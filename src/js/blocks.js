@@ -361,13 +361,8 @@ async function fetchCurrentBlockNumber() {
 // Create block number display element
 function createBlockNumberDisplay(number) {
     return `
-        <div class="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-[#00ffa3]/20">
-            <div class="px-3 py-2 text-center">
-                <div class="flex items-center justify-center gap-1">
-                    <span class="text-sm font-mono text-[#00ffa3] font-bold tracking-wider">#${number}</span>
-                </div>
-            </div>
-            <div class="absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-black/90 to-transparent"></div>
+        <div class="block-number">
+            <span class="block-number-text">#${number}</span>
         </div>
     `;
 }
@@ -399,8 +394,8 @@ export async function initializeBlocks() {
             <div class="relative w-full h-full">
                 <img src="${getImageForBlock(blockNumber)}" alt="Block" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                ${createBlockNumberDisplay(blockNumber)}
             </div>
+            ${createBlockNumberDisplay(blockNumber)}
         `;
         upcomingBlocks.appendChild(block);
     }
@@ -423,8 +418,8 @@ export async function initializeBlocks() {
                 </div>
 
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                ${createBlockNumberDisplay(blockNumber)}
             </div>
+            ${createBlockNumberDisplay(blockNumber)}
         `;
         
         // Add click handler to show past submissions modal

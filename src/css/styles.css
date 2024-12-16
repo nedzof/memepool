@@ -161,7 +161,7 @@ body {
     gap: 20px;
     padding: 20px;
     position: relative;
-    height: 140px;
+    height: 160px;
     overflow: visible;
     width: 100%;
 }
@@ -325,7 +325,7 @@ body {
     gap: 20px;
     padding: 20px;
     position: relative;
-    height: 140px;
+    height: 160px;
     overflow: visible;
     width: 100%;
 }
@@ -2074,5 +2074,36 @@ input.neon-input:focus {
     pointer-events: none;
     opacity: 0.5;
     border-radius: inherit;
+}
+
+/* Add new block number styles */
+.block-number {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -32px;
+    text-align: center;
+    padding: 4px 0;
+}
+
+.block-number-text {
+    display: inline-block;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, rgba(0, 255, 163, 0.2), rgba(0, 255, 255, 0.2));
+    border: 1px solid rgba(0, 255, 163, 0.4);
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 14px;
+    font-weight: bold;
+    color: #00ffa3;
+    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+}
+
+.meme-block:hover .block-number-text {
+    background: linear-gradient(135deg, rgba(0, 255, 163, 0.3), rgba(0, 255, 255, 0.3));
+    border-color: rgba(0, 255, 163, 0.6);
+    box-shadow: 0 0 15px rgba(0, 255, 163, 0.3);
 }
   
