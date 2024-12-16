@@ -410,6 +410,15 @@ function startLiveViewerUpdates(baseCount) {
 export function updateSubmissionThumbnails(newImageSrc) {
     const submissionBlocks = document.querySelectorAll('.submission-block .thumbnail');
     submissionBlocks.forEach(thumbnail => {
+        // Add animation class
+        thumbnail.classList.add('thumbnail-updating');
+        
+        // Update the image
         thumbnail.src = newImageSrc;
+        
+        // Remove animation class after animation completes
+        thumbnail.addEventListener('animationend', () => {
+            thumbnail.classList.remove('thumbnail-updating');
+        }, { once: true }); // Use once: true to automatically remove the event listener after it fires
     });
 } 
