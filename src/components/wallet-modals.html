@@ -136,8 +136,19 @@
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Your Seed Phrase</h2>
                 <p class="text-gray-400 text-sm mt-1">Write down these words in order and keep them safe</p>
             </div>
-            <div class="p-6 rounded-xl bg-black/30 border border-[#ff00ff]/20 backdrop-blur-sm">
-                <span id="seedPhrase" class="text-lg text-white break-all"></span>
+            <div class="p-6 rounded-xl bg-transparent border border-[#00ffa3]/10 backdrop-blur-sm relative group">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#00ffa3]/5 via-transparent to-[#00ffff]/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div id="seedPhrase" class="grid grid-cols-3 gap-3 relative z-10">
+                    <!-- Words will be inserted here dynamically -->
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button id="copySeedPhrase" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#00ffa3] hover:text-[#00ffff] transition-colors border border-[#00ffa3]/30 hover:border-[#00ffff] bg-[#0F1825]/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        Copy Seed Phrase
+                    </button>
+                </div>
             </div>
             <div class="p-4 rounded-xl bg-[#ff00ff]/10 border border-[#ff00ff]/20">
                 <div class="text-sm text-white/80">
@@ -275,31 +286,39 @@
 </div>
 
 <!-- Receive Modal -->
-<div id="receiveModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
-    <div class="bg-black border border-[#ff00ff]/30 rounded-lg p-6 max-w-md w-full relative">
-        <button id="closeReceiveModal" class="absolute top-4 right-4 text-white/50 hover:text-white">
+<div id="receiveModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
+        <button id="closeReceiveModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
         </button>
 
         <div class="space-y-6">
-            <h2 class="text-2xl font-bold text-center bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Receive BSV</h2>
+            <h2 class="text-3xl font-bold text-center bg-gradient-to-r from-[#00ffa3] to-[#00ffff] text-transparent bg-clip-text">Receive BSV</h2>
+            
+            <!-- QR Code Container with Solana-style gradient border -->
             <div class="flex justify-center">
-                <div id="qrCode"></div>
+                <div class="p-4 rounded-2xl relative"
+                     style="background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 255, 0.1));">
+                    <!-- Gradient border effect -->
+                    <div class="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-r from-[#00ffa3] to-[#00ffff] opacity-30"></div>
+                    <!-- QR Code with white background for better visibility -->
+                    <div class="relative bg-white rounded-xl p-4" id="qrCode"></div>
+                </div>
             </div>
-            <div>
-                <label class="text-sm text-gray-400">Your Address</label>
-                <div class="flex gap-2 mt-1">
-                    <input type="text" id="walletAddress" readonly class="flex-1 bg-transparent rounded-lg p-3 text-white"
-                           style="background: rgba(255, 0, 255, 0.1);
-                                  border: 1px solid rgba(255, 0, 255, 0.3);
-                                  box-shadow: 0 0 10px rgba(255, 0, 255, 0.1)">
-                    <button id="copyAddress" class="px-4 rounded-lg font-bold transition-all duration-300 hover:scale-105 text-white"
-                            style="background: rgba(255, 0, 255, 0.1);
-                                   border: 1px solid rgba(255, 0, 255, 0.3);
-                                   box-shadow: 0 0 10px rgba(255, 0, 255, 0.1)">
-                        Copy
+
+            <div class="space-y-2">
+                <label class="text-sm text-[#00ffa3]">Your Address</label>
+                <div class="flex gap-2">
+                    <input type="text" id="walletAddress" readonly 
+                           class="flex-1 bg-black/30 rounded-xl p-4 text-white border border-[#00ffa3]/30 backdrop-blur-sm"
+                           style="box-shadow: 0 0 20px rgba(0, 255, 163, 0.1);">
+                    <button id="copyAddress" 
+                            class="px-6 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#00ffa3]/30 bg-[#00ffa3]/10 hover:bg-[#00ffa3]/20">
+                        <div class="relative z-10">Copy</div>
                     </button>
                 </div>
             </div>
