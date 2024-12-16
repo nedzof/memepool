@@ -112,52 +112,206 @@ function updateSubmissions() {
     submissionsGrid.innerHTML = '';
     
     sortedSubmissions.forEach((submission, index) => {
-        const block = document.createElement('div');
-        block.className = 'submission-block neon-border';
-        
-        // Add rank badge for top 3
-        const rankBadgeHtml = index < 3 ? `
-            <div class="rank-badge rank-badge-${index + 1}">
-                ${index + 1}
-            </div>
-        ` : '';
+        const block = createSubmissionBlock(submission);
+        submissionsGrid.appendChild(block);
+    });
+}
 
-        // Add live pulse animation
-        const livePulseHtml = `
-            <div class="live-pulse">
-                <span class="text-white text-sm">${formatNumber(submission.liveViewers)}</span>
-            </div>
-        `;
+function createSubmissionBlock(submission) {
+    const block = document.createElement('div');
+    block.className = 'submission-block relative group cursor-pointer transform transition-all duration-300 hover:scale-105';
+    
+    // Get current meme image
+    const currentMeme = document.getElementById('currentMeme');
+    const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
 
-        block.innerHTML = `
-            <div class="thumbnail">
-                <video src="${submission.videoUrl}" class="w-full h-full object-cover" preload="none" poster="${submission.thumbnail}"></video>
-                ${rankBadgeHtml}
-                ${livePulseHtml}
-                <div class="play-indicator">
-                    <svg class="w-8 h-8" fill="none" stroke="rgba(0, 255, 163, 0.8)" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    block.innerHTML = `
+        <div class="relative w-full h-full">
+            <img src="${currentMemeImage}" alt="Submission Thumbnail" class="thumbnail w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <!-- Engagement Stats Banner -->
+            <div class="watch-banner">
+                <div class="watch-count">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
+                    <span class="watch-time">${Math.floor(Math.random() * 1000)}k</span>
                 </div>
-                <div class="submission-info">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-2">
-                            <div class="watch-time neon-text">${formatWatchTime(submission.totalWatchTimeSeconds)}</div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[#00ffa3]">+${Math.floor(Math.random() * 100)} SOL</span>
+                    <span class="text-xs opacity-75">Potential Reward</span>
+                </div>
+            </div>
+
+            <!-- Play Indicator -->
+            <div class="play-indicator">
+                <div class="absolute inset-0 bg-[#00ffa3] opacity-20 rounded-full animate-pulse"></div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+
+            <!-- Live Viewer Count -->
+            <div class="live-pulse">
+                <span class="text-red-500">● LIVE</span>
+                <span class="text-white" id="liveViewers">${Math.floor(Math.random() * 1000)}</span>
+            </div>
+
+            <!-- Rank Badge (if in top 3) -->
+            ${submission.rank <= 3 ? `
+                <div class="rank-badge rank-badge-${submission.rank}">
+                    ${submission.rank}
+                </div>
+            ` : ''}
+
+            <!-- Engagement Boost -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black via-black/90 to-transparent">
+                <div class="flex justify-between items-center text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[#00ffa3]">${Math.floor(Math.random() * 100)}%</span>
+                        <span class="opacity-75">Engagement Rate</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[#00ffa3]">${Math.floor(Math.random() * 24)}h</span>
+                        <span class="opacity-75">Time Left</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add hover effects
+    block.addEventListener('mouseenter', () => {
+        block.style.transform = 'scale(1.05)';
+        block.style.boxShadow = '0 0 30px rgba(0, 255, 163, 0.3)';
+    });
+
+    block.addEventListener('mouseleave', () => {
+        block.style.transform = 'scale(1)';
+        block.style.boxShadow = 'none';
+    });
+
+    // Add click handler
+    block.addEventListener('click', () => {
+        openSubmissionDetails(submission);
+    });
+
+    return block;
+}
+
+function openSubmissionDetails(submission) {
+    const modal = document.getElementById('submissionDetailsModal');
+    const currentMeme = document.getElementById('currentMeme');
+    const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
+
+    if (modal) {
+        modal.innerHTML = `
+            <div class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+                <div class="bg-[#0c0620]/90 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar relative border border-[#00ffa3]/20">
+                    <!-- Close button -->
+                    <button id="closeSubmissionModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    <!-- Content -->
+                    <div class="p-6">
+                        <!-- Video container -->
+                        <div class="relative rounded-xl overflow-hidden mb-6 group">
+                            <img src="${currentMemeImage}" alt="Submission Thumbnail" class="w-full aspect-video object-cover">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="transform group-hover:scale-110 transition-transform duration-300">
+                                    <div class="relative">
+                                        <div class="absolute inset-0 bg-[#00ffa3] opacity-20 rounded-full animate-pulse"></div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Live viewer count -->
+                            <div class="absolute top-4 left-4 bg-black/50 rounded-full px-4 py-1 flex items-center gap-2">
+                                <span class="animate-pulse text-red-500">●</span>
+                                <span class="text-white" id="liveViewers">${Math.floor(Math.random() * 1000)}</span>
+                                <span class="text-white/70">watching</span>
+                            </div>
+
+                            <!-- Potential reward -->
+                            <div class="absolute top-4 right-4 bg-[#00ffa3]/20 border border-[#00ffa3]/40 rounded-full px-4 py-1">
+                                <span class="text-[#00ffa3]">+${Math.floor(Math.random() * 100)} SOL</span>
+                                <span class="text-white/70">potential reward</span>
+                            </div>
                         </div>
-                        <div class="text-[#00ffa3]">${formatNumber(submission.points)} pts</div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="stats-card bg-black/20 rounded-xl p-4 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
+                                <div class="text-white/70 mb-2">Total Views</div>
+                                <div class="text-2xl font-bold">
+                                    <span class="text-[#00ffa3]">${Math.floor(Math.random() * 1000)}k</span>
+                                </div>
+                            </div>
+                            <div class="stats-card bg-black/20 rounded-xl p-4 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
+                                <div class="text-white/70 mb-2">Engagement Rate</div>
+                                <div class="text-2xl font-bold">
+                                    <span class="text-[#00ffa3]">${Math.floor(Math.random() * 100)}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Creator Info -->
+                        <div class="creator-info bg-black/20 rounded-xl p-4 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-r from-[#00ffa3] to-[#00ffff]"></div>
+                                <div>
+                                    <div class="font-bold">Creator Name</div>
+                                    <div class="text-white/70 text-sm">Joined ${Math.floor(Math.random() * 12)} months ago</div>
+                                </div>
+                                <button class="ml-auto bg-[#00ffa3] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#00ffff] transition-colors">
+                                    Follow
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Engagement Stats -->
+                        <div class="space-y-4">
+                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-black/20 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
+                                <span>Watch Time</span>
+                                <span class="text-[#00ffa3]">${Math.floor(Math.random() * 60)} minutes</span>
+                            </div>
+                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-black/20 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
+                                <span>Completion Rate</span>
+                                <span class="text-[#00ffa3]">${Math.floor(Math.random() * 100)}%</span>
+                            </div>
+                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-black/20 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
+                                <span>Time Left</span>
+                                <span class="text-[#00ffa3]">${Math.floor(Math.random() * 24)}h ${Math.floor(Math.random() * 60)}m</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
 
-        block.addEventListener('click', () => {
-            currentSubmissionIndex = index;
-            openSubmissionModal(submission);
-        });
+        modal.classList.add('modal-open');
 
-        submissionsGrid.appendChild(block);
-    });
+        // Add close button handler
+        const closeButton = modal.querySelector('#closeSubmissionModal');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                modal.classList.remove('modal-open');
+                setTimeout(() => {
+                    modal.classList.remove('modal-close');
+                }, 300);
+            });
+        }
+    }
 }
 
 function showPreviousSubmission() {
@@ -216,40 +370,6 @@ function formatTimeAgo(timestamp) {
     return 'Just now';
 }
 
-function openSubmissionModal(submissionData) {
-    const modal = document.getElementById('submissionDetailsModal');
-    if (!modal) return;
-    
-    // Update modal content
-    document.getElementById('submissionBlockNumber').textContent = `#${submissionData.blockNumber}`;
-    document.getElementById('submissionVideo').src = submissionData.videoUrl;
-    document.getElementById('submissionVideo').poster = submissionData.thumbnail;
-    
-    document.getElementById('submissionTimestamp').textContent = formatTimeAgo(submissionData.timestamp);
-    document.getElementById('creatorAddress').textContent = submissionData.creator;
-    document.getElementById('creatorRank').textContent = `Top Creator #${submissionData.creatorRank}`;
-    
-    document.getElementById('totalWatchTime').textContent = (submissionData.totalWatchTimeSeconds / 3600).toFixed(1);
-    document.getElementById('submissionRank').textContent = `#${submissionData.rank}`;
-    document.getElementById('liveViewers').textContent = formatNumber(submissionData.liveViewers);
-    document.getElementById('retentionRate').textContent = `${Math.round(submissionData.retentionRate * 100)}`;
-    document.getElementById('pointsEarned').textContent = formatNumber(submissionData.points);
-    document.getElementById('peakViewers').textContent = formatNumber(submissionData.peakViewers);
-
-    // Update navigation buttons
-    const prevButton = document.getElementById('prevSubmission');
-    const nextButton = document.getElementById('nextSubmission');
-    if (prevButton) prevButton.style.visibility = currentSubmissionIndex > 0 ? 'visible' : 'hidden';
-    if (nextButton) nextButton.style.visibility = currentSubmissionIndex < submissions.length - 1 ? 'visible' : 'hidden';
-
-    // Show modal with animation
-    modal.classList.remove('hidden');
-    modal.classList.add('modal-open');
-
-    // Start live viewer count updates
-    startLiveViewerUpdates(submissionData.liveViewers);
-}
-
 function closeSubmissionModal() {
     const modal = document.getElementById('submissionDetailsModal');
     if (!modal) return;
@@ -285,4 +405,11 @@ function startLiveViewerUpdates(baseCount) {
         liveViewersElement.classList.add('number-pulse');
         setTimeout(() => liveViewersElement.classList.remove('number-pulse'), 500);
     }, 3000);
+}
+
+export function updateSubmissionThumbnails(newImageSrc) {
+    const submissionBlocks = document.querySelectorAll('.submission-block .thumbnail');
+    submissionBlocks.forEach(thumbnail => {
+        thumbnail.src = newImageSrc;
+    });
 } 

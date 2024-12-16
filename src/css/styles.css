@@ -1580,4 +1580,194 @@ textarea:focus {
         opacity: 1;
     }
 }
+
+/* Submission Block Styles */
+.submission-block {
+    background: rgba(12, 6, 32, 0.8);
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.submission-block:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 30px rgba(0, 255, 163, 0.2);
+}
+
+.thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.watch-banner {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: all 0.3s ease;
+}
+
+.submission-block:hover .watch-banner {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.watch-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.play-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.submission-block:hover .play-indicator {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.live-pulse {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: rgba(0,0,0,0.6);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.rank-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.125rem;
+    color: black;
+}
+
+.rank-badge-1 {
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+}
+
+.rank-badge-2 {
+    background: linear-gradient(45deg, #C0C0C0, #E8E8E8);
+}
+
+.rank-badge-3 {
+    background: linear-gradient(45deg, #CD7F32, #B87333);
+}
+
+/* Modal Styles */
+.modal-open {
+    animation: modalFadeIn 0.3s ease forwards;
+}
+
+.modal-close {
+    animation: modalFadeOut 0.3s ease forwards;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes modalFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0,255,163,0.5);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,255,163,0.7);
+}
+
+/* Stats Cards Hover Effects */
+.stats-card {
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0,255,163,0.6);
+}
+
+/* Engagement Stats Animation */
+.engagement-stat {
+    transition: all 0.3s ease;
+}
+
+.engagement-stat:hover {
+    transform: translateX(4px);
+    border-color: rgba(0,255,163,0.6);
+}
+
+/* Live Pulse Animation */
+@keyframes livePulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.live-pulse span:first-child {
+    animation: livePulse 1.5s ease-in-out infinite;
+}
   

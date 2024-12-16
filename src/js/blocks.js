@@ -1,3 +1,5 @@
+import { initializeSubmissions, updateSubmissionThumbnails } from './submissions.js';
+
 // Initialize state variables
 let isAnimating = false;
 let animationQueue = [];
@@ -200,6 +202,8 @@ export function shiftBlocks() {
                 if (currentMemeImage) {
                     currentMemeImage.src = lastUpcoming.querySelector('img').src;
                     currentMemeImage.setAttribute('data-initialized', 'true');
+                    // Update submission thumbnails with the new image
+                    updateSubmissionThumbnails(currentMemeImage.src);
                 }
             });
 
