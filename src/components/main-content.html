@@ -1,4 +1,9 @@
 <body class="p-8">
+    <!-- Logo -->
+    <div class="fixed top-4 left-4 z-50">
+        <img src="../Memepool_Logo.png" alt="Memepool Logo" class="h-12 w-auto">
+    </div>
+
     <div class="fixed top-4 right-4 z-50">
         <button id="connectWalletBtn" class="gradient-button px-6 py-2 rounded-lg font-bold">
             Connect Wallet
@@ -17,34 +22,165 @@
             <!-- Upcoming Blocks Section - Fixed width -->
             <div class="w-[400px]">
                 <div class="section-label text-right mb-4 neon-text">Upcoming Blocks</div>
-                <div class="blocks-container justify-end" id="upcomingBlocks">
-                    <!-- Will be populated by JavaScript -->
+                <div class="flex items-center">
+                    <!-- Left arrow for upcoming blocks -->
+                    <button id="moreUpcomingBlocks" class="flex-shrink-0 mr-4 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110">
+                        <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div class="blocks-container justify-end" id="upcomingBlocks">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
 
             <!-- Current Meme Section - Fixed position in center -->
             <div class="flex-shrink-0 w-[400px]">
                 <div class="current-meme rounded-xl overflow-hidden relative" id="currentMeme">
-                    <img src="https://placehold.co/400x400" alt="Current Meme" class="w-full h-full object-cover">
-                    <div class="absolute bottom-0 left-0 right-0 text-xs text-center p-1 bg-black/70">#803525</div>
-                    <button class="gradient-button beat-button px-6 py-2 rounded-lg font-bold">
-                        BEAT THIS
-                    </button>
+                    <div class="relative w-full h-full">
+                        <img src="https://placehold.co/400x400" alt="Current Meme" class="w-full h-full object-cover">
+                        <div class="absolute bottom-4 left-0 right-0 flex justify-center">
+                            <button class="gradient-button beat-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20">
+                                COMPETE
+                            </button>
+                        </div>
+                        <!-- Block number display will be added by JavaScript -->
+                    </div>
                 </div>
             </div>
 
             <!-- Past Blocks Section - Fixed width -->
             <div class="w-[400px]">
                 <div class="section-label text-left mb-4 neon-text">Past Blocks</div>
-                <div class="blocks-container justify-start" id="pastBlocks">
-                    <!-- Will be populated by JavaScript -->
+                <div class="flex items-center">
+                    <div class="blocks-container justify-start" id="pastBlocks">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    <!-- Right arrow for past blocks -->
+                    <button id="morePastBlocks" class="flex-shrink-0 ml-4 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110">
+                        <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Past Submissions Modal -->
+        <div id="pastSubmissionsModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50">
+            <div class="w-full h-full max-w-7xl mx-auto p-8 rounded-2xl relative" 
+                 style="background: linear-gradient(135deg, rgba(12, 6, 32, 0.95) 0%, rgba(18, 12, 52, 0.95) 100%);">
+                
+                <!-- Close Button -->
+                <button id="closePastSubmissionsModal" class="absolute top-4 right-4 text-[#00ffa3] hover:text-white transition-all hover:scale-110 z-10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <!-- Header -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-[#00ffa3] mb-4">Past Block Submissions</h2>
+                    
+                    <!-- Filters Section -->
+                    <div class="space-y-4">
+                        <!-- Time and Sort Filters -->
+                        <div class="flex justify-between items-center">
+                            <!-- Time Filters -->
+                            <div class="flex gap-4">
+                                <button class="filter-button active" data-time="current">Current Round</button>
+                                <button class="filter-button" data-time="hour">Last Hour</button>
+                                <button class="filter-button" data-time="day">Last 24h</button>
+                            </div>
+                            
+                            <!-- Sort Options -->
+                            <div class="flex gap-4">
+                                <button class="filter-button active" data-sort="trending">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    Trending
+                                </button>
+                                <button class="filter-button" data-sort="earnings">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Earnings
+                                </button>
+                                <button class="filter-button" data-sort="viewers">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    Viewers
+                                </button>
+                                <button class="filter-button" data-sort="watchTime">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Watch Time
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Search Filters -->
+                        <div class="flex gap-4">
+                            <!-- Transaction ID Search -->
+                            <div class="flex-1">
+                                <input type="text" 
+                                       id="txIdSearch" 
+                                       placeholder="Search by Transaction ID" 
+                                       class="w-full px-4 py-2 rounded-lg bg-black/30 border border-[#00ffa3]/30 text-white placeholder-gray-400 focus:border-[#00ffa3] transition-all">
+                            </div>
+                            <!-- Creator Search -->
+                            <div class="flex-1">
+                                <input type="text" 
+                                       id="creatorSearch" 
+                                       placeholder="Search by Creator" 
+                                       class="w-full px-4 py-2 rounded-lg bg-black/30 border border-[#00ffa3]/30 text-white placeholder-gray-400 focus:border-[#00ffa3] transition-all">
+                            </div>
+                            <!-- Search Button -->
+                            <button id="searchSubmissions" 
+                                    class="px-6 py-2 rounded-lg bg-[#00ffa3]/10 border border-[#00ffa3]/30 text-[#00ffa3] hover:bg-[#00ffa3]/20 transition-all">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Current Block Info -->
+                    <div class="flex items-center gap-4 mt-4 p-4 rounded-xl bg-black/30 border border-[#00ffa3]/20">
+                        <div class="text-[#00ffa3]">Current Block:</div>
+                        <div class="text-white font-bold" id="pastModalBlockNumber">#803525</div>
+                        <div class="text-[#00ffa3] ml-8">Transaction ID:</div>
+                        <div class="text-white font-mono text-sm flex-1" id="pastModalTxId">0x1234...5678</div>
+                        <button class="text-[#00ffa3] hover:text-white transition-all" id="copyTxId">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submissions Grid with Infinite Scroll -->
+                <div class="overflow-y-auto max-h-[calc(100vh-300px)] pr-4 custom-scrollbar" id="pastSubmissionsContainer">
+                    <div class="grid grid-cols-4 gap-6" id="pastSubmissionsGrid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    <!-- Loading Indicator -->
+                    <div id="submissionsLoader" class="hidden py-8 text-center">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#00ffa3] border-t-transparent"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Submissions Section -->
         <div class="mt-16">
-            <div class="section-label mb-6 neon-text">Submissions for Block <span id="currentBlockNumber">#803525</span></div>
+            <div class="section-label mb-6 text-center mx-auto max-w-2xl">
+                <span class="text-white">Submissions for Block</span>
+                <span class="ml-2 font-mono text-[#00ffa3] font-bold">#<span id="currentBlockNumber">803525</span></span>
+            </div>
             <div class="submissions-grid" id="submissionsGrid">
                 <!-- Will be populated by JavaScript -->
             </div>
