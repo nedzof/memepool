@@ -7,59 +7,6 @@ export function initializeSubmissions() {
     const submissionsGrid = document.getElementById('submissionsGrid');
     if (!submissionsGrid) return;
 
-    // Add filter bar
-    const filterBar = document.createElement('div');
-    filterBar.className = 'filter-bar';
-    filterBar.innerHTML = `
-        <div class="flex gap-4">
-            <button class="filter-button active" data-sort="trending">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                Trending
-            </button>
-            <button class="filter-button" data-sort="earnings">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Earnings
-            </button>
-            <button class="filter-button" data-sort="viewers">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Viewers
-            </button>
-        </div>
-        <div class="flex gap-4">
-            <button class="filter-button active" data-time="current">Current Round</button>
-            <button class="filter-button" data-time="hour">Last Hour</button>
-            <button class="filter-button" data-time="day">Last 24h</button>
-        </div>
-    `;
-
-    submissionsGrid.parentNode.insertBefore(filterBar, submissionsGrid);
-
-    // Add filter button click handlers
-    filterBar.querySelectorAll('[data-sort]').forEach(button => {
-        button.addEventListener('click', () => {
-            filterBar.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-            button.classList.add('active');
-            currentFilter = button.dataset.sort;
-            updateSubmissions();
-        });
-    });
-
-    filterBar.querySelectorAll('[data-time]').forEach(button => {
-        button.addEventListener('click', () => {
-            filterBar.querySelectorAll('[data-time]').forEach(b => b.classList.remove('active'));
-            button.classList.add('active');
-            currentTimeRange = button.dataset.time;
-            updateSubmissions();
-        });
-    });
-
     // Generate mock submissions
     submissions = generateMockSubmissions();
     updateSubmissions();
@@ -71,11 +18,15 @@ export function initializeSubmissions() {
 }
 
 function generateMockSubmissions() {
+    // Get current meme image
+    const currentMeme = document.getElementById('currentMeme');
+    const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
+
     return Array.from({ length: 9 }, (_, i) => ({
         id: i + 1,
         blockNumber: 803525,
-        videoUrl: 'https://picsum.photos/400/400',
-        thumbnail: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23000' fill-opacity='0.2'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='rgba(0, 255, 163, 0.5)' text-anchor='middle' dominant-baseline='middle'%3EVideo %23${i + 1}%3C/text%3E%3C/svg%3E`,
+        videoUrl: currentMemeImage,
+        thumbnail: currentMemeImage,
         timestamp: new Date(Date.now() - Math.random() * 86400000 * 7),
         creator: `Creator${i + 1}.sol`,
         creatorRank: Math.floor(Math.random() * 100) + 1,
@@ -111,7 +62,9 @@ function updateSubmissions() {
 
     submissionsGrid.innerHTML = '';
     
+    // Add fixed premium badges for top 3 positions
     sortedSubmissions.forEach((submission, index) => {
+        submission.rank = index + 1; // Assign fixed rank based on position
         const block = createSubmissionBlock(submission);
         submissionsGrid.appendChild(block);
     });
@@ -125,58 +78,43 @@ function createSubmissionBlock(submission) {
     const currentMeme = document.getElementById('currentMeme');
     const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
 
+    // Define badge styles based on rank
+    const badgeStyles = {
+        1: 'bg-gradient-to-r from-yellow-300 to-yellow-500 border-yellow-300 text-black', // Gold
+        2: 'bg-gradient-to-r from-gray-300 to-gray-400 border-gray-300 text-black',      // Silver
+        3: 'bg-gradient-to-r from-amber-600 to-amber-700 border-amber-600 text-white'    // Bronze
+    };
+
     block.innerHTML = `
         <div class="relative w-full h-full">
             <img src="${currentMemeImage}" alt="Submission Thumbnail" class="thumbnail w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             
-            <!-- Engagement Stats Banner -->
-            <div class="watch-banner">
-                <div class="watch-count">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span class="watch-time">${Math.floor(Math.random() * 1000)}k</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[#00ffa3]">+${Math.floor(Math.random() * 100)} SOL</span>
-                    <span class="text-xs opacity-75">Potential Reward</span>
-                </div>
-            </div>
-
-            <!-- Play Indicator -->
-            <div class="play-indicator">
-                <div class="absolute inset-0 bg-[#00ffa3] opacity-20 rounded-full animate-pulse"></div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-
-            <!-- Live Viewer Count -->
-            <div class="live-pulse">
-                <span class="text-red-500">● LIVE</span>
-                <span class="text-white" id="liveViewers">${Math.floor(Math.random() * 1000)}</span>
-            </div>
-
-            <!-- Rank Badge (if in top 3) -->
+            <!-- Premium Badge for top 3 -->
             ${submission.rank <= 3 ? `
-                <div class="rank-badge rank-badge-${submission.rank}">
-                    ${submission.rank}
+                <div class="absolute top-3 right-3 ${badgeStyles[submission.rank]} px-3 py-1 rounded-full border shadow-lg flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span class="font-bold">#${submission.rank}</span>
                 </div>
             ` : ''}
-
-            <!-- Engagement Boost -->
-            <div class="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black via-black/90 to-transparent">
+            
+            <!-- Transaction ID Banner -->
+            <div class="absolute top-4 left-4 right-4 px-3 py-2 bg-black/70 backdrop-blur-sm rounded-lg border border-[#00ffa3]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="text-xs font-mono text-[#00ffa3] truncate">${submission.txId}</div>
+            </div>
+            
+            <!-- Stats Banner -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div class="flex justify-between items-center text-sm">
                     <div class="flex items-center gap-2">
-                        <span class="text-[#00ffa3]">${Math.floor(Math.random() * 100)}%</span>
-                        <span class="opacity-75">Engagement Rate</span>
+                        <span class="text-[#00ffa3]">${submission.points}</span>
+                        <span class="text-white opacity-75">Points</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-[#00ffa3]">${Math.floor(Math.random() * 24)}h</span>
-                        <span class="opacity-75">Time Left</span>
+                        <span class="text-[#00ffa3]">#${submission.rank}</span>
+                        <span class="text-white opacity-75">Rank</span>
                     </div>
                 </div>
             </div>
@@ -208,18 +146,63 @@ function openSubmissionDetails(submission) {
     const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
 
     if (modal) {
+        // Store current submission index for navigation
+        currentSubmissionIndex = submissions.findIndex(s => s.id === submission.id);
+
         modal.innerHTML = `
-            <div class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-                <div class="bg-[#0c0620]/90 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar relative border border-[#00ffa3]/20">
+            <div class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+                <div class="relative bg-[#0F1825] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar border border-[#00ffa3]/20">
+                    <!-- Solana Background Effects -->
+                    <div class="absolute inset-0 overflow-hidden rounded-2xl">
+                        <div class="absolute inset-0 bg-gradient-to-br from-[#232D3F]/50 via-[#0F1825]/50 to-[#192E4B]/50"></div>
+                        <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#00ffa3]/50 to-transparent"></div>
+                        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#00ffa3]/50 to-transparent"></div>
+                        <div class="absolute -left-32 -top-32 w-64 h-64 bg-[#00ffa3]/10 rounded-full blur-3xl"></div>
+                        <div class="absolute -right-32 -bottom-32 w-64 h-64 bg-[#00ffa3]/10 rounded-full blur-3xl"></div>
+                    </div>
+
+                    <!-- Navigation Arrows -->
+                    <div class="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none z-20 px-4">
+                        <button id="prevDetailSubmission" class="pointer-events-auto p-2 rounded-full bg-[#0F1825]/90 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110 ${currentSubmissionIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+                            <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <button id="nextDetailSubmission" class="pointer-events-auto p-2 rounded-full bg-[#0F1825]/90 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110 ${currentSubmissionIndex === submissions.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+                            <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+
                     <!-- Close button -->
-                    <button id="closeSubmissionModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                    <button id="closeSubmissionModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors z-30">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
 
                     <!-- Content -->
-                    <div class="p-6">
+                    <div class="p-6 relative z-10">
+                        <!-- Transaction ID Banner -->
+                        <div class="mb-6 p-4 rounded-xl bg-[#0F1825]/80 border border-[#00ffa3]/20 backdrop-blur-sm">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[#00ffa3]">Transaction ID:</span>
+                                    <a href="https://whatsonchain.com/tx/${submission.txId}" 
+                                       target="_blank" 
+                                       class="font-mono text-white hover:text-[#00ffa3] transition-colors">
+                                        ${submission.txId}
+                                    </a>
+                                </div>
+                                <button class="text-[#00ffa3] hover:text-white transition-all" onclick="navigator.clipboard.writeText('${submission.txId}')">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Video container -->
                         <div class="relative rounded-xl overflow-hidden mb-6 group">
                             <img src="${currentMemeImage}" alt="Submission Thumbnail" class="w-full aspect-video object-cover">
@@ -235,43 +218,52 @@ function openSubmissionDetails(submission) {
                                 </div>
                             </div>
                             
+                            <!-- Beat This Button -->
+                            <div class="absolute bottom-4 left-0 right-0 flex justify-center">
+                                <button class="gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20 text-white">
+                                    BEAT THIS
+                                </button>
+                            </div>
+
                             <!-- Live viewer count -->
-                            <div class="absolute top-4 left-4 bg-black/50 rounded-full px-4 py-1 flex items-center gap-2">
+                            <div class="absolute top-4 left-4 bg-[#080418]/95 backdrop-blur-md rounded-full px-4 py-1 flex items-center gap-2 border border-[#00ffa3]/30">
                                 <span class="animate-pulse text-red-500">●</span>
-                                <span class="text-white" id="liveViewers">${Math.floor(Math.random() * 1000)}</span>
+                                <span class="text-white" id="liveViewers">${submission.liveViewers}</span>
                                 <span class="text-white/70">watching</span>
                             </div>
 
                             <!-- Potential reward -->
-                            <div class="absolute top-4 right-4 bg-[#00ffa3]/20 border border-[#00ffa3]/40 rounded-full px-4 py-1">
-                                <span class="text-[#00ffa3]">+${Math.floor(Math.random() * 100)} SOL</span>
+                            <div class="absolute top-4 right-4 bg-[#080418]/95 backdrop-blur-md rounded-full px-4 py-1 border border-[#00ffa3]/30">
+                                <span class="text-[#00ffa3]">+${submission.earnings} SOL</span>
                                 <span class="text-white/70">potential reward</span>
                             </div>
                         </div>
 
                         <!-- Stats Grid -->
                         <div class="grid grid-cols-2 gap-4 mb-6">
-                            <div class="stats-card bg-black/20 rounded-xl p-4 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
+                            <div class="stats-card bg-[#080418]/95 backdrop-blur-md rounded-xl p-4 border border-[#00ffa3]/20">
                                 <div class="text-white/70 mb-2">Total Views</div>
                                 <div class="text-2xl font-bold">
-                                    <span class="text-[#00ffa3]">${Math.floor(Math.random() * 1000)}k</span>
+                                    <span class="text-[#00ffa3]">${formatNumber(submission.totalViews)}</span>
                                 </div>
                             </div>
-                            <div class="stats-card bg-black/20 rounded-xl p-4 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
+                            <div class="stats-card bg-[#080418]/95 backdrop-blur-md rounded-xl p-4 border border-[#00ffa3]/20">
                                 <div class="text-white/70 mb-2">Engagement Rate</div>
                                 <div class="text-2xl font-bold">
-                                    <span class="text-[#00ffa3]">${Math.floor(Math.random() * 100)}%</span>
+                                    <span class="text-[#00ffa3]">${Math.round(submission.retentionRate * 100)}%</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Creator Info -->
-                        <div class="creator-info bg-black/20 rounded-xl p-4 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors mb-6">
+                        <div class="creator-info bg-[#080418]/95 backdrop-blur-md rounded-xl p-4 border border-[#00ffa3]/20 mb-6">
                             <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-full bg-gradient-to-r from-[#00ffa3] to-[#00ffff]"></div>
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-r from-[#00ffa3] to-[#00ffff] flex items-center justify-center">
+                                    <span class="text-black font-bold">${submission.creator.slice(0, 2)}</span>
+                                </div>
                                 <div>
-                                    <div class="font-bold">Creator Name</div>
-                                    <div class="text-white/70 text-sm">Joined ${Math.floor(Math.random() * 12)} months ago</div>
+                                    <div class="font-bold text-white">${submission.creator}</div>
+                                    <div class="text-[#00ffa3] text-sm">Rank #${submission.creatorRank}</div>
                                 </div>
                                 <button class="ml-auto bg-[#00ffa3] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#00ffff] transition-colors">
                                     Follow
@@ -281,17 +273,17 @@ function openSubmissionDetails(submission) {
 
                         <!-- Engagement Stats -->
                         <div class="space-y-4">
-                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-black/20 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
-                                <span>Watch Time</span>
-                                <span class="text-[#00ffa3]">${Math.floor(Math.random() * 60)} minutes</span>
+                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-[#080418]/95 backdrop-blur-md border border-[#00ffa3]/20">
+                                <span class="text-white">Watch Time</span>
+                                <span class="text-[#00ffa3]">${formatWatchTime(submission.totalWatchTimeSeconds)}</span>
                             </div>
-                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-black/20 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
-                                <span>Completion Rate</span>
-                                <span class="text-[#00ffa3]">${Math.floor(Math.random() * 100)}%</span>
+                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-[#080418]/95 backdrop-blur-md border border-[#00ffa3]/20">
+                                <span class="text-white">Peak Viewers</span>
+                                <span class="text-[#00ffa3]">${formatNumber(submission.peakViewers)}</span>
                             </div>
-                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-black/20 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-colors">
-                                <span>Time Left</span>
-                                <span class="text-[#00ffa3]">${Math.floor(Math.random() * 24)}h ${Math.floor(Math.random() * 60)}m</span>
+                            <div class="engagement-stat flex justify-between items-center p-4 rounded-xl bg-[#080418]/95 backdrop-blur-md border border-[#00ffa3]/20">
+                                <span class="text-white">Time Left</span>
+                                <span class="text-[#00ffa3]">${formatTimeAgo(submission.timestamp)}</span>
                             </div>
                         </div>
                     </div>
@@ -301,8 +293,27 @@ function openSubmissionDetails(submission) {
 
         modal.classList.add('modal-open');
 
-        // Add close button handler
+        // Add navigation handlers
+        const prevButton = modal.querySelector('#prevDetailSubmission');
+        const nextButton = modal.querySelector('#nextDetailSubmission');
         const closeButton = modal.querySelector('#closeSubmissionModal');
+
+        if (prevButton) {
+            prevButton.addEventListener('click', () => {
+                if (currentSubmissionIndex > 0) {
+                    openSubmissionDetails(submissions[currentSubmissionIndex - 1]);
+                }
+            });
+        }
+
+        if (nextButton) {
+            nextButton.addEventListener('click', () => {
+                if (currentSubmissionIndex < submissions.length - 1) {
+                    openSubmissionDetails(submissions[currentSubmissionIndex + 1]);
+                }
+            });
+        }
+
         if (closeButton) {
             closeButton.addEventListener('click', () => {
                 modal.classList.remove('modal-open');
@@ -311,6 +322,31 @@ function openSubmissionDetails(submission) {
                 }, 300);
             });
         }
+
+        // Add click handler for Beat This button
+        const beatThisButton = modal.querySelector('.gradient-button');
+        if (beatThisButton) {
+            beatThisButton.addEventListener('click', () => {
+                const videoModal = document.getElementById('videoModal');
+                if (videoModal) {
+                    // Close the submission details modal
+                    modal.classList.remove('modal-open');
+                    setTimeout(() => {
+                        modal.classList.remove('modal-close');
+                    }, 300);
+
+                    // Open the video modal
+                    videoModal.classList.remove('hidden');
+                    videoModal.classList.add('modal-open');
+                    document.getElementById('promptStep').style.display = 'block';
+                    document.getElementById('generatingStep').style.display = 'none';
+                    document.getElementById('previewStep').style.display = 'none';
+                }
+            });
+        }
+
+        // Start live viewer updates
+        startLiveViewerUpdates(submission.liveViewers);
     }
 }
 

@@ -1797,4 +1797,282 @@ textarea:focus {
 .live-pulse span:first-child {
     animation: livePulse 1.5s ease-in-out infinite;
 }
+
+/* Enhanced Wallet Transaction History */
+.transaction-history {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px;
+    margin: 20px 0;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 255, 163, 0.2);
+}
+
+.transaction-item {
+    margin: 8px 0;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(26, 17, 71, 0.6);
+    border: 1px solid rgba(0, 255, 163, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.transaction-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 255, 163, 0.1),
+        transparent
+    );
+    transition: 0.5s;
+}
+
+.transaction-item:hover::before {
+    left: 100%;
+}
+
+.transaction-item:hover {
+    transform: translateX(5px);
+    border-color: rgba(0, 255, 163, 0.4);
+    box-shadow: 
+        0 0 20px rgba(0, 255, 163, 0.1),
+        inset 0 0 10px rgba(0, 255, 163, 0.1);
+}
+
+/* Enhanced Neon Text Effects */
+.neon-value {
+    color: #00ffa3;
+    text-shadow: 
+        0 0 10px rgba(0, 255, 163, 0.5),
+        0 0 20px rgba(0, 255, 255, 0.3),
+        0 0 30px rgba(0, 255, 163, 0.1);
+    animation: neonPulse 2s ease-in-out infinite alternate;
+}
+
+/* Enhanced Button Hover Effects */
+.gradient-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 255, 163, 0.3);
+}
+
+.gradient-button::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #00ffa3, #00ffff, #ff00ff);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: inherit;
+}
+
+.gradient-button:hover::before {
+    opacity: 1;
+    animation: borderRotate 2s linear infinite;
+}
+
+@keyframes borderRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Enhanced Modal Backdrop */
+.modal-backdrop {
+    backdrop-filter: blur(25px);
+    background: radial-gradient(
+        circle at center,
+        rgba(0, 255, 163, 0.1) 0%,
+        rgba(0, 0, 0, 0.95) 100%
+    );
+}
+
+/* Enhanced Input Fields */
+input.neon-input {
+    background: rgba(26, 17, 71, 0.6);
+    border: 1px solid rgba(0, 255, 163, 0.2);
+    border-radius: 8px;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+input.neon-input:focus {
+    border-color: rgba(0, 255, 163, 0.6);
+    box-shadow: 
+        0 0 15px rgba(0, 255, 163, 0.2),
+        inset 0 0 10px rgba(0, 255, 163, 0.1);
+    outline: none;
+}
+
+/* Enhanced Scrollbar for Transaction History */
+.transaction-history::-webkit-scrollbar {
+    width: 6px;
+}
+
+.transaction-history::-webkit-scrollbar-track {
+    background: rgba(26, 17, 71, 0.3);
+    border-radius: 3px;
+}
+
+.transaction-history::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #00ffa3, #00ffff);
+    border-radius: 3px;
+    border: 1px solid rgba(0, 255, 163, 0.2);
+}
+
+.transaction-history::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #00ffff, #00ffa3);
+}
+
+/* Enhanced Card Hover Effects */
+.neon-card {
+    position: relative;
+    border: 1px solid rgba(0, 255, 163, 0.2);
+    background: rgba(26, 17, 71, 0.6);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.neon-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(45deg, #00ffa3, #00ffff, #00ffa3);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.neon-card:hover::before {
+    opacity: 1;
+    animation: borderGlow 2s linear infinite;
+}
+
+.neon-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 0 20px rgba(0, 255, 163, 0.2),
+        0 0 40px rgba(0, 255, 163, 0.1);
+}
+
+/* Enhanced Loading Animation */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 255, 163, 0.1);
+    border-top-color: #00ffa3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Enhanced Badge Effects */
+.neon-badge {
+    background: rgba(0, 255, 163, 0.1);
+    border: 1px solid rgba(0, 255, 163, 0.3);
+    color: #00ffa3;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.neon-badge::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(0, 255, 163, 0.1),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: rotate(45deg) translateX(-100%);
+    }
+    100% {
+        transform: rotate(45deg) translateX(100%);
+    }
+}
+
+/* Fix for text-[#00ffa3] class */
+[class*="text-[#00ffa3]"] {
+    color: #00ffa3;
+    text-shadow: 
+        0 0 10px rgba(0, 255, 163, 0.5),
+        0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+/* Wallet Creation Success Modal */
+#walletCreatedModal {
+    backdrop-filter: blur(20px);
+    background: rgba(0, 0, 0, 0.85);
+}
+
+#walletCreatedModal > div {
+    background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+    animation: modalGlow 2s ease-in-out infinite alternate;
+}
+
+.wallet-success-modal {
+    backdrop-filter: blur(20px);
+    background: rgba(0, 0, 0, 0.95) !important;
+}
+
+.wallet-success-modal > div {
+    background: linear-gradient(180deg, rgba(18, 12, 52, 0.98) 0%, rgba(26, 17, 71, 0.98) 100%) !important;
+    border: 1px solid rgba(0, 255, 163, 0.3);
+    box-shadow: 
+        0 0 50px rgba(0, 255, 163, 0.2),
+        0 0 100px rgba(0, 255, 255, 0.1),
+        0 0 150px rgba(0, 255, 163, 0.05),
+        inset 0 0 30px rgba(0, 255, 163, 0.1);
+}
+
+.wallet-success-modal > div::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(0, 255, 163, 0.1),
+        rgba(0, 255, 255, 0.1),
+        rgba(0, 255, 163, 0.1)
+    );
+    pointer-events: none;
+    opacity: 0.5;
+    border-radius: inherit;
+}
   

@@ -73,7 +73,46 @@ export function initializeWallet() {
             const mnemonic = bsv.Mnemonic.fromEntropy(entropy).toString();
             tempMnemonic = mnemonic; // Store mnemonic
             console.log('Generated mnemonic:', tempMnemonic);
-            document.getElementById('seedPhrase').textContent = tempMnemonic;
+            
+            // Update seed phrase display with highlighted words
+            const seedPhraseContainer = document.getElementById('seedPhrase');
+            const words = tempMnemonic.split(' ');
+            seedPhraseContainer.innerHTML = words.map((word, index) => `
+                <div class="relative group/word">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#00ffa3]/5 via-transparent to-[#00ffff]/5 rounded-lg opacity-0 group-hover/word:opacity-100 transition-all duration-300"></div>
+                    <div class="relative">
+                        <div class="text-xs text-[#00ffa3] mb-1 opacity-70">${index + 1}</div>
+                        <div class="text-lg text-white/90 font-mono group-hover/word:text-[#00ffa3] transition-colors duration-300">${word}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add copy functionality
+            const copySeedPhraseBtn = document.getElementById('copySeedPhrase');
+            if (copySeedPhraseBtn) {
+                copySeedPhraseBtn.onclick = async () => {
+                    try {
+                        await navigator.clipboard.writeText(tempMnemonic);
+                        const originalContent = copySeedPhraseBtn.innerHTML;
+                        copySeedPhraseBtn.innerHTML = `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Copied!
+                        `;
+                        copySeedPhraseBtn.classList.remove('text-[#00ffa3]');
+                        copySeedPhraseBtn.classList.add('text-[#00ffff]');
+                        
+                        setTimeout(() => {
+                            copySeedPhraseBtn.innerHTML = originalContent;
+                            copySeedPhraseBtn.classList.remove('text-[#00ffff]');
+                            copySeedPhraseBtn.classList.add('text-[#00ffa3]');
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy seed phrase:', err);
+                    }
+                };
+            }
         } catch (error) {
             console.error('Error generating mnemonic:', error);
             const errorDiv = document.createElement('div');
@@ -175,11 +214,11 @@ export function initializeWallet() {
             
             // Show success message
             const successMessage = document.createElement('div');
-            successMessage.className = 'fixed inset-0 flex items-center justify-center z-50';
+            successMessage.className = 'fixed inset-0 flex items-center justify-center z-50 wallet-success-modal';
             successMessage.innerHTML = `
-                <div class="bg-black/90 p-6 rounded-xl border border-[#00ffa3] text-center">
-                    <div class="text-[#00ffa3] text-xl mb-2">✓</div>
-                    <div class="text-white">Wallet created successfully!</div>
+                <div class="relative bg-black/95 p-8 rounded-xl border border-[#00ffa3] text-center max-w-md w-full mx-4">
+                    <div class="text-[#00ffa3] text-4xl mb-4">✓</div>
+                    <div class="text-white text-xl">Wallet created successfully!</div>
                 </div>
             `;
             document.body.appendChild(successMessage);
@@ -281,11 +320,11 @@ export function initializeWallet() {
             
             // Show success message
             const successMessage = document.createElement('div');
-            successMessage.className = 'fixed inset-0 flex items-center justify-center z-50';
+            successMessage.className = 'fixed inset-0 flex items-center justify-center z-50 wallet-success-modal';
             successMessage.innerHTML = `
-                <div class="bg-black/90 p-6 rounded-xl border border-[#00ffa3] text-center">
-                    <div class="text-[#00ffa3] text-xl mb-2">✓</div>
-                    <div class="text-white">Transaction sent successfully!</div>
+                <div class="relative bg-black/95 p-8 rounded-xl border border-[#00ffa3] text-center max-w-md w-full mx-4">
+                    <div class="text-[#00ffa3] text-4xl mb-4">✓</div>
+                    <div class="text-white text-xl">Transaction sent successfully!</div>
                 </div>
             `;
             document.body.appendChild(successMessage);
@@ -331,6 +370,24 @@ export function initializeWallet() {
         connectBtn.textContent = 'Connect Wallet';
     });
 
+    // Update connect button with balance when wallet is connected
+    function updateConnectButton() {
+        if (wallet.isInitialized) {
+            const balance = wallet.getBalance().toFixed(8);
+            connectBtn.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span>${balance}</span>
+                    <span class="text-[#00ffa3]">BSV</span>
+                </div>
+            `;
+            connectBtn.classList.add('connected');
+        } else {
+            connectBtn.textContent = 'Connect Wallet';
+            connectBtn.classList.remove('connected');
+        }
+    }
+
+    // Call updateConnectButton whenever the wallet state changes
     function showMainWallet() {
         console.log('Showing main wallet UI');
         if (!wallet.isInitialized) {
@@ -353,18 +410,13 @@ export function initializeWallet() {
             
             // Update UI elements
             updateWalletUI();
+            updateConnectButton();
             
             // Show main wallet modal
             mainWalletModal.classList.remove('hidden');
             mainWalletModal.style.display = 'flex';
-            
-            // Update connect button
-            connectBtn.textContent = 'Connected';
-            connectBtn.classList.add('connected');
-            
         } catch (error) {
             console.error('Error showing main wallet:', error);
-            // Show error to user
             const errorDiv = document.createElement('div');
             errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg';
             errorDiv.textContent = `Error: ${error.message}`;
@@ -381,9 +433,25 @@ export function initializeWallet() {
         const transactionList = document.getElementById('transactionList');
         transactionList.innerHTML = '';
         
-        wallet.getTransactions().forEach((tx, index) => {
+        const transactions = wallet.getTransactions();
+        
+        if (transactions.length === 0) {
+            transactionList.innerHTML = `
+                <div class="text-center py-6">
+                    <div class="text-[#00ffa3] mb-2">
+                        <svg class="w-8 h-8 mx-auto opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <div class="text-gray-400">No transactions yet</div>
+                </div>
+            `;
+            return;
+        }
+        
+        transactions.forEach((tx, index) => {
             const txElement = document.createElement('div');
-            txElement.className = 'transaction-item p-4 rounded-xl';
+            txElement.className = 'transaction-item p-4 rounded-xl bg-[#0F1825]/20 border border-[#00ffa3]/10 backdrop-blur-sm';
             
             const timeAgo = getTimeAgo(new Date(tx.timestamp));
             
@@ -414,13 +482,13 @@ export function initializeWallet() {
                             </div>
                             <div class="text-sm text-gray-400">
                                 ${tx.type === 'send' ? 'To: ' : 'From: '}
-                                <span class="text-[#00ffa3]">${tx.type === 'send' ? tx.to : tx.from}</span>
+                                <span class="text-[#00ffa3]">${tx[tx.type === 'send' ? 'to' : 'from']}</span>
                             </div>
                         </div>
                     </div>
                     <div class="text-right">
                         <div class="font-medium ${tx.type === 'send' ? 'text-red-400' : 'text-green-400'}">
-                            ${tx.type === 'send' ? '-' : '+'}${tx.amount} BSV
+                            ${tx.type === 'send' ? '-' : '+'}${tx.amount.toFixed(8)} BSV
                         </div>
                         <div class="text-sm text-gray-400">
                             ${timeAgo}
@@ -553,11 +621,11 @@ export function initializeWallet() {
 
             // Show success message
             const successMessage = document.createElement('div');
-            successMessage.className = 'fixed inset-0 flex items-center justify-center z-50';
+            successMessage.className = 'fixed inset-0 flex items-center justify-center z-50 wallet-success-modal';
             successMessage.innerHTML = `
-                <div class="bg-black/90 p-6 rounded-xl border border-[#00ffa3] text-center">
-                    <div class="text-[#00ffa3] text-xl mb-2">✓</div>
-                    <div class="text-white">Wallet imported successfully!</div>
+                <div class="relative bg-black/95 p-8 rounded-xl border border-[#00ffa3] text-center max-w-md w-full mx-4">
+                    <div class="text-[#00ffa3] text-4xl mb-4">✓</div>
+                    <div class="text-white text-xl">Wallet imported successfully!</div>
                 </div>
             `;
             document.body.appendChild(successMessage);
