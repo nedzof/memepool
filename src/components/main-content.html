@@ -1,0 +1,53 @@
+<body class="p-8">
+    <div class="fixed top-4 right-4 z-50">
+        <button id="connectWalletBtn" class="gradient-button px-6 py-2 rounded-lg font-bold">
+            Connect Wallet
+        </button>
+    </div>
+
+    <div class="text-center mb-8">
+        <button class="shift-blocks gradient-button px-6 py-2 rounded-lg font-bold">
+            Shift Blocks
+        </button>
+    </div>
+
+    <div class="section-container">
+        <!-- Main horizontal layout with fixed widths -->
+        <div class="flex justify-center items-center gap-8 mb-12 relative">
+            <!-- Upcoming Blocks Section - Fixed width -->
+            <div class="w-[400px]">
+                <div class="section-label text-right mb-4 neon-text">Upcoming Blocks</div>
+                <div class="blocks-container justify-end" id="upcomingBlocks">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Current Meme Section - Fixed position in center -->
+            <div class="flex-shrink-0 w-[400px]">
+                <div class="current-meme rounded-xl overflow-hidden relative" id="currentMeme">
+                    <img src="https://placehold.co/400x400" alt="Current Meme" class="w-full h-full object-cover">
+                    <div class="absolute bottom-0 left-0 right-0 text-xs text-center p-1 bg-black/70">#803525</div>
+                    <button class="gradient-button beat-button px-6 py-2 rounded-lg font-bold">
+                        BEAT THIS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Past Blocks Section - Fixed width -->
+            <div class="w-[400px]">
+                <div class="section-label text-left mb-4 neon-text">Past Blocks</div>
+                <div class="blocks-container justify-start" id="pastBlocks">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Submissions Section -->
+        <div class="mt-16">
+            <div class="section-label mb-6 neon-text">Submissions for Block <span id="currentBlockNumber">#803525</span></div>
+            <div class="submissions-grid" id="submissionsGrid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</body> 

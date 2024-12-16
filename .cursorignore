@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.git/
+*.log
+*.lock
+*.json
+*.md
+*.txt
+.idea/
