@@ -150,6 +150,12 @@ export function shiftBlocks() {
         return;
     }
 
+    // Get the new image source early
+    const newImageSrc = lastUpcoming.querySelector('img').src;
+
+    // Update thumbnails immediately when animation starts
+    updateSubmissionThumbnails(newImageSrc);
+
     // Hide the BEAT THIS button during animation
     const beatButton = currentMeme.querySelector('button');
     if (beatButton) {
@@ -196,16 +202,14 @@ export function shiftBlocks() {
             });
             pastBlocksArray.forEach(block => block.style.opacity = '0');
 
-            // Update current meme image after its animation completes
-            animatedCurrent.addEventListener('animationend', () => {
-                const currentMemeImage = currentMeme.querySelector('img');
-                if (currentMemeImage) {
-                    currentMemeImage.src = lastUpcoming.querySelector('img').src;
-                    currentMemeImage.setAttribute('data-initialized', 'true');
-                    // Update submission thumbnails with the new image
-                    updateSubmissionThumbnails(currentMemeImage.src);
-                }
-            });
+            // Update current meme image and thumbnails during animation
+            const currentMemeImage = currentMeme.querySelector('img');
+            if (currentMemeImage) {
+                currentMemeImage.src = newImageSrc;
+                currentMemeImage.setAttribute('data-initialized', 'true');
+                // Update thumbnails again during animation
+                updateSubmissionThumbnails(newImageSrc);
+            }
 
             // Hide last upcoming when its clone starts moving
             const upcomingClone = animatedElements.find(el => el.classList.contains('move-to-current'));
@@ -283,6 +287,9 @@ export function shiftBlocks() {
 
             // Show current meme in its new state
             currentMeme.style.opacity = '1';
+
+            // Update thumbnails one final time after animation
+            updateSubmissionThumbnails(newImageSrc);
 
             // Reinitialize blocks with new positions
             initializeBlocks();
