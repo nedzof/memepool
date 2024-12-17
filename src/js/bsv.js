@@ -11,7 +11,8 @@ export const bsv = {
 
 // Export utility functions
 export function generateMnemonic() {
-    return bsvLib.Mnemonic.fromRandom();
+    const mnemonic = bsvLib.Mnemonic.fromRandom();
+    return mnemonic.toString();
 }
 
 export function validateMnemonic(mnemonic) {
@@ -19,7 +20,8 @@ export function validateMnemonic(mnemonic) {
 }
 
 export function createWalletFromMnemonic(mnemonic) {
-    return bsvLib.Wallet.fromMnemonic(mnemonic);
+    const mnemonicObj = bsvLib.Mnemonic.fromString(mnemonic);
+    return bsvLib.Wallet.fromMnemonic(mnemonicObj);
 }
 
 export default bsv;
