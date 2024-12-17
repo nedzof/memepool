@@ -1,5 +1,6 @@
 import { bsv, generateMnemonic } from './bsv.js';
-import { BSVWallet } from './BSVWallet.js';
+import BSVWallet from './BSVWallet.js';
+import { setupReceiveModal } from './qrCode.js';
 
 // Export all necessary functions
 export {
@@ -590,14 +591,22 @@ async function connectYoursWallet() {
 async function connectOKXWallet() {
     try {
         const wallet = await initOKXWallet();
+        if (!wallet) {
+            throw new Error('Failed to initialize OKX wallet');
+        }
+        
         window.wallet = wallet;
         
         // Save wallet session
         saveWalletSession('okx', wallet.getAddress());
         
+        // Hide the wallet selection modal
+        hideModal('initialSetupModal');
+        
         // Update profile with persistence
         await updateProfileWithPersistence(wallet.getAddress());
         
+        // Show the main wallet menu
         showMainWallet();
     } catch (error) {
         console.error('Failed to connect OKX wallet:', error);
@@ -612,9 +621,11 @@ async function initOKXWallet() {
             throw new Error('OKX Wallet not found. Please install OKX Wallet extension.');
         }
 
-        // Request account access
+        // Request Bitcoin account access
         await window.okxwallet.bitcoin.connect();
-        const accounts = await window.okxwallet.bitcoin.getAccounts();
+        
+        // Get Bitcoin accounts
+        const accounts = await window.okxwallet.bitcoin.requestAccounts();
         
         if (!accounts || accounts.length === 0) {
             throw new Error('No accounts found in OKX Wallet');
@@ -624,20 +635,25 @@ async function initOKXWallet() {
         const wallet = {
             getAddress: () => accounts[0],
             getBalance: async () => {
-                const balance = await window.okxwallet.bitcoin.getBalance();
-                return balance ? parseFloat(balance) : 0;
+                try {
+                    const balance = await window.okxwallet.bitcoin.getBalance();
+                    return balance ? parseFloat(balance) / 1e8 : 0; // Convert from satoshis to BSV
+                } catch (error) {
+                    console.error('Error getting balance:', error);
+                    return 0;
+                }
             },
             getPrivateKey: () => {
                 throw new Error('Private key access not available through OKX Wallet');
             },
             getUtxos: async () => {
-                return await window.okxwallet.bitcoin.getUtxos();
+                throw new Error('UTXO access not available through OKX Wallet');
             },
             send: async (toAddress, amount) => {
                 try {
                     const txHash = await window.okxwallet.bitcoin.send({
                         to: toAddress,
-                        value: amount,
+                        value: amount * 1e8 // Convert BSV to satoshis
                     });
                     return { txid: txHash };
                 } catch (error) {
@@ -1114,8 +1130,132 @@ function showWalletSelection() {
 
 // Update other modal functions to use animations
 function showMainWallet() {
-    hideModal('initialSetupModal');
-    showModal('mainWalletModal');
+    const mainWalletModal = document.getElementById('mainWalletModal');
+    if (mainWalletModal) {
+        mainWalletModal.classList.remove('hidden');
+        mainWalletModal.style.display = 'flex';
+        mainWalletModal.classList.add('modal-enter');
+        
+        // Setup main wallet events
+        setupMainWalletEvents();
+        
+        // Trigger animation
+        requestAnimationFrame(() => {
+            mainWalletModal.classList.add('show');
+            const content = mainWalletModal.querySelector('.modal-content');
+            if (content) {
+                content.classList.add('show');
+            }
+        });
+    }
+}
+
+// Add main wallet menu button setup
+function setupMainWalletEvents() {
+    // Send button
+    const sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', () => {
+            hideModal('mainWalletModal');
+            showModal('sendModal');
+        });
+    }
+
+    // Receive button
+    const receiveBtn = document.getElementById('receiveBtn');
+    if (receiveBtn) {
+        receiveBtn.addEventListener('click', () => {
+            hideModal('mainWalletModal');
+            showModal('receiveModal');
+        });
+    }
+
+    // Profile button
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', () => {
+            hideModal('mainWalletModal');
+            showModal('profileSetupModal');
+        });
+    }
+
+    // Disconnect button
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', () => {
+            // Clear wallet instance and session
+            window.wallet = null;
+            localStorage.removeItem(WALLET_SESSION_KEY);
+            
+            // Hide main wallet and show initial setup
+            hideModal('mainWalletModal');
+            showWalletSelection();
+        });
+    }
+
+    // Close buttons for each modal
+    const closeButtons = document.querySelectorAll('[id$="CloseBtn"]');
+    closeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modalId = btn.getAttribute('data-modal-target') || 'mainWalletModal';
+            hideModal(modalId);
+            if (modalId !== 'mainWalletModal') {
+                showModal('mainWalletModal');
+            }
+        });
+    });
+
+    // Update wallet balance and address
+    const addressDisplay = document.getElementById('walletAddress');
+    const balanceDisplay = document.getElementById('walletBalance');
+    
+    if (window.wallet) {
+        if (addressDisplay) {
+            const address = window.wallet.getAddress();
+            addressDisplay.textContent = address ? 
+                `${address.slice(0, 6)}...${address.slice(-4)}` : 
+                'No address available';
+        }
+
+        if (balanceDisplay && typeof window.wallet.getBalance === 'function') {
+            window.wallet.getBalance().then(balance => {
+                balanceDisplay.textContent = `${balance || 0} BSV`;
+            }).catch(error => {
+                console.error('Error fetching balance:', error);
+                balanceDisplay.textContent = '0 BSV';
+            });
+        }
+    }
+
+    // Copy address button
+    const copyAddressBtn = document.getElementById('copyAddressBtn');
+    if (copyAddressBtn && window.wallet) {
+        copyAddressBtn.addEventListener('click', async () => {
+            try {
+                const address = window.wallet.getAddress();
+                await navigator.clipboard.writeText(address);
+                copyAddressBtn.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Copied!
+                `;
+                setTimeout(() => {
+                    copyAddressBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                        Copy Address
+                    `;
+                }, 2000);
+            } catch (error) {
+                console.error('Failed to copy address:', error);
+            }
+        });
+    }
+
+    // Setup receive modal
+    setupReceiveModal();
 }
 
 function showImportWallet() {
@@ -1127,7 +1267,7 @@ function showImportWallet() {
 async function generateNewWallet() {
     try {
         // Generate new mnemonic
-        const mnemonic = generateMnemonic();
+        const mnemonic = await generateMnemonic();
         
         // Store mnemonic temporarily
         sessionStorage.setItem('temp_mnemonic', mnemonic);
@@ -1150,10 +1290,13 @@ function displaySeedPhrase(mnemonic) {
     const seedPhraseContainer = document.getElementById('seedPhrase');
     const words = mnemonic.split(' ');
     
+    // Add opacity-0 class to hide the seed phrase initially
+    seedPhraseContainer.classList.add('opacity-0');
+    
     seedPhraseContainer.innerHTML = words.map((word, index) => `
-        <div class="relative p-3 rounded-lg bg-black/30 border border-[#ff00ff]/20 group hover:border-[#ff00ff]/40 transition-all duration-300">
-            <span class="absolute top-2 left-2 text-xs text-[#ff00ff]/50">${index + 1}</span>
-            <span class="block text-center text-white mt-2">${word}</span>
+        <div class="relative p-2 rounded-lg bg-gradient-to-r from-[#00ffa3]/10 to-[#00ffff]/10 hover:from-[#00ffa3]/20 hover:to-[#00ffff]/20 transition-all duration-300 group">
+            <span class="absolute top-1 left-2 text-xs text-[#00ffa3]/50">${index + 1}</span>
+            <span class="block text-center text-[#00ffa3] text-sm mt-1">${word}</span>
         </div>
     `).join('');
 }
@@ -1162,10 +1305,13 @@ function setupSeedPhraseEvents() {
     // Reveal seed phrase
     const revealBtn = document.getElementById('revealSeedPhrase');
     const blurOverlay = document.getElementById('seedPhraseBlur');
+    const seedPhraseContainer = document.getElementById('seedPhrase');
     
-    if (revealBtn && blurOverlay) {
+    if (revealBtn && blurOverlay && seedPhraseContainer) {
         revealBtn.addEventListener('click', () => {
             blurOverlay.style.opacity = '0';
+            // Show the seed phrase with transition
+            seedPhraseContainer.classList.remove('opacity-0');
             setTimeout(() => {
                 blurOverlay.style.display = 'none';
             }, 300);
@@ -1189,7 +1335,7 @@ function setupSeedPhraseEvents() {
                     setTimeout(() => {
                         copyBtn.innerHTML = `
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                             </svg>
                             Copy Seed Phrase
                         `;
@@ -1208,11 +1354,20 @@ function setupSeedPhraseEvents() {
     if (checkbox && continueBtn) {
         checkbox.addEventListener('change', () => {
             continueBtn.disabled = !checkbox.checked;
+            if (checkbox.checked) {
+                continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
         });
         
         continueBtn.addEventListener('click', () => {
-            hideModal('seedPhraseModal');
-            showModal('passwordSetupModal');
+            if (!continueBtn.disabled) {
+                hideModal('seedPhraseModal');
+                showModal('passwordSetupModal');
+                // Initialize password validation after showing the modal
+                setupPasswordValidation();
+            }
         });
     }
 }
@@ -1312,44 +1467,109 @@ function setupPasswordValidation() {
         const isStrong = updateStrength(passwordInput.value);
         const matches = updatePasswordMatch();
         continueBtn.disabled = !(isStrong && matches);
+        if (isStrong && matches) {
+            continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
     });
     
     confirmInput.addEventListener('input', () => {
         const isStrong = updateStrength(passwordInput.value);
         const matches = updatePasswordMatch();
         continueBtn.disabled = !(isStrong && matches);
+        if (isStrong && matches) {
+            continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
     });
     
     // Form submission
     const form = document.getElementById('passwordSetupForm');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const password = passwordInput.value;
-        const mnemonic = sessionStorage.getItem('temp_mnemonic');
-        
-        if (mnemonic && password) {
-            try {
-                // Create wallet
-                const wallet = new BSVWallet();
-                const result = await wallet.generateNewWallet(password, mnemonic);
-                
-                if (result.success) {
-                    // Clear sensitive data
-                    sessionStorage.removeItem('temp_mnemonic');
-                    passwordInput.value = '';
-                    confirmInput.value = '';
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = passwordInput.value;
+            const mnemonic = sessionStorage.getItem('temp_mnemonic');
+            
+            if (mnemonic && password) {
+                try {
+                    // Create wallet
+                    const wallet = new BSVWallet();
+                    const result = await wallet.generateNewWallet(password, mnemonic);
                     
-                    // Show success animation
-                    hideModal('passwordSetupModal');
-                    showSuccessAnimation();
+                    if (result.success) {
+                        // Clear sensitive data
+                        sessionStorage.removeItem('temp_mnemonic');
+                        passwordInput.value = '';
+                        confirmInput.value = '';
+                        
+                        // Store wallet instance
+                        window.wallet = wallet;
+
+                        // Hide password modal
+                        const passwordModal = document.getElementById('passwordSetupModal');
+                        if (passwordModal) {
+                            passwordModal.classList.add('modal-exit');
+                            passwordModal.classList.remove('show');
+                            
+                            setTimeout(() => {
+                                passwordModal.classList.add('hidden');
+                                passwordModal.style.display = 'none';
+                                
+                                // Show success animation
+                                const successModal = document.getElementById('walletCreatedModal');
+                                if (successModal) {
+                                    successModal.classList.remove('hidden');
+                                    successModal.style.display = 'flex';
+                                    
+                                    requestAnimationFrame(() => {
+                                        successModal.classList.add('modal-enter', 'show');
+                                        const checkmark = successModal.querySelector('.success-checkmark');
+                                        if (checkmark) {
+                                            checkmark.classList.add('animate');
+                                        }
+                                    });
+
+                                    // Wait for animation then show main wallet
+                                    setTimeout(() => {
+                                        successModal.classList.remove('show');
+                                        successModal.classList.add('modal-exit');
+                                        
+                                        setTimeout(() => {
+                                            successModal.classList.add('hidden');
+                                            successModal.style.display = 'none';
+                                            showMainWallet();
+                                        }, 300);
+                                    }, 1500);
+                                } else {
+                                    // If success modal not found, go directly to main wallet
+                                    showMainWallet();
+                                }
+                            }, 300);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to create wallet:', error);
+                    showWalletError('Failed to create wallet. Please try again.');
                 }
-            } catch (error) {
-                console.error('Failed to create wallet:', error);
-                showWalletError('Failed to create wallet. Please try again.');
             }
-        }
-    });
+        });
+    }
+
+    // Add click handler for continue button
+    const continueToProfile = document.getElementById('continueToProfile');
+    if (continueToProfile) {
+        continueToProfile.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!continueToProfile.disabled) {
+                // Trigger form submission
+                form.dispatchEvent(new Event('submit'));
+            }
+        });
+    }
 }
 
 function showSuccessAnimation() {
