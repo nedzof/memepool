@@ -283,12 +283,12 @@
             </div>
 
             <!-- Seed Phrase Container -->
-            <div class="relative p-6 rounded-xl border border-[#ff00ff]/20 group transition-all duration-300 hover:border-[#ff00ff]/40"
-                 style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.05), rgba(0, 255, 255, 0.05));">
+            <div class="relative p-4 rounded-xl border border-[#00ffa3]/20 group transition-all duration-300 hover:border-[#00ffa3]/40"
+                 style="background: linear-gradient(135deg, rgba(0, 255, 163, 0.05), rgba(0, 255, 255, 0.05));">
                 
-                <!-- Blur Overlay - Updated z-index and pointer-events -->
+                <!-- Blur Overlay -->
                 <div id="seedPhraseBlur" class="absolute inset-0 backdrop-blur-lg flex items-center justify-center z-50 bg-black/50 rounded-xl transition-all duration-300">
-                    <button id="revealSeedPhrase" class="px-4 py-2 rounded-lg bg-[#ff00ff] text-white font-medium hover:bg-[#ff00ff]/80 transition-colors flex items-center gap-2 relative z-50 cursor-pointer">
+                    <button id="revealSeedPhrase" class="px-4 py-2 rounded-lg bg-[#00ffa3] text-white font-medium hover:bg-[#00ffa3]/80 transition-colors flex items-center gap-2 relative z-50 cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -297,13 +297,13 @@
                     </button>
                 </div>
 
-                <!-- Seed Phrase Grid -->
-                <div id="seedPhrase" class="grid grid-cols-3 gap-3 relative z-10">
+                <!-- Seed Phrase Grid - Updated with transition classes -->
+                <div id="seedPhrase" class="grid grid-cols-4 gap-2 relative z-10 opacity-0 transition-opacity duration-300">
                     <!-- Words will be inserted here dynamically -->
                 </div>
 
                 <!-- Copy Button -->
-                <div class="mt-4 flex justify-end">
+                <div class="mt-3 flex justify-end">
                     <button id="copySeedPhrase" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#00ffa3] hover:text-[#00ffff] transition-colors border border-[#00ffa3]/30 hover:border-[#00ffff] bg-[#0F1825]/30">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
@@ -535,7 +535,7 @@
                             <button class="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors"
                                     id="pasteAddress">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                 </svg>
                             </button>
                         </div>
@@ -575,7 +575,7 @@
 
 <!-- Receive Modal -->
 <div id="receiveModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl modal-content"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
                 box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         <button id="closeReceiveModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
@@ -584,30 +584,68 @@
             </svg>
         </button>
 
-        <div class="space-y-6">
-            <h2 class="text-3xl font-bold text-center bg-gradient-to-r from-[#00ffa3] to-[#00ffff] text-transparent bg-clip-text">Receive BSV</h2>
+        <div class="space-y-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#00ffa3] to-[#00ffff] text-transparent bg-clip-text">Receive BSV</h2>
+                <p class="text-gray-400 text-sm mt-1">Scan QR code or copy address</p>
+            </div>
             
-            <!-- QR Code Container with Solana-style gradient border -->
+            <!-- QR Code Container with purple-cyan-blue gradient border -->
             <div class="flex justify-center">
-                <div class="p-4 rounded-2xl relative"
-                     style="background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 255, 0.1));">
-                    <!-- Gradient border effect -->
-                    <div class="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-r from-[#00ffa3] to-[#00ffff] opacity-30"></div>
-                    <!-- QR Code with white background for better visibility -->
-                    <div class="relative bg-white rounded-xl p-4" id="qrCode"></div>
+                <div class="p-4 rounded-2xl relative group transition-all duration-300 hover:scale-[1.02]"
+                     style="background: linear-gradient(45deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.1));">
+                    <!-- Animated gradient border effect -->
+                    <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#ff00ff] to-[#00ffff] opacity-30 group-hover:opacity-40 transition-opacity"></div>
+                    <!-- Inner shadow for depth -->
+                    <div class="absolute inset-[1px] rounded-2xl bg-black/40 backdrop-blur-xl"></div>
+                    <!-- QR Code with dark background -->
+                    <div class="relative bg-black rounded-xl p-4 transition-transform duration-300" id="qrCode">
+                        <!-- QR code will be inserted here -->
+                    </div>
                 </div>
             </div>
 
-            <div class="space-y-2">
-                <label class="text-sm text-[#00ffa3]">Your Address</label>
+            <div class="space-y-3">
+                <label class="text-sm text-[#00ffa3] flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Your BSV Address
+                </label>
                 <div class="flex gap-2">
-                    <input type="text" id="walletAddress" readonly 
-                           class="flex-1 bg-black/30 rounded-xl p-4 text-white border border-[#00ffa3]/30 backdrop-blur-sm"
-                           style="box-shadow: 0 0 20px rgba(0, 255, 163, 0.1);">
+                    <div class="flex-1 relative group">
+                        <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-[#00ffa3] to-[#00ffff] opacity-30 group-hover:opacity-40 transition-opacity"></div>
+                        <div class="absolute inset-[1px] rounded-xl bg-black/40 backdrop-blur-xl"></div>
+                        <input type="text" id="walletAddress" readonly 
+                               class="relative w-full bg-transparent rounded-xl p-4 text-white font-mono text-sm"
+                               style="text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);">
+                    </div>
                     <button id="copyAddress" 
-                            class="px-6 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#00ffa3]/30 bg-[#00ffa3]/10 hover:bg-[#00ffa3]/20">
-                        <div class="relative z-10">Copy</div>
+                            class="px-6 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group">
+                        <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-[#00ffa3] to-[#00ffff] opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                        <div class="absolute inset-[1px] rounded-xl bg-black/40 backdrop-blur-xl"></div>
+                        <div class="relative z-10 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            <span>Copy</span>
+                        </div>
                     </button>
+                </div>
+            </div>
+
+            <!-- Network Info -->
+            <div class="p-4 rounded-xl relative group">
+                <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-[#00ffa3] to-[#00ffff] opacity-10"></div>
+                <div class="absolute inset-[1px] rounded-xl bg-black/40 backdrop-blur-xl"></div>
+                <div class="relative flex items-start gap-3">
+                    <svg class="w-5 h-5 text-[#00ffa3] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div class="space-y-1 text-sm">
+                        <p class="text-white/80">This address can only receive BSV on the Bitcoin SV network.</p>
+                        <p class="text-[#00ffa3]">Network: BSV Mainnet</p>
+                    </div>
                 </div>
             </div>
         </div>
