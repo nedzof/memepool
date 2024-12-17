@@ -1,138 +1,89 @@
-import bsv from './bsv.js';
+import { bsv, createWalletFromMnemonic, validateMnemonic } from './bsv.js';
 
-class BSVWallet {
+export class BSVWallet {
     constructor() {
-        this.balance = 0;
-        this.transactions = [];
-        this.address = '';
-        this.privateKey = '';
         this.isInitialized = false;
+        this.balance = 0;
+        this.address = '';
+        this.transactions = [];
+        this.wallet = null;
     }
 
     async generateNewWallet(password, mnemonic) {
-        console.log('Starting wallet generation...');
         try {
-            if (!password) {
-                throw new Error('Password is required');
+            // Validate mnemonic
+            if (!validateMnemonic(mnemonic)) {
+                throw new Error('Invalid mnemonic');
             }
 
-            console.log('Creating mnemonic...');
-            // Use provided mnemonic or generate a new one
-            const entropy = new Uint8Array(16);
-            window.crypto.getRandomValues(entropy);
-            const mnemonicWords = mnemonic || bsv.Mnemonic.fromEntropy(entropy).toString();
-            console.log('Mnemonic created successfully');
-
-            console.log('Generating seed from mnemonic...');
-            const seedBuffer = await this.mnemonicToSeed(mnemonicWords, password);
-            console.log('Seed generated successfully');
-
-            console.log('Creating HD private key...');
-            const hdPrivateKey = bsv.HDPrivateKey.fromSeed(seedBuffer);
-            console.log('HD private key created successfully');
-            
-            // Derive first address (m/44'/0'/0'/0/0)
-            console.log('Deriving address...');
-            const derivedKey = hdPrivateKey.deriveChild("m/44'/0'/0'/0/0");
-            this.privateKey = derivedKey.privateKey;
-            this.address = derivedKey.publicKey.toAddress().toString();
-            console.log('Address derived successfully:', this.address);
-            
+            // Create wallet from mnemonic
+            this.wallet = await createWalletFromMnemonic(mnemonic);
+            this.address = this.wallet.getAddress();
             this.isInitialized = true;
-            this.balance = 1.0; // Set initial balance for testing
-            this.generateMockTransactions(); // For demo purposes
-            
-            console.log('Wallet initialization complete');
-            return {
-                mnemonic: mnemonicWords,
-                address: this.address,
-                initialized: this.isInitialized
-            };
+            await this.updateBalance();
+
+            return { success: true };
         } catch (error) {
-            console.error('Error in generateNewWallet:', error);
-            this.isInitialized = false;
-            this.balance = 0;
-            this.address = '';
-            this.privateKey = '';
-            throw new Error(`Failed to generate wallet: ${error.message}`);
+            throw new Error('Failed to generate wallet: ' + error.message);
         }
     }
 
-    async mnemonicToSeed(mnemonic, password) {
-        if (!mnemonic) {
-            throw new Error('Mnemonic is required');
+    async importFromMnemonic(mnemonic, password = '') {
+        try {
+            // Validate mnemonic
+            if (!validateMnemonic(mnemonic)) {
+                throw new Error('Invalid mnemonic');
+            }
+
+            // Create wallet from mnemonic
+            this.wallet = await createWalletFromMnemonic(mnemonic);
+            this.address = this.wallet.getAddress();
+            this.isInitialized = true;
+            await this.updateBalance();
+
+            return { success: true };
+        } catch (error) {
+            throw new Error('Failed to import mnemonic: ' + error.message);
         }
-        if (!password) {
-            throw new Error('Password is required');
+    }
+
+    async importFromPrivateKey(privateKey, password = '') {
+        try {
+            // Validate private key format
+            if (!/^[0-9a-fA-F]{64}$/.test(privateKey)) {
+                throw new Error('Invalid private key format');
+            }
+
+            // Create wallet from private key
+            this.wallet = await bsv.Wallet.fromPrivateKey(privateKey);
+            this.address = this.wallet.getAddress();
+            this.isInitialized = true;
+            await this.updateBalance();
+
+            return { success: true };
+        } catch (error) {
+            throw new Error('Failed to import private key: ' + error.message);
+        }
+    }
+
+    async updateBalance() {
+        if (!this.isInitialized || !this.wallet) {
+            throw new Error('Wallet not initialized');
         }
 
         try {
-            // Use PBKDF2 for seed generation
-            const encoder = new TextEncoder();
-            const salt = encoder.encode('mnemonic' + password);
-            const keyMaterial = await window.crypto.subtle.importKey(
-                'raw',
-                encoder.encode(mnemonic),
-                { name: 'PBKDF2' },
-                false,
-                ['deriveBits']
-            );
-            const seed = await window.crypto.subtle.deriveBits(
-                {
-                    name: 'PBKDF2',
-                    salt: salt,
-                    iterations: 2048,
-                    hash: 'SHA-512'
-                },
-                keyMaterial,
-                512
-            );
-            return new Uint8Array(seed);
-        } catch (error) {
-            console.error('Error in mnemonicToSeed:', error);
-            throw new Error(`Failed to generate seed: ${error.message}`);
-        }
-    }
-
-    generateMockTransactions() {
-        const types = ['send', 'receive'];
-        const now = Date.now();
-        
-        for (let i = 0; i < 5; i++) {
-            const type = types[Math.floor(Math.random() * types.length)];
-            const amount = (Math.random() * 0.1).toFixed(8);
-            const address = 'addr_' + Math.random().toString(36).substr(2, 9);
-            
-            this.transactions.push({
-                type: type,
-                amount: parseFloat(amount),
-                [type === 'send' ? 'to' : 'from']: address,
-                timestamp: now - (i * 3600000) // Each transaction 1 hour apart
-            });
-
-            if (type === 'send') {
-                this.balance -= parseFloat(amount);
-            } else {
-                this.balance += parseFloat(amount);
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${this.address}/balance`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch balance');
             }
-        }
-    }
 
-    async send(toAddress, amount) {
-        if (!this.isInitialized) throw new Error('Wallet not initialized');
-        
-        // Mock transaction for demo
-        this.balance -= amount;
-        this.transactions.unshift({
-            type: 'send',
-            amount: amount,
-            to: toAddress,
-            timestamp: Date.now()
-        });
-        
-        return {
-            txid: 'tx_' + Math.random().toString(36).substr(2, 9)
-        };
+            const data = await response.json();
+            this.balance = data.confirmed / 100000000; // Convert satoshis to BSV
+            return this.balance;
+        } catch (error) {
+            console.error('Error updating balance:', error);
+            return this.balance;
+        }
     }
 
     getBalance() {
@@ -147,12 +98,86 @@ class BSVWallet {
         return this.transactions;
     }
 
+    async getUtxos() {
+        if (!this.isInitialized || !this.wallet) {
+            throw new Error('Wallet not initialized');
+        }
+
+        try {
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${this.address}/unspent`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch UTXOs');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching UTXOs:', error);
+            return [];
+        }
+    }
+
+    async send(toAddress, amount) {
+        if (!this.isInitialized || !this.wallet) {
+            throw new Error('Wallet not initialized');
+        }
+
+        if (amount > this.balance) {
+            throw new Error('Insufficient balance');
+        }
+
+        try {
+            const utxos = await this.getUtxos();
+            const tx = new bsv.Transaction()
+                .from(utxos)
+                .to(toAddress, Math.floor(amount * 100000000)) // Convert BSV to satoshis
+                .change(this.address)
+                .sign(this.wallet.getPrivateKey());
+
+            const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/tx/raw', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    txhex: tx.toString()
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to broadcast transaction');
+            }
+
+            const { txid } = await response.json();
+            
+            // Update local state
+            this.balance -= amount;
+            this.transactions.unshift({
+                txid,
+                type: 'send',
+                amount,
+                to: toAddress,
+                timestamp: new Date().toISOString()
+            });
+
+            return { txid };
+        } catch (error) {
+            throw new Error('Failed to send transaction: ' + error.message);
+        }
+    }
+
+    getPrivateKey() {
+        if (!this.isInitialized || !this.wallet) {
+            throw new Error('Wallet not initialized');
+        }
+        return this.wallet.getPrivateKey();
+    }
+
     disconnect() {
-        this.balance = 0;
-        this.transactions = [];
-        this.address = '';
-        this.privateKey = '';
         this.isInitialized = false;
+        this.balance = 0;
+        this.address = '';
+        this.transactions = [];
+        this.wallet = null;
     }
 }
 

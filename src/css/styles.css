@@ -909,356 +909,21 @@ textarea:focus {
 
 /* Submission Modal Styles */
 #submissionDetailsModal {
-    backdrop-filter: blur(20px);
-}
-
-#submissionDetailsModal .number-pulse {
-    animation: numberPulse 0.5s ease-out;
-}
-
-@keyframes numberPulse {
-    0% {
-        transform: scale(1);
-        color: #00ffa3;
-    }
-    50% {
-        transform: scale(1.1);
-        color: #00ffff;
-    }
-    100% {
-        transform: scale(1);
-        color: white;
-    }
-}
-
-#submissionDetailsModal .modal-content {
-    animation: modalSlideUp 0.3s ease-out;
-}
-
-@keyframes modalSlideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Stats card hover effects */
-#submissionDetailsModal .stats-card {
-    transition: all 0.3s ease;
-}
-
-#submissionDetailsModal .stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(0, 255, 163, 0.3);
-    border-color: rgba(0, 255, 163, 0.5);
-}
-
-/* Video container effects */
-#submissionDetailsModal .video-container {
-    position: relative;
-    overflow: hidden;
-    border: 2px solid rgba(0, 255, 163, 0.3);
-    transition: all 0.3s ease;
-}
-
-#submissionDetailsModal .video-container:hover {
-    border-color: rgba(0, 255, 163, 0.8);
-    box-shadow: 
-        0 0 20px rgba(0, 255, 163, 0.4),
-        0 0 40px rgba(0, 255, 163, 0.2);
-}
-
-/* Engagement stats hover effects */
-#submissionDetailsModal .engagement-stat {
-    transition: all 0.3s ease;
-}
-
-#submissionDetailsModal .engagement-stat:hover {
-    background: rgba(0, 255, 163, 0.1);
-    transform: translateX(5px);
-}
-
-/* Creator info hover effect */
-#submissionDetailsModal .creator-info {
-    transition: all 0.3s ease;
-}
-
-#submissionDetailsModal .creator-info:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(0, 255, 163, 0.3);
-}
-
-/* Block number badge pulse animation */
-@keyframes badgePulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.4);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(0, 255, 163, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(0, 255, 163, 0);
-    }
-}
-
-#submissionDetailsModal .block-badge {
-    animation: badgePulse 2s infinite;
-}
-
-/* Live viewer count animation */
-@keyframes liveCountPulse {
-    0% {
-        color: #00ffa3;
-    }
-    50% {
-        color: #ffffff;
-    }
-    100% {
-        color: #00ffa3;
-    }
-}
-
-#submissionDetailsModal .live-count {
-    animation: liveCountPulse 2s infinite;
-}
-
-/* Enhanced Submission Modal Styles */
-#submissionDetailsModal {
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(25px);
+    background: rgba(0, 0, 0, 0.98);
 }
 
 #submissionDetailsModal > div {
-    animation: modalGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes modalGlow {
-    0% {
-        box-shadow: 
-            0 0 40px rgba(0, 255, 163, 0.2),
-            0 0 80px rgba(0, 255, 255, 0.1),
-            inset 0 0 30px rgba(0, 255, 163, 0.1);
-    }
-    100% {
-        box-shadow: 
-            0 0 60px rgba(0, 255, 163, 0.3),
-            0 0 100px rgba(0, 255, 255, 0.2),
-            inset 0 0 50px rgba(0, 255, 163, 0.15);
-    }
-}
-
-/* Enhanced video container */
-#submissionDetailsModal .rounded-xl {
-    position: relative;
-}
-
-#submissionDetailsModal .rounded-xl::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    background: linear-gradient(45deg, #00ffa3, #00ffff, #00ffa3);
-    border-radius: inherit;
-    z-index: -1;
-    animation: borderGlow 3s linear infinite;
-    opacity: 0.5;
-}
-
-@keyframes borderGlow {
-    0%, 100% {
-        opacity: 0.5;
-    }
-    50% {
-        opacity: 0.8;
-    }
-}
-
-/* Enhanced stats cards */
-#submissionDetailsModal .grid-cols-2 > div {
-    position: relative;
-    overflow: hidden;
-}
-
-#submissionDetailsModal .grid-cols-2 > div::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-        45deg,
-        transparent,
-        rgba(0, 255, 255, 0.1),
-        transparent
+    background: linear-gradient(180deg, 
+        rgba(12, 6, 32, 0.98) 0%, 
+        rgba(18, 12, 52, 0.98) 50%, 
+        rgba(26, 17, 71, 0.98) 100%
     );
-    transform: rotate(45deg);
-    animation: cardShine 6s linear infinite;
-}
-
-@keyframes cardShine {
-    0% {
-        transform: rotate(45deg) translateX(-100%);
-    }
-    100% {
-        transform: rotate(45deg) translateX(100%);
-    }
-}
-
-/* Enhanced text gradients */
-#submissionDetailsModal h2 {
-    background: linear-gradient(45deg, #00ffa3, #00ffff, #00ffa3);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: gradientFlow 3s linear infinite;
-    background-size: 200% auto;
-}
-
-@keyframes gradientFlow {
-    0% {
-        background-position: 0% center;
-    }
-    100% {
-        background-position: 200% center;
-    }
-}
-
-/* Enhanced engagement stats */
-#submissionDetailsModal .engagement-stat {
-    position: relative;
-    overflow: hidden;
-}
-
-#submissionDetailsModal .engagement-stat:hover {
-    background: rgba(0, 255, 255, 0.1);
-    transform: translateX(5px);
     box-shadow: 
-        0 0 20px rgba(0, 255, 255, 0.2),
-        inset 0 0 10px rgba(0, 255, 163, 0.1);
-}
-
-/* Enhanced creator info */
-#submissionDetailsModal .creator-info {
-    position: relative;
-}
-
-#submissionDetailsModal .creator-info::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(45deg, 
-        rgba(0, 255, 163, 0.1),
-        rgba(0, 255, 255, 0.1)
-    );
-    border-radius: inherit;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-#submissionDetailsModal .creator-info:hover::before {
-    opacity: 1;
-}
-
-/* Enhanced live viewer count */
-#submissionDetailsModal #liveViewers {
-    text-shadow: 
-        0 0 10px rgba(0, 255, 163, 0.5),
-        0 0 20px rgba(0, 255, 255, 0.3);
-    animation: viewerPulse 2s ease-in-out infinite alternate;
-}
-
-@keyframes viewerPulse {
-    0% {
-        text-shadow: 
-            0 0 10px rgba(0, 255, 163, 0.5),
-            0 0 20px rgba(0, 255, 255, 0.3);
-    }
-    100% {
-        text-shadow: 
-            0 0 15px rgba(0, 255, 163, 0.7),
-            0 0 30px rgba(0, 255, 255, 0.5);
-    }
-}
-
-/* Enhanced block number badge */
-#submissionDetailsModal .block-badge {
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid rgba(0, 255, 163, 0.3);
-    animation: badgeGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes badgeGlow {
-    0% {
-        box-shadow: 
-            0 0 10px rgba(0, 255, 163, 0.3),
-            0 0 20px rgba(0, 255, 255, 0.2);
-    }
-    100% {
-        box-shadow: 
-            0 0 20px rgba(0, 255, 163, 0.5),
-            0 0 40px rgba(0, 255, 255, 0.3);
-    }
-}
-
-/* Enhanced stats values */
-#submissionDetailsModal .text-2xl {
-    position: relative;
-    z-index: 1;
-}
-
-#submissionDetailsModal .text-2xl .text-[#00ffa3] {
-    text-shadow: 
-        0 0 10px rgba(0, 255, 163, 0.5),
-        0 0 20px rgba(0, 255, 255, 0.3);
-}
-
-/* Enhanced modal background */
-#submissionDetailsModal::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(
-        circle at center,
-        rgba(0, 255, 163, 0.1) 0%,
-        rgba(0, 255, 255, 0.05) 50%,
-        transparent 100%
-    );
-    pointer-events: none;
-    animation: backgroundPulse 4s ease-in-out infinite alternate;
-}
-
-@keyframes backgroundPulse {
-    0% {
-        opacity: 0.5;
-    }
-    100% {
-        opacity: 0.8;
-    }
-}
-
-/* Enhanced Modal Glow Effects */
-.modal-open {
-    animation: modalEnter 0.3s ease-out forwards;
-}
-
-@keyframes modalEnter {
-    from {
-        opacity: 0;
-        transform: scale(0.95) translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-/* Enhanced overall modal glow */
-#submissionDetailsModal {
-    backdrop-filter: blur(25px);
+        0 0 50px rgba(0, 255, 163, 0.15),
+        0 0 100px rgba(0, 255, 255, 0.1),
+        0 0 150px rgba(0, 255, 163, 0.05),
+        inset 0 0 30px rgba(0, 255, 163, 0.1);
 }
 
 #submissionDetailsModal::before {
@@ -1267,9 +932,9 @@ textarea:focus {
     inset: 0;
     background: radial-gradient(
         circle at center,
-        rgba(0, 255, 163, 0.15) 0%,
-        rgba(0, 255, 255, 0.1) 25%,
-        rgba(0, 0, 0, 0.9) 100%
+        rgba(0, 255, 163, 0.05) 0%,
+        rgba(0, 255, 255, 0.025) 25%,
+        rgba(0, 0, 0, 0.98) 100%
     );
     pointer-events: none;
     animation: modalBackgroundPulse 4s ease-in-out infinite alternate;
@@ -1636,7 +1301,7 @@ textarea:focus {
     left: 0;
     right: 0;
     padding: 1rem;
-    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2102,5 +1767,436 @@ input.neon-input:focus {
 .meme-block .block-number-display .text-[#00ffa3] {
     text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
     font-weight: 600;
+}
+
+/* Neon Button Styles */
+.neon-button {
+    box-shadow: 
+        0 0 30px rgba(0, 255, 163, 0.6),
+        0 0 60px rgba(0, 255, 163, 0.4),
+        0 0 90px rgba(0, 255, 163, 0.2),
+        inset 0 0 30px rgba(0, 255, 163, 0.4);
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.neon-button::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, #00ffa3, #00ffff, #00ffa3);
+    z-index: -2;
+    animation: borderRotate 4s linear infinite;
+}
+
+.neon-button::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(45deg, #00ffa3, #00ffff);
+    z-index: -1;
+    border-radius: 6px;
+}
+
+@keyframes borderRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Update submission modal button */
+#submissionDetailsModal .neon-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+#submissionDetailsModal .video-container:hover .neon-button {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Modal Animations */
+.modal-overlay {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+}
+
+.modal-content {
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-content.show {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Modal entrance animations */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes modalFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+}
+
+.modal-enter {
+    animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-exit {
+    animation: modalFadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Backdrop blur animation */
+.modal-backdrop {
+    backdrop-filter: blur(0px);
+    transition: backdrop-filter 0.3s ease-in-out;
+}
+
+.modal-backdrop.show {
+    backdrop-filter: blur(8px);
+}
+
+/* Button hover effects */
+.wallet-option-btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wallet-option-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(255, 0, 255, 0.2);
+}
+
+/* Glow effects */
+.glow-effect {
+    position: relative;
+    overflow: hidden;
+}
+
+.glow-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: 0.5s;
+    pointer-events: none;
+}
+
+.glow-effect:hover::before {
+    left: 100%;
+}
+
+/* Success Animation */
+.success-checkmark {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    position: relative;
+    transform: scale(0);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.success-checkmark.animate {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.check-icon {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    border-radius: 50%;
+    box-sizing: content-box;
+    border: 4px solid #00ffa3;
+}
+
+.check-icon::before {
+    top: 3px;
+    left: -2px;
+    width: 30px;
+    transform-origin: 100% 50%;
+    border-radius: 100px 0 0 100px;
+}
+
+.check-icon::after {
+    top: 0;
+    left: 30px;
+    width: 60px;
+    transform-origin: 0 50%;
+    border-radius: 0 100px 100px 0;
+    animation: rotate-circle 4.25s ease-in;
+}
+
+.check-icon::before, .check-icon::after {
+    content: '';
+    height: 100px;
+    position: absolute;
+    background: transparent;
+    transform: rotate(-45deg);
+}
+
+.check-icon .icon-line {
+    height: 5px;
+    background-color: #00ffa3;
+    display: block;
+    border-radius: 2px;
+    position: absolute;
+    z-index: 10;
+}
+
+.check-icon .icon-line.line-tip {
+    top: 46px;
+    left: 14px;
+    width: 25px;
+    transform: rotate(45deg);
+    animation: icon-line-tip 0.75s;
+}
+
+.check-icon .icon-line.line-long {
+    top: 38px;
+    right: 8px;
+    width: 47px;
+    transform: rotate(-45deg);
+    animation: icon-line-long 0.75s;
+}
+
+.check-icon .icon-circle {
+    top: -4px;
+    left: -4px;
+    z-index: 10;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    position: absolute;
+    box-sizing: content-box;
+    border: 4px solid rgba(0, 255, 163, 0.5);
+}
+
+.check-icon .icon-fix {
+    top: 8px;
+    width: 5px;
+    left: 26px;
+    z-index: 1;
+    height: 85px;
+    position: absolute;
+    transform: rotate(-45deg);
+    background-color: transparent;
+}
+
+@keyframes rotate-circle {
+    0% {
+        transform: rotate(-45deg);
+    }
+    5% {
+        transform: rotate(-45deg);
+    }
+    12% {
+        transform: rotate(-405deg);
+    }
+    100% {
+        transform: rotate(-405deg);
+    }
+}
+
+@keyframes icon-line-tip {
+    0% {
+        width: 0;
+        left: 1px;
+        top: 19px;
+    }
+    54% {
+        width: 0;
+        left: 1px;
+        top: 19px;
+    }
+    70% {
+        width: 50px;
+        left: -8px;
+        top: 37px;
+    }
+    84% {
+        width: 17px;
+        left: 21px;
+        top: 48px;
+    }
+    100% {
+        width: 25px;
+        left: 14px;
+        top: 46px;
+    }
+}
+
+@keyframes icon-line-long {
+    0% {
+        width: 0;
+        right: 46px;
+        top: 54px;
+    }
+    65% {
+        width: 0;
+        right: 46px;
+        top: 54px;
+    }
+    84% {
+        width: 55px;
+        right: 0px;
+        top: 35px;
+    }
+    100% {
+        width: 47px;
+        right: 8px;
+        top: 38px;
+    }
+}
+
+/* Enhanced Modal Animations */
+.modal-overlay {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+}
+
+.modal-content {
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-content.show {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Modal entrance animations */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes modalFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+}
+
+.modal-enter {
+    animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-exit {
+    animation: modalFadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Backdrop blur animation */
+.modal-backdrop {
+    backdrop-filter: blur(0px);
+    transition: backdrop-filter 0.3s ease-in-out;
+}
+
+.modal-backdrop.show {
+    backdrop-filter: blur(8px);
+}
+
+/* Password strength bar animations */
+#strengthBar {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Password requirement check animations */
+[id$="Check"] {
+    transition: all 0.2s ease-in-out;
+}
+
+[id$="Check"]:not(:empty) {
+    color: #00ffa3;
+    border-color: #00ffa3;
+}
+
+/* Seed phrase reveal animation */
+#seedPhraseBlur {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Progress steps animation */
+.progress-step {
+    transition: all 0.3s ease-in-out;
+}
+
+.progress-step.completed {
+    background: #00ffa3;
+    border-color: #00ffa3;
+}
+
+.progress-line {
+    transition: all 0.3s ease-in-out;
+}
+
+.progress-line.completed {
+    background: #00ffa3;
 }
   

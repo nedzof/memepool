@@ -17,6 +17,50 @@
         </div>
 
         <div class="space-y-8">
+            <!-- Profile Section -->
+            <div class="rounded-xl p-6 border border-[#ff00ff]/20 bg-black/30">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="relative group">
+                        <div id="profileAvatar" class="w-16 h-16 rounded-full bg-gradient-to-r from-[#ff00ff] to-[#00ffff] flex items-center justify-center overflow-hidden">
+                            <!-- Avatar image or default will be set by JS -->
+                            <img src="" alt="Profile" class="w-full h-full object-cover hidden">
+                            <span class="text-2xl font-bold text-black">RX</span>
+                        </div>
+                        <button id="changeAvatar" class="absolute bottom-0 right-0 w-6 h-6 bg-[#ff00ff] rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h3 id="profileUsername" class="text-xl font-bold text-white">Loading...</h3>
+                            <button id="changeUsername" class="text-[#ff00ff] hover:text-[#ff00ff]/80 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="text-sm text-gray-400">Registered on BSV</div>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="importFromX" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white transition-colors border border-[#ff00ff]/30 hover:border-[#ff00ff] bg-[#0F1825]/30">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                        Import from X
+                    </button>
+                    <button id="generateRandom" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white/80 hover:text-white transition-colors border border-[#ff00ff]/30 hover:border-[#ff00ff] bg-[#0F1825]/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Generate Random
+                    </button>
+                </div>
+            </div>
+
+            <!-- Existing Balance Card -->
             <div class="rounded-xl p-6 border border-[#ff00ff]/20 wallet-balance-card">
                 <div class="text-sm text-gray-400 mb-2">Total Balance</div>
                 <div class="flex items-end gap-2">
@@ -72,50 +116,132 @@
     </div>
 </div>
 
-<!-- Initial Setup Modal -->
-<div id="initialSetupModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+<!-- Username Change Modal -->
+<div id="usernameModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
     <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
                 box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
-        <button id="closeInitialModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+        <button id="closeUsernameModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
         </button>
 
-        <div class="space-y-8">
+        <div class="space-y-6">
             <div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Connect Wallet</h2>
-                <p class="text-gray-400 text-sm mt-1">Choose how you want to connect</p>
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Change Username</h2>
+                <p class="text-gray-400 text-sm mt-1">This will be registered on BSV blockchain</p>
             </div>
+
             <div class="space-y-4">
-                <button id="createNewWalletBtn" class="wallet-action-btn w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
-                        style="border: 1px solid rgba(255, 0, 255, 0.3);
-                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
-                    <div class="relative z-10">
-                        <div class="flex justify-center items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div>
+                    <input type="text" id="newUsername" placeholder="Enter new username" 
+                           class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm">
+                    <div id="usernameAvailability" class="text-sm mt-2 text-gray-400"></div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-[#ff00ff]/10 border border-[#ff00ff]/20">
+                    <div class="text-sm text-white/80 flex items-start gap-3">
+                        <svg class="w-5 h-5 text-[#ff00ff] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Username will be permanently registered on the BSV blockchain and cannot be changed for 30 days.
+                    </div>
+                </div>
+            </div>
+
+            <button id="confirmUsername" class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                    style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                           box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                <div class="relative z-10">Register Username</div>
+                <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Avatar Change Modal -->
+<div id="avatarModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        <button id="closeAvatarModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <div class="space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Change Avatar</h2>
+                <p class="text-gray-400 text-sm mt-1">Choose your new profile picture</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="aspect-square rounded-xl overflow-hidden border border-[#ff00ff]/20 cursor-pointer hover:border-[#ff00ff] transition-all">
+                        <input type="file" id="avatarUpload" class="hidden" accept="image/*">
+                        <label for="avatarUpload" class="w-full h-full flex items-center justify-center bg-black/30 hover:bg-black/50 transition-all">
+                            <svg class="w-8 h-8 text-[#ff00ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
-                            Create New Wallet
-                        </div>
+                        </label>
                     </div>
-                    <div class="absolute inset-0 bg-gradient-to-r from-[#ff00ff]/20 to-[#00ffff]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </button>
-                <button id="importWalletBtn" class="wallet-action-btn w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
-                        style="border: 1px solid rgba(255, 0, 255, 0.3);
-                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
-                    <div class="relative z-10">
-                        <div class="flex justify-center items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                            </svg>
-                            Import Existing Wallet
-                        </div>
+                    <!-- Rexxie NFT placeholders - will be populated by JS -->
+                    <div id="rexxieNFTs" class="col-span-2 grid grid-cols-2 gap-4">
+                        <!-- NFTs will be inserted here -->
                     </div>
-                    <div class="absolute inset-0 bg-gradient-to-r from-[#ff00ff]/20 to-[#00ffff]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </button>
+                </div>
+
+                <div class="p-4 rounded-xl bg-[#ff00ff]/10 border border-[#ff00ff]/20">
+                    <div class="text-sm text-white/80 flex items-start gap-3">
+                        <svg class="w-5 h-5 text-[#ff00ff] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Avatar will be permanently registered on the BSV blockchain.
+                    </div>
+                </div>
             </div>
+
+            <button id="confirmAvatar" class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                    style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                           box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                <div class="relative z-10">Register Avatar</div>
+                <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Initial Setup Modal -->
+<div id="initialSetupModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl">
+        <div class="space-y-8">
+            <!-- Wallet selection buttons -->
+            <button id="unisatBtn" class="flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
+                <img src="../assets/images/unisat-logo.svg" alt="UniSat" class="w-8 h-8">
+                UniSat Wallet
+            </button>
+            <button id="yoursBtn" class="flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
+                <img src="../assets/images/yours-logo.svg" alt="Yours" class="w-8 h-8">
+                Yours Wallet
+            </button>
+            <button id="okxBtn" class="flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
+                <img src="../assets/images/okx-logo.svg" alt="OKX" class="w-8 h-8">
+                OKX Wallet
+            </button>
+            <button id="importWalletBtn" class="flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Import Wallet
+            </button>
+            <button id="importFromX" class="flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
+                <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                Import from X
+            </button>
         </div>
     </div>
 </div>
@@ -125,6 +251,25 @@
     <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
                 box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        
+        <!-- Progress Steps - Now inside the modal -->
+        <div class="flex items-center gap-2 bg-black/50 rounded-full px-4 py-2 border border-[#ff00ff]/20 mb-8">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#ff00ff] text-white">1</div>
+                <div class="ml-2 text-[#ff00ff] text-sm">Seed</div>
+            </div>
+            <div class="w-8 h-[2px] bg-[#ff00ff]/30"></div>
+            <div class="flex items-center opacity-50">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#ff00ff]/30 text-[#ff00ff]">2</div>
+                <div class="ml-2 text-[#ff00ff] text-sm">Password</div>
+            </div>
+            <div class="w-8 h-[2px] bg-[#ff00ff]/30"></div>
+            <div class="flex items-center opacity-50">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#ff00ff]/30 text-[#ff00ff]">3</div>
+                <div class="ml-2 text-[#ff00ff] text-sm">Profile</div>
+            </div>
+        </div>
+
         <button id="closeSeedModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -136,11 +281,28 @@
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Your Seed Phrase</h2>
                 <p class="text-gray-400 text-sm mt-1">Write down these words in order and keep them safe</p>
             </div>
-            <div class="p-6 rounded-xl bg-transparent border border-[#00ffa3]/10 backdrop-blur-sm relative group">
-                <div class="absolute inset-0 bg-gradient-to-br from-[#00ffa3]/5 via-transparent to-[#00ffff]/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+            <!-- Seed Phrase Container -->
+            <div class="relative p-6 rounded-xl border border-[#ff00ff]/20 group transition-all duration-300 hover:border-[#ff00ff]/40"
+                 style="background: linear-gradient(135deg, rgba(255, 0, 255, 0.05), rgba(0, 255, 255, 0.05));">
+                
+                <!-- Blur Overlay - Updated z-index and pointer-events -->
+                <div id="seedPhraseBlur" class="absolute inset-0 backdrop-blur-lg flex items-center justify-center z-50 bg-black/50 rounded-xl transition-all duration-300">
+                    <button id="revealSeedPhrase" class="px-4 py-2 rounded-lg bg-[#ff00ff] text-white font-medium hover:bg-[#ff00ff]/80 transition-colors flex items-center gap-2 relative z-50 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Click to Reveal
+                    </button>
+                </div>
+
+                <!-- Seed Phrase Grid -->
                 <div id="seedPhrase" class="grid grid-cols-3 gap-3 relative z-10">
                     <!-- Words will be inserted here dynamically -->
                 </div>
+
+                <!-- Copy Button -->
                 <div class="mt-4 flex justify-end">
                     <button id="copySeedPhrase" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#00ffa3] hover:text-[#00ffff] transition-colors border border-[#00ffa3]/30 hover:border-[#00ffff] bg-[#0F1825]/30">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,25 +312,39 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Warning Box -->
             <div class="p-4 rounded-xl bg-[#ff00ff]/10 border border-[#ff00ff]/20">
                 <div class="text-sm text-white/80">
-                    <div class="flex items-start gap-3 mb-2">
-                        <svg class="w-5 h-5 text-[#ff00ff] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-[#ff00ff] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        Never share your seed phrase. Anyone with these words can access your wallet.
+                        <div class="space-y-2">
+                            <p>Never share your seed phrase. Anyone with these words can access your wallet.</p>
+                            <p>Make sure to store it in a secure location.</p>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Confirmation Checkbox -->
             <div class="flex items-center gap-3 p-4 rounded-xl bg-black/30 border border-[#ff00ff]/20">
                 <input type="checkbox" id="seedConfirm" class="rounded bg-transparent border-[#ff00ff]/30">
-                <label for="seedConfirm" class="text-sm text-white/80">I have written down my seed phrase</label>
+                <label for="seedConfirm" class="text-sm text-white/80">I have written down my seed phrase and stored it securely</label>
             </div>
+
+            <!-- Continue Button -->
             <button id="continueToPassword" disabled 
                     class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                     style="background: linear-gradient(45deg, #ff00ff, #00ffff);
                            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
-                <div class="relative z-10">Continue</div>
+                <div class="relative z-10 flex items-center justify-center gap-2">
+                    <span>Continue to Password Setup</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
                 <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
         </div>
@@ -180,35 +356,147 @@
     <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
                 box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        
+        <!-- Progress Steps -->
+        <div class="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 rounded-full px-4 py-2 border border-[#ff00ff]/20">
+            <div class="flex items-center opacity-50">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#ff00ff]/30 text-white">✓</div>
+                <div class="ml-2 text-[#ff00ff] text-sm">Seed</div>
+            </div>
+            <div class="w-8 h-[2px] bg-[#ff00ff]"></div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#ff00ff] text-white">2</div>
+                <div class="ml-2 text-[#ff00ff] text-sm">Password</div>
+            </div>
+            <div class="w-8 h-[2px] bg-[#ff00ff]/30"></div>
+            <div class="flex items-center opacity-50">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#ff00ff]/30 text-[#ff00ff]">3</div>
+                <div class="ml-2 text-[#ff00ff] text-sm">Profile</div>
+            </div>
+        </div>
+
         <div class="space-y-8">
             <div>
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Set Password</h2>
                 <p class="text-gray-400 text-sm mt-1">Create a strong password to secure your wallet</p>
             </div>
+
             <form id="passwordSetupForm" class="space-y-6" onsubmit="return false;">
+                <input type="text" name="username" autocomplete="username" class="hidden">
                 <div class="space-y-4">
+                    <!-- Password Input -->
                     <div>
-                        <input type="password" id="password" placeholder="Enter password" 
-                               class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
-                               autocomplete="new-password">
-                        <div id="passwordStrength" class="text-sm mt-2 text-gray-400"></div>
+                        <div class="relative">
+                            <input type="password" id="password" name="password" placeholder="Enter password" 
+                                   class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm pr-12"
+                                   autocomplete="new-password">
+                            <button type="button" class="toggle-password absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="passwordStrength" class="text-sm mt-2">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="flex-1 h-1 bg-black/30 rounded-full overflow-hidden">
+                                    <div id="strengthBar" class="h-full w-0 transition-all duration-300"></div>
+                                </div>
+                                <span id="strengthLabel" class="text-xs min-w-[60px]">Too weak</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs text-gray-400">
+                                <div class="flex items-center gap-1">
+                                    <span id="lengthCheck" class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center"></span>
+                                    <span>At least 8 characters</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span id="upperCheck" class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center"></span>
+                                    <span>Uppercase letter</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span id="numberCheck" class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center"></span>
+                                    <span>Number</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span id="specialCheck" class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center"></span>
+                                    <span>Special character</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Confirm Password Input -->
                     <div>
-                        <input type="password" id="confirmPassword" placeholder="Confirm password" 
-                               class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
-                               autocomplete="new-password">
+                        <div class="relative">
+                            <input type="password" id="confirmPassword" placeholder="Confirm password" 
+                                   class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm pr-12"
+                                   autocomplete="new-password">
+                            <button type="button" class="toggle-password absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
                         <div id="passwordMatch" class="text-sm mt-2 text-gray-400"></div>
                     </div>
                 </div>
-                <button type="submit" id="createWallet" disabled 
+
+                <!-- Warning Box -->
+                <div class="p-4 rounded-xl bg-[#ff00ff]/10 border border-[#ff00ff]/20">
+                    <div class="text-sm text-white/80">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-[#ff00ff] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="space-y-2">
+                                <p>Your password will be used to encrypt your wallet. Make sure to remember it!</p>
+                                <p>If you forget your password, you'll need your seed phrase to recover your wallet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Continue Button -->
+                <button type="submit" id="continueToProfile" disabled 
                         class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                         style="background: linear-gradient(45deg, #ff00ff, #00ffff);
                                box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
-                    <div class="relative z-10">Create Wallet</div>
+                    <div class="relative z-10 flex items-center justify-center gap-2">
+                        <span>Continue to Profile Setup</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
                     <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </button>
             </form>
         </div>
+    </div>
+</div>
+
+<!-- Success Animation Modal -->
+<div id="walletCreatedModal" class="fixed inset-0 bg-black/95 hidden items-center justify-center p-4">
+    <div class="max-w-md w-full text-center">
+        <div class="success-checkmark scale-150 mb-8">
+            <div class="check-icon">
+                <span class="icon-line line-tip"></span>
+                <span class="icon-line line-long"></span>
+                <div class="icon-circle"></div>
+                <div class="icon-fix"></div>
+            </div>
+        </div>
+        <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text mb-4">
+            Wallet Created Successfully!
+        </h2>
+        <p class="text-gray-400 mb-8">Your wallet is ready to use. You can now start exploring the Memepire!</p>
+        <button id="getStartedBtn" 
+                class="px-8 py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                       box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+            <div class="relative z-10">Get Started</div>
+            <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </button>
     </div>
 </div>
 
@@ -344,6 +632,7 @@
             </div>
 
             <form id="importWalletForm" class="space-y-6" onsubmit="return false;">
+                <input type="text" name="username" autocomplete="username" class="hidden">
                 <div class="space-y-4">
                     <div>
                         <label class="text-sm text-gray-400 mb-2 block">Seed Phrase or Private Key</label>

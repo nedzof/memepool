@@ -7,84 +7,136 @@ import { Wallet } from './bsv.js';
 
 async function loadComponents() {
     try {
-        // Create container elements
-        const mainContent = document.createElement('div');
-        mainContent.id = 'mainContent';
-        const submissionDetailsModalContainer = document.createElement('div');
-        submissionDetailsModalContainer.id = 'submissionDetailsModalContainer';
-        const videoModalContainer = document.createElement('div');
-        videoModalContainer.id = 'videoModalContainer';
-        const walletModalsContainer = document.createElement('div');
-        walletModalsContainer.id = 'walletModalsContainer';
-        const loadingState = document.createElement('div');
-        loadingState.id = 'loadingState';
-        loadingState.className = 'fixed inset-0 flex items-center justify-center bg-black z-50';
-        loadingState.innerHTML = `
-            <div class="text-center">
-                <div class="loading-spinner mb-4"></div>
-                <p class="text-lg">Loading Memepire...</p>
-            </div>
-        `;
+        console.log('Starting component loading...');
+        
+        // Load all components in parallel
+        const components = [
+            { name: 'wallet-modals', path: '/src/components/wallet-modals.html' },
+            { name: 'header', path: '/src/components/header.html' },
+            { name: 'main-content', path: '/src/components/main-content.html' },
+            { name: 'loading-states', path: '/src/components/loading-states.html' },
+            { name: 'submission-details-modal', path: '/src/components/submission-details-modal.html' },
+            { name: 'video-modal', path: '/src/components/video-modal.html' }
+        ];
 
-        // Add containers to body
-        document.body.appendChild(mainContent);
-        document.body.appendChild(submissionDetailsModalContainer);
-        document.body.appendChild(videoModalContainer);
-        document.body.appendChild(walletModalsContainer);
-        document.body.appendChild(loadingState);
+        const loadPromises = components.map(async (component) => {
+            try {
+                const response = await fetch(component.path);
+                if (!response.ok) {
+                    throw new Error(`Failed to load ${component.name}: ${response.status}`);
+                }
+                return {
+                    name: component.name,
+                    html: await response.text()
+                };
+            } catch (error) {
+                console.error(`Error loading ${component.name}:`, error);
+                return null;
+            }
+        });
 
-        // Load component contents
-        const [mainContentHtml, submissionModalHtml, videoModalHtml, walletModalsHtml] = await Promise.all([
-            fetch('src/components/main-content.html').then(r => r.text()),
-            fetch('src/components/submission-details-modal.html').then(r => r.text()),
-            fetch('src/components/video-modal.html').then(r => r.text()),
-            fetch('src/components/wallet-modals.html').then(r => r.text())
-        ]);
+        const results = await Promise.all(loadPromises);
+        const mainElement = document.querySelector('main');
+        
+        // Insert components in the correct order
+        results.forEach(result => {
+            if (result) {
+                if (result.name === 'wallet-modals') {
+                    // Insert wallet modals at the end of body
+                    document.body.insertAdjacentHTML('beforeend', result.html);
+                } else if (result.name === 'header' || result.name === 'main-content') {
+                    // Insert header and main content into main element
+                    mainElement.insertAdjacentHTML('beforeend', result.html);
+                } else {
+                    // Insert other modals at the end of body
+                    document.body.insertAdjacentHTML('beforeend', result.html);
+                }
+            }
+        });
 
-        // Insert component contents
-        mainContent.innerHTML = mainContentHtml;
-        submissionDetailsModalContainer.innerHTML = submissionModalHtml;
-        videoModalContainer.innerHTML = videoModalHtml;
-        walletModalsContainer.innerHTML = walletModalsHtml;
+        // Wait for DOM update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify critical components
+        const criticalElements = [
+            'initialSetupModal',
+            'mainWalletModal',
+            'seedPhraseModal',
+            'passwordSetupModal',
+            'sendModal',
+            'receiveModal'
+        ];
 
-        // Remove loading state
-        loadingState.remove();
+        const missingElements = criticalElements.filter(id => !document.getElementById(id));
+        if (missingElements.length > 0) {
+            throw new Error(`Missing critical elements: ${missingElements.join(', ')}`);
+        }
 
-        // After components are loaded, initialize the app
-        initializeApp();
+        return true;
     } catch (error) {
         console.error('Error loading components:', error);
+        return false;
     }
 }
 
-function initializeApp() {
-    console.log('Initializing app...');
-    
-    // Check if dependencies are loaded
-    if (!window.QRCode) {
-        console.error('QR Code library not loaded');
-        return;
+async function initializeApp() {
+    try {
+        // Load components first
+        const componentsLoaded = await loadComponents();
+        if (!componentsLoaded) {
+            throw new Error('Failed to load components');
+        }
+
+        // Remove any duplicate connect buttons
+        const connectButtons = document.querySelectorAll('[id="connectWalletBtn"]');
+        if (connectButtons.length > 1) {
+            for (let i = 1; i < connectButtons.length; i++) {
+                connectButtons[i].remove();
+            }
+        }
+
+        // Initialize all modals as hidden
+        const allModals = document.querySelectorAll('[id$="Modal"]');
+        allModals.forEach(modal => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        });
+
+        console.log('Initializing blocks...');
+        initializeBlocks();
+        centerBlocks();
+
+        console.log('Initializing submissions...');
+        initializeSubmissions();
+
+        console.log('Creating wallet instance...');
+        window.wallet = new BSVWallet();
+        
+        console.log('Initializing wallet UI...');
+        await initializeWallet();
+
+        console.log('Setting up event listeners...');
+        setupEventListeners();
+    } catch (error) {
+        console.error('Initialization error:', error);
+        // Show error to user
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg z-50';
+        errorDiv.textContent = error.message;
+        document.body.appendChild(errorDiv);
     }
-
-    // Initialize blocks
-    console.log('Initializing blocks...');
-    initializeBlocks();
-    centerBlocks();
-
-    // Initialize submissions
-    console.log('Initializing submissions...');
-    initializeSubmissions();
-
-    // Initialize wallet
-    console.log('Creating wallet instance...');
-    window.wallet = new Wallet();
-    console.log('Initializing wallet UI...');
-    initializeWallet();
-
-    // Add event listeners
-    console.log('Setting up event listeners...');
-    setupEventListeners();
 }
+
+// Initialize the application
+async function initialize() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    } else {
+        await initializeApp();
+    }
+}
+
+initialize();
 
 function setupEventListeners() {
     // Add shift blocks button listener
@@ -189,19 +241,4 @@ function startSubmissionsRefresh() {
     initializeSubmissions();
     setInterval(initializeSubmissions, 60000);
 }
-
-// Initialize everything
-function initialize() {
-    // Setup body
-    document.body.className = 'bg-black text-white min-h-screen';
-    
-    // Load components
-    loadComponents();
-}
-
-// Start initialization when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
-} else {
-    initialize();
-} 
+ 
