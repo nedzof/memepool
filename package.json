@@ -5,6 +5,7 @@
   "dependencies": {
     "@bsv/sdk": "^1.0.0",
     "bitcoinjs-lib": "^6.1.7",
+    "buffer": "^6.0.3",
     "qrcode": "^1.5.4",
     "vite": "^4.5.0"
   },
