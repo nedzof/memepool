@@ -2,8 +2,6 @@ import { Buffer } from 'buffer';
 import { bsv, generateMnemonic } from './bsv.js';
 import BSVWallet from './BSVWallet.js';
 import { setupReceiveModal } from './qrCode.js';
-import { AddressUtils } from '@okxweb3/crypto-lib';
-import { BtcAddressFormat } from '@okxweb3/coin-base';
 import bitcoin from 'bitcoinjs-lib';
 
 // Make Buffer available globally
