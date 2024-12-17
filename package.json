@@ -6,6 +6,7 @@
     "@bsv/sdk": "^1.0.0",
     "@okxweb3/coin-base": "^1.0.11",
     "@okxweb3/crypto-lib": "^1.0.6",
+    "bitcoinjs-lib": "^6.1.7",
     "buffer": "^6.0.3",
     "qrcode": "^1.5.4",
     "vite": "^4.5.0"

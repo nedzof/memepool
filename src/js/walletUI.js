@@ -4,6 +4,7 @@ import BSVWallet from './BSVWallet.js';
 import { setupReceiveModal } from './qrCode.js';
 import { AddressUtils } from '@okxweb3/crypto-lib';
 import { BtcAddressFormat } from '@okxweb3/coin-base';
+import bitcoin from 'bitcoinjs-lib';
 
 // Make Buffer available globally
 window.Buffer = Buffer;
@@ -620,6 +621,29 @@ async function connectOKXWallet() {
     }
 }
 
+// Function to convert bc1 to legacy address
+function bc1ToLegacy(bc1Address) {
+    try {
+        // Decode the bc1 address
+        const decoded = bitcoin.address.fromBech32(bc1Address);
+        
+        // Convert to legacy address format
+        const p2wpkh = bitcoin.payments.p2wpkh({
+            hash: decoded.data
+        });
+        
+        // Convert to p2pkh (legacy)
+        const p2pkh = bitcoin.payments.p2pkh({
+            hash: p2wpkh.hash
+        });
+
+        return p2pkh.address;
+    } catch (error) {
+        console.error('Error converting address:', error);
+        throw new Error('Invalid bc1 address');
+    }
+}
+
 // Initialize OKX wallet
 async function initOKXWallet() {
     try {
@@ -639,15 +663,20 @@ async function initOKXWallet() {
 
         // Convert bc1 address to legacy format
         const bc1Address = accounts[0];
-        const legacyAddress = AddressUtils.convertAddress(bc1Address, BtcAddressFormat.BTC_LEGACY);
+        const legacyAddress = bc1ToLegacy(bc1Address);
 
         // Create a wallet interface
         const wallet = {
             getAddress: () => legacyAddress,
             getBalance: async () => {
                 try {
-                    const balance = await window.okxwallet.bitcoin.getBalance();
-                    return balance ? parseFloat(balance) / 1e8 : 0; // Convert from satoshis to BSV
+                    // Get balance from WhatsOnChain API
+                    const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${legacyAddress}/balance`);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch balance');
+                    }
+                    const data = await response.json();
+                    return data.confirmed / 1e8; // Convert satoshis to BSV
                 } catch (error) {
                     console.error('Error getting balance:', error);
                     return 0;
@@ -662,9 +691,8 @@ async function initOKXWallet() {
             send: async (toAddress, amount) => {
                 try {
                     // Convert legacy address back to bc1 for sending
-                    const bc1ToAddress = AddressUtils.convertAddress(toAddress, BtcAddressFormat.BTC_SEGWIT);
                     const txHash = await window.okxwallet.bitcoin.send({
-                        to: bc1ToAddress,
+                        to: toAddress,
                         value: amount * 1e8 // Convert BSV to satoshis
                     });
                     return { txid: txHash };
