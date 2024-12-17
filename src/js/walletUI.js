@@ -1,11 +1,7 @@
-import { Buffer } from 'buffer';
 import { bsv, generateMnemonic } from './bsv.js';
 import BSVWallet from './BSVWallet.js';
 import { setupReceiveModal } from './qrCode.js';
 import bitcoin from 'bitcoinjs-lib';
-
-// Make Buffer available globally
-window.Buffer = Buffer;
 
 // Export all necessary functions
 export {
