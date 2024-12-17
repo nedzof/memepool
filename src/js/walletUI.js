@@ -5,8 +5,10 @@ import { setupReceiveModal } from './qrCode.js';
 import bitcoin from 'bitcoinjs-lib';
 
 // Make Buffer available globally
-window.Buffer = Buffer;
-globalThis.Buffer = Buffer;
+if (typeof window !== 'undefined') {
+    window.Buffer = Buffer;
+    globalThis.Buffer = Buffer;
+}
 
 // Export all necessary functions
 export {

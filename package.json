@@ -6,7 +6,9 @@
     "@bsv/sdk": "^1.0.0",
     "bitcoinjs-lib": "^6.1.7",
     "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
     "qrcode": "^1.5.4",
+    "stream-browserify": "^3.0.0",
     "vite": "^4.5.0"
   },
   "scripts": {

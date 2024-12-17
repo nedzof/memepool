@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { Buffer } from 'buffer';
 
 export default defineConfig({
   // Enable .env file loading
@@ -13,18 +14,33 @@ export default defineConfig({
   assetsInclude: ['**/*.html'],
   resolve: {
     alias: {
-      buffer: 'buffer'
+      buffer: 'buffer',
+      stream: 'stream-browserify',
+      crypto: 'crypto-browserify'
     }
   },
   define: {
     'process.env': {},
-    global: 'globalThis'
+    global: 'globalThis',
+    'global.Buffer': Buffer,
+    Buffer: ['buffer', 'Buffer']
+  },
+  build: {
+    rollupOptions: {
+      external: ['buffer'],
+      output: {
+        globals: {
+          buffer: 'Buffer'
+        }
+      }
+    }
   },
   optimizeDeps: {
     esbuildOptions: {
       define: {
         global: 'globalThis'
       }
-    }
+    },
+    include: ['buffer', 'bitcoinjs-lib']
   }
 }); 
