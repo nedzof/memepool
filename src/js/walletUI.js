@@ -1,6 +1,8 @@
 import { bsv, generateMnemonic } from './bsv.js';
 import BSVWallet from './BSVWallet.js';
 import { setupReceiveModal } from './qrCode.js';
+import { AddressUtils } from '@okxweb3/crypto-lib';
+import { BtcAddressFormat } from '@okxweb3/coin-base';
 
 // Export all necessary functions
 export {
@@ -631,9 +633,13 @@ async function initOKXWallet() {
             throw new Error('No accounts found in OKX Wallet');
         }
 
+        // Convert bc1 address to legacy format
+        const bc1Address = accounts[0];
+        const legacyAddress = AddressUtils.convertAddress(bc1Address, BtcAddressFormat.BTC_LEGACY);
+
         // Create a wallet interface
         const wallet = {
-            getAddress: () => accounts[0],
+            getAddress: () => legacyAddress,
             getBalance: async () => {
                 try {
                     const balance = await window.okxwallet.bitcoin.getBalance();
@@ -651,8 +657,10 @@ async function initOKXWallet() {
             },
             send: async (toAddress, amount) => {
                 try {
+                    // Convert legacy address back to bc1 for sending
+                    const bc1ToAddress = AddressUtils.convertAddress(toAddress, BtcAddressFormat.BTC_SEGWIT);
                     const txHash = await window.okxwallet.bitcoin.send({
-                        to: toAddress,
+                        to: bc1ToAddress,
                         value: amount * 1e8 // Convert BSV to satoshis
                     });
                     return { txid: txHash };
