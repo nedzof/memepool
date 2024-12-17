@@ -10,5 +10,21 @@ export default defineConfig({
       allow: ['..']
     }
   },
-  assetsInclude: ['**/*.html']
+  assetsInclude: ['**/*.html'],
+  resolve: {
+    alias: {
+      buffer: 'buffer'
+    }
+  },
+  define: {
+    'process.env': {},
+    global: 'globalThis'
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
+  }
 }); 
