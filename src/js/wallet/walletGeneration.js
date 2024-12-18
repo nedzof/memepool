@@ -36,7 +36,7 @@ function displaySeedPhrase(mnemonic) {
     seedPhraseContainer.innerHTML = words.map((word, index) => `
         <div class="relative p-2 rounded-lg bg-gradient-to-r from-[#00ffa3]/10 to-[#00ffff]/10 hover:from-[#00ffa3]/20 hover:to-[#00ffff]/20 transition-all duration-300 group">
             <span class="absolute top-1 left-2 text-xs text-[#00ffa3]/50">${index + 1}</span>
-            <span class="block text-center text-[#00ffa3] text-sm mt-1">${word}</span>
+            <span class="block text-center text-[#00ffa3] text-sm mt-1 seed-word">${word}</span>
         </div>
     `).join('');
 }
@@ -76,7 +76,7 @@ function setupSeedPhraseEvents() {
                     setTimeout(() => {
                         copyBtn.innerHTML = `
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                             </svg>
                             Copy Seed Phrase
                         `;
@@ -88,29 +88,65 @@ function setupSeedPhraseEvents() {
         });
     }
 
-    // Handle checkbox and continue button
-    const checkbox = document.getElementById('seedConfirm');
-    const continueBtn = document.getElementById('continueToPassword');
-    
-    if (checkbox && continueBtn) {
-        checkbox.addEventListener('change', () => {
-            continueBtn.disabled = !checkbox.checked;
-            if (checkbox.checked) {
-                continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-        });
-        
-        continueBtn.addEventListener('click', () => {
-            if (!continueBtn.disabled) {
-                hideModal('seedPhraseModal');
-                showModal('passwordSetupModal');
-                // Initialize password validation after showing the modal
-                setupPasswordValidation();
-            }
+    // Setup seed phrase input boxes
+    const seedPhraseInputs = document.getElementById('seedPhraseInputs');
+    if (seedPhraseInputs) {
+        // Create 12 input boxes
+        seedPhraseInputs.innerHTML = Array.from({ length: 12 }, (_, i) => `
+            <div class="relative">
+                <span class="absolute top-1 left-2 text-xs text-[#00ffa3]/50">${i + 1}</span>
+                <input type="password" 
+                       class="w-full bg-black/30 rounded-lg p-4 pt-6 text-white text-center font-medium relative z-10 seed-input"
+                       data-index="${i}"
+                       placeholder="●●●●">
+                <div class="absolute inset-0 rounded-lg bg-gradient-to-r from-[#00ffa3]/10 to-[#00ffff]/10 opacity-10"></div>
+            </div>
+        `).join('');
+
+        // Add event listeners to handle input navigation
+        const inputs = seedPhraseInputs.querySelectorAll('input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.includes(' ')) {
+                    // If pasting multiple words
+                    const words = e.target.value.trim().split(/\s+/);
+                    words.forEach((word, wordIndex) => {
+                        if (inputs[index + wordIndex]) {
+                            inputs[index + wordIndex].value = word;
+                        }
+                    });
+                    // Focus next empty input or last input
+                    const nextEmpty = Array.from(inputs).find((input, i) => i > index && !input.value);
+                    if (nextEmpty) nextEmpty.focus();
+                    else inputs[inputs.length - 1].focus();
+                } else if (e.target.value) {
+                    // Move to next input after typing a word
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    // Move to previous input when backspacing an empty input
+                    inputs[index - 1].focus();
+                }
+            });
         });
     }
+}
+
+// Get seed phrase from input boxes
+export function getSeedPhrase() {
+    const inputs = document.querySelectorAll('.seed-input');
+    return Array.from(inputs).map(input => input.value.trim()).join(' ');
+}
+
+// Validate seed phrase
+export function validateSeedPhrase(seedPhrase) {
+    const words = seedPhrase.trim().split(/\s+/);
+    return words.length === 12 && words.every(word => word.length > 0);
 }
 
 // Setup password validation
