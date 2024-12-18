@@ -1,4 +1,4 @@
-import { showModal, hideModal, showWalletError } from './modalManager.js';
+import { showModal, hideModal, showWalletError, showMainWallet } from './modalManager.js';
 import { connectUnisatWallet, connectOKXWallet } from './walletInit.js';
 import { generateNewWallet } from './walletGeneration.js';
 import { authenticateWithX } from './auth/xAuth.js';
