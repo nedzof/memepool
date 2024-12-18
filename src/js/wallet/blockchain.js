@@ -1,3 +1,6 @@
+import { bsv } from '../bsv.js';
+import { Buffer } from 'buffer';
+
 // Fetch balance from WhatsOnChain API
 export async function fetchBalanceFromWhatsOnChain(address) {
     try {

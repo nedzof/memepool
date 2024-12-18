@@ -1,7 +1,7 @@
-import { showModal, hideModal } from '../modals/modalManager.js';
-import { setupReceiveModal } from '../modals/qrCode.js';
-import { clearAllCache } from '../utils/cache.js';
-import { fetchBalanceFromWhatsOnChain } from '../utils/blockchain.js';
+import { showModal, hideModal } from './modalManager.js';
+import { setupReceiveModal } from './qrCode.js';
+import { clearAllCache } from './cache.js';
+import { fetchBalanceFromWhatsOnChain } from './blockchain.js';
 
 // Setup main wallet events
 export function setupMainWalletEvents() {
@@ -20,6 +20,7 @@ export function setupMainWalletEvents() {
         receiveBtn.addEventListener('click', () => {
             hideModal('mainWalletModal');
             showModal('receiveModal');
+            setupReceiveModal();
         });
     }
 
@@ -52,13 +53,10 @@ export function setupMainWalletEvents() {
 
     // Update wallet balance and address
     updateWalletDisplay();
-
-    // Call setupReceiveModal at the end
-    setupReceiveModal();
 }
 
 // Handle wallet disconnect
-function handleDisconnect() {
+export function handleDisconnect() {
     // Clear wallet instance and session
     window.wallet = null;
     localStorage.removeItem('memepire_wallet_session');
@@ -89,11 +87,15 @@ function handleDisconnect() {
 }
 
 // Update wallet display
-function updateWalletDisplay() {
+export function updateWalletDisplay() {
     const addressDisplay = document.getElementById('walletAddress');
     const balanceDisplay = document.getElementById('walletBalance');
+    const walletTypeDisplay = document.getElementById('walletType');
     
     if (window.wallet) {
+        // Get wallet type
+        const walletType = window.wallet.getAddress().startsWith('0x') ? 'OKX' : 'UniSat';
+        
         if (addressDisplay) {
             const address = window.wallet.getAddress();
             addressDisplay.textContent = address ? 
@@ -101,9 +103,21 @@ function updateWalletDisplay() {
                 'No address available';
         }
 
+        if (walletTypeDisplay) {
+            walletTypeDisplay.textContent = `Connected with ${walletType}`;
+        }
+
         if (balanceDisplay && typeof window.wallet.getBalance === 'function') {
             window.wallet.getBalance().then(balance => {
-                balanceDisplay.textContent = `${balance || 0} BSV`;
+                const formattedBalance = balance.toFixed(8);
+                balanceDisplay.textContent = `${formattedBalance} BSV`;
+                
+                // Update connect button
+                const connectBtn = document.getElementById('connectWalletBtn');
+                if (connectBtn) {
+                    connectBtn.textContent = `${formattedBalance} BSV`;
+                    connectBtn.classList.add('connected');
+                }
             }).catch(error => {
                 console.error('Error fetching balance:', error);
                 balanceDisplay.textContent = '0 BSV';
@@ -117,6 +131,7 @@ export async function updateBalanceDisplay() {
     const balanceDisplay = document.getElementById('walletBalance');
     const connectBtn = document.getElementById('connectWalletBtn');
     const availableBalance = document.getElementById('availableBalance');
+    const walletTypeDisplay = document.getElementById('walletType');
     
     if (window.wallet) {
         try {
@@ -125,6 +140,14 @@ export async function updateBalanceDisplay() {
             if (!address) {
                 console.error('No legacy address available');
                 return;
+            }
+
+            // Get wallet type
+            const walletType = window.wallet.getAddress().startsWith('0x') ? 'OKX' : 'UniSat';
+            
+            // Update wallet type display
+            if (walletTypeDisplay) {
+                walletTypeDisplay.textContent = `Connected with ${walletType}`;
             }
 
             // Fetch balance from WhatsOnChain
@@ -144,6 +167,13 @@ export async function updateBalanceDisplay() {
             }
         } catch (error) {
             console.error('Error updating balance:', error);
+            // Set default values on error
+            if (balanceDisplay) balanceDisplay.textContent = '0';
+            if (availableBalance) availableBalance.textContent = '0';
+            if (connectBtn) {
+                connectBtn.textContent = '0 BSV';
+                connectBtn.classList.add('connected');
+            }
         }
     }
 } 

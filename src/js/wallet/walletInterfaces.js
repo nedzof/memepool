@@ -1,10 +1,10 @@
 import { Buffer } from 'buffer';
 import * as bitcoin from 'bitcoinjs-lib';
-import { generateQRCode } from '../modals/qrCode.js';
-import { fetchBalanceFromWhatsOnChain } from '../utils/blockchain.js';
+import { generateQRCode } from './qrCode.js';
+import { fetchBalanceFromWhatsOnChain } from './blockchain.js';
 
-// Wallet interface creation
-export async function createWalletInterface(walletType, accounts, publicKey) {
+// Create wallet interface
+async function createWalletInterface(walletType, accounts, publicKey) {
     try {
         console.log(`Creating wallet interface for ${walletType}...`);
         
@@ -26,7 +26,6 @@ export async function createWalletInterface(walletType, accounts, publicKey) {
         // Generate QR code with the legacy address
         await generateQRCode(legacyAddress);
 
-        // Create a wallet interface
         return {
             getAddress: () => accounts[0],
             getLegacyAddress: () => legacyAddress,
@@ -38,12 +37,6 @@ export async function createWalletInterface(walletType, accounts, publicKey) {
                     console.error('Error getting balance:', error);
                     return 0;
                 }
-            },
-            getPrivateKey: () => {
-                throw new Error(`Private key access not available through ${walletType} Wallet`);
-            },
-            getUtxos: async () => {
-                throw new Error(`UTXO access not available through ${walletType} Wallet`);
             },
             send: async (toAddress, amount) => {
                 try {

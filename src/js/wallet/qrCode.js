@@ -4,16 +4,31 @@ import QRCode from 'qrcode';
 export async function generateQRCode(address) {
     try {
         const qrCanvas = document.getElementById('qrCode');
-        if (qrCanvas) {
-            await QRCode.toCanvas(qrCanvas, address, {
-                width: 256,
-                margin: 1,
-                color: {
-                    dark: '#000000',
-                    light: '#ffffff'
-                }
-            });
+        if (!qrCanvas || !(qrCanvas instanceof HTMLCanvasElement)) {
+            console.error('QR code canvas element not found or not a canvas');
+            return;
         }
+        
+        // Set canvas dimensions
+        qrCanvas.width = 256;
+        qrCanvas.height = 256;
+        
+        // Clear previous QR code
+        const ctx = qrCanvas.getContext('2d');
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+        
+        // Generate new QR code
+        await QRCode.toCanvas(qrCanvas, address, {
+            width: 256,
+            margin: 1,
+            color: {
+                dark: '#FFFFFF',
+                light: '#000000'
+            }
+        });
+        
+        console.log('QR code generated for address:', address);
     } catch (error) {
         console.error('Error generating QR code:', error);
     }
@@ -24,10 +39,25 @@ export function setupReceiveModal() {
     const walletAddressInput = document.getElementById('walletAddress');
     const copyAddressBtn = document.getElementById('copyAddressBtn');
     
-    if (window.wallet && walletAddressInput) {
-        const legacyAddress = window.wallet.getLegacyAddress();
-        walletAddressInput.value = legacyAddress;
-        generateQRCode(legacyAddress);
+    if (window.wallet) {
+        try {
+            const legacyAddress = window.wallet.getLegacyAddress();
+            if (!legacyAddress) {
+                console.error('No legacy address available');
+                return;
+            }
+            
+            if (walletAddressInput) {
+                walletAddressInput.value = legacyAddress;
+            }
+            
+            // Generate QR code with legacy address
+            generateQRCode(legacyAddress).catch(error => {
+                console.error('Failed to generate QR code in receive modal:', error);
+            });
+        } catch (error) {
+            console.error('Error setting up receive modal:', error);
+        }
     }
 
     if (copyAddressBtn && walletAddressInput) {

@@ -1,3 +1,5 @@
+import { setupMainWalletEvents, updateBalanceDisplay } from './walletEvents.js';
+
 // Show modal with animation
 export function showModal(modalId) {
     const modal = document.getElementById(modalId);

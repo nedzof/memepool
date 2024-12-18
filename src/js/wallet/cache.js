@@ -48,6 +48,31 @@ export function setInCache(key, data, type = 'profile') {
     localStorage.setItem(storageKey, JSON.stringify(cacheObject));
 }
 
+// Update profile with persistence
+export async function updateProfileWithPersistence(address) {
+    try {
+        // Get cached profile data
+        const cachedProfile = getFromCache(address);
+        if (cachedProfile) {
+            return cachedProfile;
+        }
+
+        // Create new profile data
+        const profileData = {
+            address: address,
+            timestamp: Date.now()
+        };
+
+        // Cache the profile data
+        setInCache(address, profileData);
+
+        return profileData;
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        return null;
+    }
+}
+
 // Clear cache for specific data
 export function clearProfileCache(username, address) {
     // Clear from memory cache
