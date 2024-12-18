@@ -672,6 +672,12 @@ async function initializeWallet() {
                 
                 window.wallet = wallet;
                 
+                // Update balance display immediately
+                await updateBalanceDisplay();
+                
+                // Set up periodic balance updates
+                setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
+                
                 // Verify address matches
                 if (wallet.getAddress() === lastSession.address) {
                     console.log('Successfully reconnected to previous wallet session');
@@ -1172,9 +1178,33 @@ function setupMainWalletEvents() {
             window.wallet = null;
             localStorage.removeItem(WALLET_SESSION_KEY);
             
-            // Hide main wallet and show initial setup
-            hideModal('mainWalletModal');
-            showWalletSelection();
+            // Reset the connect button text and state
+            const connectButton = document.getElementById('connectWalletBtn');
+            if (connectButton) {
+                connectButton.textContent = 'Connect Wallet';
+                connectButton.classList.remove('connected');
+            }
+
+            // Close all modals
+            const modals = document.querySelectorAll('[id$="Modal"]');
+            modals.forEach(modal => {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+            });
+            
+            // Show the initial setup modal
+            const initialSetupModal = document.getElementById('initialSetupModal');
+            if (initialSetupModal) {
+                initialSetupModal.style.display = 'flex';
+                initialSetupModal.classList.remove('hidden');
+            }
+            
+            // Clear any cached data
+            localStorage.removeItem('memepire_username');
+            localStorage.removeItem('memepire_avatar');
+            localStorage.removeItem('memepire_avatar_hash');
+            localStorage.removeItem('memepire_x_profile');
+            memoryCache.clear();
         });
     }
 
@@ -1511,11 +1541,7 @@ function setupPasswordValidation() {
                                     successModal.style.display = 'flex';
                                     
                                     requestAnimationFrame(() => {
-                                        successModal.classList.add('modal-enter', 'show');
-                                        const checkmark = successModal.querySelector('.success-checkmark');
-                                        if (checkmark) {
-                                            checkmark.classList.add('animate');
-                                        }
+                                        successModal.querySelector('.success-checkmark').classList.add('animate');
                                     });
 
                                     // Wait for animation then show main wallet
@@ -1583,10 +1609,11 @@ async function fetchBalanceFromWhatsOnChain(address) {
             throw new Error('Failed to fetch balance');
         }
         const data = await response.json();
-        // Convert satoshis to BSV
-        return data.confirmed / 100000000;
+        // Convert satoshis to BSV (confirmed + unconfirmed balance)
+        const totalBalance = (data.confirmed + data.unconfirmed) / 100000000;
+        return totalBalance;
     } catch (error) {
-        console.error('Error fetching balance:', error);
+        console.error('Error fetching balance from WhatsOnChain:', error);
         return 0;
     }
 }
@@ -1619,15 +1646,31 @@ function setupModalNavigation() {
 async function updateBalanceDisplay() {
     const balanceDisplay = document.getElementById('walletBalance');
     const connectBtn = document.getElementById('connectWalletBtn');
+    const availableBalance = document.getElementById('availableBalance');
     
     if (window.wallet) {
         try {
-            const balance = await window.wallet.getBalance();
+            // Get the legacy address for WhatsOnChain lookup
+            const address = window.wallet.getLegacyAddress();
+            if (!address) {
+                console.error('No legacy address available');
+                return;
+            }
+
+            // Fetch balance from WhatsOnChain
+            const balance = await fetchBalanceFromWhatsOnChain(address);
+            const formattedBalance = balance.toFixed(8);
+            
+            // Update all balance displays
             if (balanceDisplay) {
-                balanceDisplay.textContent = balance.toFixed(8);
+                balanceDisplay.textContent = formattedBalance;
+            }
+            if (availableBalance) {
+                availableBalance.textContent = formattedBalance;
             }
             if (connectBtn) {
-                connectBtn.innerHTML = `${balance.toFixed(8)} BSV`;
+                connectBtn.textContent = `${formattedBalance} BSV`;
+                connectBtn.classList.add('connected');
             }
         } catch (error) {
             console.error('Error updating balance:', error);

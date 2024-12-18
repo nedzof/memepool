@@ -1,12 +1,12 @@
 <!-- Wallet Modals -->
 <!-- Main Wallet Modal -->
 <div id="mainWalletModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">My Wallet</h2>
+                <h2 class="text-3xl font-bold" style="color: #00ffa3; text-shadow: 0 0 10px rgba(0, 255, 163, 0.5), 0 0 20px rgba(0, 255, 163, 0.3);">My Wallet</h2>
                 <p class="text-gray-400 text-sm mt-1">Connected with BSV</p>
             </div>
             <button id="closeMainWalletModal" class="text-white/50 hover:text-white transition-colors">
@@ -106,9 +106,10 @@
                 <div id="transactionList" class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar"></div>
             </div>
 
-            <button id="disconnectBtn" class="w-full py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white/50 hover:text-white relative overflow-hidden group"
-                    style="background: rgba(26, 17, 71, 0.6);
-                           border: 1px solid rgba(255, 0, 255, 0.1)">
+            <button id="disconnectBtn" class="w-full py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                    style="background: linear-gradient(45deg, #ff3b3b, #ff6b6b);
+                           border: 1px solid rgba(255, 59, 59, 0.3);
+                           box-shadow: 0 0 15px rgba(255, 59, 59, 0.3);">
                 <div class="relative z-10">Disconnect</div>
                 <div class="absolute inset-0 bg-gradient-to-r from-red-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
@@ -118,9 +119,9 @@
 
 <!-- Username Change Modal -->
 <div id="usernameModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         <button id="closeUsernameModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -162,9 +163,9 @@
 
 <!-- Avatar Change Modal -->
 <div id="avatarModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         <button id="closeAvatarModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -215,7 +216,9 @@
 
 <!-- Initial Setup Modal -->
 <div id="initialSetupModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl">
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         <div class="space-y-8">
             <!-- Wallet selection buttons -->
             <button id="unisatBtn" class="flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
@@ -248,25 +251,31 @@
 
 <!-- Seed Phrase Modal -->
 <div id="seedPhraseModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         
-        <!-- Progress Steps - Now inside the modal -->
-        <div class="flex items-center gap-2 bg-black/50 rounded-full px-4 py-2 border border-[#ff00ff]/20 mb-8">
-            <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#ff00ff] text-white">1</div>
-                <div class="ml-2 text-[#ff00ff] text-sm">Seed</div>
+        <!-- Integrated Navigation Steps -->
+        <div class="flex items-center justify-between mb-8 relative">
+            <div class="absolute left-0 right-0 h-[2px] bg-[#00ffa3]/10"></div>
+            
+            <!-- Step 1: Seed -->
+            <div class="relative z-10 flex flex-col items-center group">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#00ffa3] text-black mb-2">1</div>
+                <div class="text-[#00ffa3] text-sm">Seed</div>
+                <div class="absolute -bottom-1 left-0 right-0 h-[2px] bg-[#00ffa3] shadow-[0_0_10px_rgba(0,255,163,0.5)]"></div>
             </div>
-            <div class="w-8 h-[2px] bg-[#ff00ff]/30"></div>
-            <div class="flex items-center opacity-50">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#ff00ff]/30 text-[#ff00ff]">2</div>
-                <div class="ml-2 text-[#ff00ff] text-sm">Password</div>
+            
+            <!-- Step 2: Password -->
+            <div class="relative z-10 flex flex-col items-center opacity-50">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#00ffa3]/30 text-[#00ffa3] mb-2">2</div>
+                <div class="text-[#00ffa3] text-sm">Password</div>
             </div>
-            <div class="w-8 h-[2px] bg-[#ff00ff]/30"></div>
-            <div class="flex items-center opacity-50">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#ff00ff]/30 text-[#ff00ff]">3</div>
-                <div class="ml-2 text-[#ff00ff] text-sm">Profile</div>
+            
+            <!-- Step 3: Profile -->
+            <div class="relative z-10 flex flex-col items-center opacity-50">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#00ffa3]/30 text-[#00ffa3] mb-2">3</div>
+                <div class="text-[#00ffa3] text-sm">Profile</div>
             </div>
         </div>
 
@@ -278,7 +287,7 @@
 
         <div class="space-y-8">
             <div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Your Seed Phrase</h2>
+                <h2 class="text-3xl font-bold" style="color: #00ffa3; text-shadow: 0 0 10px rgba(0, 255, 163, 0.5), 0 0 20px rgba(0, 255, 163, 0.3);">Your Seed Phrase</h2>
                 <p class="text-gray-400 text-sm mt-1">Write down these words in order and keep them safe</p>
             </div>
 
@@ -353,31 +362,37 @@
 
 <!-- Password Setup Modal -->
 <div id="passwordSetupModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         
-        <!-- Progress Steps -->
-        <div class="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 rounded-full px-4 py-2 border border-[#ff00ff]/20">
-            <div class="flex items-center opacity-50">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#ff00ff]/30 text-white">✓</div>
-                <div class="ml-2 text-[#ff00ff] text-sm">Seed</div>
+        <!-- Integrated Navigation Steps -->
+        <div class="flex items-center justify-between mb-8 relative">
+            <div class="absolute left-0 right-0 h-[2px] bg-[#00ffa3]/10"></div>
+            
+            <!-- Step 1: Seed (Completed) -->
+            <div class="relative z-10 flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#00ffa3]/30 text-white mb-2">✓</div>
+                <div class="text-[#00ffa3] text-sm">Seed</div>
             </div>
-            <div class="w-8 h-[2px] bg-[#ff00ff]"></div>
-            <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#ff00ff] text-white">2</div>
-                <div class="ml-2 text-[#ff00ff] text-sm">Password</div>
+            
+            <!-- Step 2: Password (Active) -->
+            <div class="relative z-10 flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-[#00ffa3] text-black mb-2">2</div>
+                <div class="text-[#00ffa3] text-sm">Password</div>
+                <div class="absolute -bottom-1 left-0 right-0 h-[2px] bg-[#00ffa3] shadow-[0_0_10px_rgba(0,255,163,0.5)]"></div>
             </div>
-            <div class="w-8 h-[2px] bg-[#ff00ff]/30"></div>
-            <div class="flex items-center opacity-50">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#ff00ff]/30 text-[#ff00ff]">3</div>
-                <div class="ml-2 text-[#ff00ff] text-sm">Profile</div>
+            
+            <!-- Step 3: Profile -->
+            <div class="relative z-10 flex flex-col items-center opacity-50">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 border-[#00ffa3]/30 text-[#00ffa3] mb-2">3</div>
+                <div class="text-[#00ffa3] text-sm">Profile</div>
             </div>
         </div>
 
         <div class="space-y-8">
             <div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Set Password</h2>
+                <h2 class="text-3xl font-bold" style="color: #00ffa3; text-shadow: 0 0 10px rgba(0, 255, 163, 0.5), 0 0 20px rgba(0, 255, 163, 0.3);">Set Password</h2>
                 <p class="text-gray-400 text-sm mt-1">Create a strong password to secure your wallet</p>
             </div>
 
@@ -690,9 +705,9 @@
 
 <!-- Import Wallet Modal -->
 <div id="importWalletModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
         <button id="closeImportModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
