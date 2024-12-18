@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@bsv/sdk": "^1.0.0",
+    "@unisat/wallet-sdk": "^1.8.0",
     "bitcoinjs-lib": "^6.1.7",
     "buffer": "^6.0.3",
     "qrcode": "^1.5.4",

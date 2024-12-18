@@ -1,8 +1,11 @@
 import { bsv, generateMnemonic } from './bsv.js';
 import BSVWallet from './BSVWallet.js';
-import { setupReceiveModal, generateQRCode } from './qrCode.js';
-import { Buffer } from 'buffer';
-import * as bitcoin from 'bitcoinjs-lib';
+import { initUnisatWallet, initOKXWallet } from './wallet/walletInterfaces.js';
+import { showModal, hideModal, showMainWallet, showWalletError } from './modals/modalManager.js';
+import { setupMainWalletEvents, updateBalanceDisplay } from './wallet/walletEvents.js';
+import { authenticateWithX } from './auth/xAuth.js';
+import { getFromCache, setInCache, clearProfileCache } from './utils/cache.js';
+import { checkUsernameAvailability, retrieveUsernameDataFromChain, retrieveAvatarDataFromChain } from './utils/blockchain.js';
 
 // Export all necessary functions
 export {
@@ -14,7 +17,6 @@ export {
     showWalletError,
     updateProfileWithPersistence,
     detectWalletType,
-    initXAuth,
     showWalletSelection
 };
 
@@ -22,399 +24,15 @@ export {
 const adjectives = ['Energetic', 'Cosmic', 'Mystic', 'Digital', 'Quantum', 'Cyber', 'Neon', 'Solar', 'Lunar', 'Stellar'];
 const names = ['Sandra', 'Alex', 'Morgan', 'Jordan', 'Casey', 'Riley', 'Taylor', 'Quinn', 'Sage', 'Phoenix'];
 
-// Declare importFromX at file scope
-let importFromXBtn = null;
-
-// Cache management
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-const memoryCache = new Map();
-
-function getFromCache(key, type = 'profile') {
-    // Try memory cache first
-    const memKey = `${type}_${key}`;
-    if (memoryCache.has(memKey)) {
-        const cached = memoryCache.get(memKey);
-        if (Date.now() - cached.timestamp < CACHE_DURATION) {
-            return cached.data;
-        }
-        memoryCache.delete(memKey);
-    }
-
-    // Try localStorage cache
-    const storageKey = `memepire_${type}_${key}`;
-    const cached = localStorage.getItem(storageKey);
-    if (cached) {
-        const parsedCache = JSON.parse(cached);
-        if (Date.now() - parsedCache.timestamp < CACHE_DURATION) {
-            // Update memory cache
-            memoryCache.set(memKey, parsedCache);
-            return parsedCache.data;
-        }
-        localStorage.removeItem(storageKey);
-    }
-
-    return null;
-}
-
-function setInCache(key, data, type = 'profile') {
-    const cacheObject = {
-        timestamp: Date.now(),
-        data: data
-    };
-
-    // Set in memory cache
-    const memKey = `${type}_${key}`;
-    memoryCache.set(memKey, cacheObject);
-
-    // Set in localStorage
-    const storageKey = `memepire_${type}_${key}`;
-    localStorage.setItem(storageKey, JSON.stringify(cacheObject));
-}
-
 // Profile management functions
-async function checkUsernameAvailability(username) {
-    try {
-        // Normalize username to lowercase and remove spaces
-        const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
-        
-        // Create a BSV script to search for username registration
-        const script = new bsv.Script()
-            .add(bsv.Opcode.OP_RETURN)
-            .add(Buffer.from('MEMEPIRE_USERNAME'))
-            .add(Buffer.from(normalizedUsername));
-
-        // Search for transactions with this script
-        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/script/search`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                script: script.toHex()
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to check username availability');
-        }
-
-        const data = await response.json();
-        
-        // If we find any transactions, the username is taken
-        return data.length === 0;
-    } catch (error) {
-        console.error('Error checking username availability:', error);
-        // In case of error, we assume username is not available to prevent conflicts
-        return false;
-    }
-}
-
 function generateRandomUsername() {
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
     const name = names[Math.floor(Math.random() * names.length)];
     return `${adj} ${name}`;
 }
 
-async function registerUsernameOnChain(username) {
-    try {
-        // Normalize username
-        const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
-        
-        // Check if username is available
-        const isAvailable = await checkUsernameAvailability(normalizedUsername);
-        if (!isAvailable) {
-            throw new Error('Username is already taken');
-        }
-
-        // Create BSV script for username registration
-        const script = new bsv.Script()
-            .add(bsv.Opcode.OP_RETURN)
-            .add(Buffer.from('MEMEPIRE_USERNAME'))
-            .add(Buffer.from(normalizedUsername))
-            .add(Buffer.from(Date.now().toString())); // Timestamp for registration
-
-        // Get current wallet address
-        const address = wallet.getAddress();
-        
-        // Create and broadcast transaction
-        const tx = new bsv.Transaction()
-            .from(await wallet.getUtxos())
-            .addOutput(new bsv.Transaction.Output({
-                script: script,
-                satoshis: 0
-            }))
-            .change(address)
-            .sign(wallet.getPrivateKey());
-
-        // Broadcast transaction
-        const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/tx/raw', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                txhex: tx.toString()
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to broadcast username registration');
-        }
-
-        // Store username locally
-        localStorage.setItem('memepire_username', normalizedUsername);
-        
-        // Clear cache after successful registration
-        clearProfileCache(normalizedUsername, wallet.getAddress());
-        
-        return true;
-    } catch (error) {
-        console.error('Error registering username:', error);
-        return false;
-    }
-}
-
-async function registerAvatarOnChain(imageData) {
-    try {
-        // Convert image data to Buffer if it's base64
-        let imageBuffer;
-        if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
-            const base64Data = imageData.split(',')[1];
-            imageBuffer = Buffer.from(base64Data, 'base64');
-        } else {
-            imageBuffer = Buffer.from(imageData);
-        }
-
-        // Compress image if needed (max 100KB)
-        if (imageBuffer.length > 100000) {
-            throw new Error('Avatar image too large. Please use an image under 100KB.');
-        }
-
-        // Create BSV script for avatar registration
-        const script = new bsv.Script()
-            .add(bsv.Opcode.OP_RETURN)
-            .add(Buffer.from('MEMEPIRE_AVATAR'))
-            .add(imageBuffer)
-            .add(Buffer.from(Date.now().toString())); // Timestamp for registration
-
-        // Get current wallet address
-        const address = wallet.getAddress();
-        
-        // Create and broadcast transaction
-        const tx = new bsv.Transaction()
-            .from(await wallet.getUtxos())
-            .addOutput(new bsv.Transaction.Output({
-                script: script,
-                satoshis: 0
-            }))
-            .change(address)
-            .sign(wallet.getPrivateKey());
-
-        // Broadcast transaction
-        const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/tx/raw', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                txhex: tx.toString()
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to broadcast avatar registration');
-        }
-
-        // Store avatar hash locally
-        const avatarHash = await crypto.subtle.digest('SHA-256', imageBuffer);
-        localStorage.setItem('memepire_avatar_hash', Buffer.from(avatarHash).toString('hex'));
-        
-        // Store avatar data in localStorage (as base64)
-        localStorage.setItem('memepire_avatar', typeof imageData === 'string' ? imageData : Buffer.from(imageData).toString('base64'));
-        
-        // Clear cache after successful registration
-        clearProfileCache(localStorage.getItem('memepire_username'), wallet.getAddress());
-        
-        return true;
-    } catch (error) {
-        console.error('Error registering avatar:', error);
-        return false;
-    }
-}
-
-async function retrieveUsernameDataFromChain(username) {
-    try {
-        const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
-        
-        // Check cache first
-        const cachedData = getFromCache(normalizedUsername, 'username');
-        if (cachedData) {
-            console.log('Username data retrieved from cache');
-            return cachedData;
-        }
-
-        // Search for username registration directly
-        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${username}/history`);
-
-        if (!response.ok) {
-            throw new Error('Failed to retrieve username data');
-        }
-
-        const data = await response.json();
-        if (data.length === 0) {
-            return null;
-        }
-
-        // Get the most recent registration
-        const userData = {
-            username: normalizedUsername,
-            registrationTx: data[data.length - 1].tx_hash,
-            timestamp: Date.now(),
-            address: username
-        };
-
-        // Cache the result
-        setInCache(normalizedUsername, userData, 'username');
-        
-        return userData;
-    } catch (error) {
-        console.error('Error retrieving username data:', error);
-        return null;
-    }
-}
-
-async function retrieveAvatarDataFromChain(address) {
-    try {
-        // Check cache first
-        const cachedData = getFromCache(address, 'avatar');
-        if (cachedData) {
-            console.log('Avatar data retrieved from cache');
-            return cachedData;
-        }
-
-        // For now, return a default avatar info
-        const avatarInfo = {
-            avatarData: null, // Default to no avatar
-            registrationTx: null,
-            timestamp: Date.now()
-        };
-
-        // Cache the result
-        setInCache(address, avatarInfo, 'avatar');
-        
-        return avatarInfo;
-    } catch (error) {
-        console.error('Error retrieving avatar data:', error);
-        return null;
-    }
-}
-
-// Add cache clearing function for when profile data is updated
-function clearProfileCache(username, address) {
-    // Clear from memory cache
-    memoryCache.delete(`username_${username}`);
-    memoryCache.delete(`avatar_${address}`);
-
-    // Clear from localStorage
-    localStorage.removeItem(`memepire_username_${username}`);
-    localStorage.removeItem(`memepire_avatar_${address}`);
-}
-
-// Wallet type detection and management
-async function detectWalletType() {
-    if (window.unisat) {
-        return 'unisat';
-    } else if (window.yours) {
-        return 'yours';
-    } else if (window.okxwallet) {
-        return 'okx';
-    }
-    return null;
-}
-
-// X Authentication
-async function authenticateWithX() {
-    try {
-        // Initialize X Auth
-        const auth = await initXAuth();
-        if (!auth) {
-            throw new Error('X authentication failed to initialize');
-        }
-
-        // Show loading state
-        const xLoginBtn = document.getElementById('xLoginBtn');
-        const originalText = xLoginBtn.textContent;
-        xLoginBtn.innerHTML = `
-            <div class="flex items-center justify-center gap-2">
-                <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                <span>Connecting...</span>
-            </div>
-        `;
-
-        // Authenticate with X
-        const xProfile = await auth.signIn();
-        
-        if (!xProfile) {
-            throw new Error('Failed to get X profile');
-        }
-
-        // Store X profile data
-        localStorage.setItem('memepire_x_profile', JSON.stringify({
-            username: xProfile.username,
-            displayName: xProfile.displayName,
-            profileImage: xProfile.profileImage,
-            timestamp: Date.now()
-        }));
-
-        // Update UI with X profile
-        updateProfileWithX(xProfile);
-
-        return true;
-    } catch (error) {
-        console.error('X authentication error:', error);
-        return false;
-    }
-}
-
-function updateProfileWithX(xProfile) {
-    const profileUsername = document.getElementById('profileUsername');
-    const profileAvatar = document.getElementById('profileAvatar');
-
-    if (xProfile.username) {
-        profileUsername.textContent = xProfile.displayName || xProfile.username;
-    }
-
-    if (xProfile.profileImage) {
-        updateProfileAvatar(xProfile.profileImage);
-    }
-}
-
 // Profile persistence management
-const PROFILE_STORAGE_KEY = 'memepire_profile_data';
 const WALLET_SESSION_KEY = 'memepire_wallet_session';
-
-function saveProfileData(walletAddress, data) {
-    try {
-        const allProfiles = JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY) || '{}');
-        allProfiles[walletAddress] = {
-            ...data,
-            lastUpdated: Date.now()
-        };
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(allProfiles));
-    } catch (error) {
-        console.error('Error saving profile data:', error);
-    }
-}
-
-function getProfileData(walletAddress) {
-    try {
-        const allProfiles = JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY) || '{}');
-        return allProfiles[walletAddress];
-    } catch (error) {
-        console.error('Error retrieving profile data:', error);
-        return null;
-    }
-}
 
 function saveWalletSession(walletType, address) {
     try {
@@ -442,7 +60,7 @@ function getLastWalletSession() {
 async function updateProfileWithPersistence(address) {
     try {
         // Try to get cached profile data first
-        const cachedProfile = getProfileData(address);
+        const cachedProfile = getFromCache(address, 'profile');
         
         if (cachedProfile) {
             // Update UI with cached data immediately
@@ -458,7 +76,7 @@ async function updateProfileWithPersistence(address) {
             lastFetched: Date.now()
         };
 
-        saveProfileData(address, profileData);
+        setInCache(address, profileData, 'profile');
         updateUIWithProfileData(profileData);
 
         return profileData;
@@ -485,35 +103,31 @@ function updateUIWithProfileData(profileData) {
 async function connectUnisatWallet() {
     try {
         const wallet = await initUnisatWallet();
+        if (!wallet) {
+            throw new Error('Failed to initialize UniSat wallet');
+        }
+        
         window.wallet = wallet;
         
         // Save wallet session
         saveWalletSession('unisat', wallet.getAddress());
         
+        // Hide the wallet selection modal
+        hideModal('initialSetupModal');
+        
         // Update profile with persistence
         await updateProfileWithPersistence(wallet.getAddress());
         
+        // Show the main wallet menu
         showMainWallet();
+        
+        // Update balance display immediately
+        await updateBalanceDisplay();
+        
+        // Set up periodic balance updates
+        setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
     } catch (error) {
         console.error('Failed to connect UniSat wallet:', error);
-        showWalletError(error.message);
-    }
-}
-
-async function connectYoursWallet() {
-    try {
-        const wallet = await initYoursWallet();
-        window.wallet = wallet;
-        
-        // Save wallet session
-        saveWalletSession('yours', wallet.getAddress());
-        
-        // Update profile with persistence
-        await updateProfileWithPersistence(wallet.getAddress());
-        
-        showMainWallet();
-    } catch (error) {
-        console.error('Failed to connect Yours wallet:', error);
         showWalletError(error.message);
     }
 }
@@ -545,103 +159,14 @@ async function connectOKXWallet() {
     }
 }
 
-// Initialize OKX wallet
-async function initOKXWallet() {
-    try {
-        console.log('Initializing OKX Wallet...');
-        if (!window.okxwallet) {
-            console.error('OKX Wallet extension not found');
-            throw new Error('OKX Wallet not found. Please install OKX Wallet extension.');
-        }
-
-        // Request Bitcoin account access
-        console.log('Requesting Bitcoin accounts...');
-        const accounts = await window.okxwallet.bitcoin.requestAccounts();
-        console.log('Bitcoin accounts received:', accounts);
-        
-        if (!accounts || accounts.length === 0) {
-            console.error('No accounts found in OKX Wallet');
-            throw new Error('No accounts found in OKX Wallet');
-        }
-
-        // Get public key
-        console.log('Requesting public key...');
-        let publicKey;
-        try {
-            publicKey = await window.okxwallet.bitcoin.getPublicKey();
-            console.log('Public key received:', publicKey);
-            
-            // Clean public key (remove 0x prefix if present)
-            const cleanPubKey = publicKey.replace('0x', '');
-            console.log('Cleaned public key:', cleanPubKey);
-
-            // Convert public key to bytes
-            const pubKeyBytes = cleanPubKey.match(/.{1,2}/g).map(byte => parseInt(byte, 16));
-            console.log('Public key bytes:', pubKeyBytes);
-
-            // Create legacy address using bitcoinjs-lib
-            const { address } = bitcoin.payments.p2pkh({
-                pubkey: Buffer.from(pubKeyBytes),
-                network: bitcoin.networks.bitcoin
-            });
-            console.log('Legacy address calculated:', address);
-
-            // Generate QR code with the legacy address
-            await generateQRCode(address);
-
-            // Create a wallet interface
-            const wallet = {
-                getAddress: () => accounts[0],
-                getLegacyAddress: () => address,
-                getPublicKey: () => publicKey,
-                getBalance: async () => {
-                    try {
-                        return await fetchBalanceFromWhatsOnChain(address);
-                    } catch (error) {
-                        console.error('Error getting balance:', error);
-                        return 0;
-                    }
-                },
-                getPrivateKey: () => {
-                    throw new Error('Private key access not available through OKX Wallet');
-                },
-                getUtxos: async () => {
-                    throw new Error('UTXO access not available through OKX Wallet');
-                },
-                send: async (toAddress, amount) => {
-                    try {
-                        const txHash = await window.okxwallet.bitcoin.sendTransaction({
-                            to: toAddress,
-                            value: '0x' + (amount * 1e8).toString(16)
-                        });
-                        return { txid: txHash };
-                    } catch (error) {
-                        throw new Error('Failed to send transaction: ' + error.message);
-                    }
-                }
-            };
-
-            // Log the wallet interface data
-            console.log('Wallet interface created:', {
-                currentBc1Address: wallet.getAddress(),
-                legacyAddress: wallet.getLegacyAddress(),
-                publicKey: wallet.getPublicKey()
-            });
-
-            // Set the legacy address in the receive modal
-            const walletAddressInput = document.getElementById('walletAddress');
-            if (walletAddressInput) {
-                walletAddressInput.value = wallet.getLegacyAddress();
-            }
-
-            return wallet;
-        } catch (e) {
-            console.error('Error getting public key:', e);
-            throw e;
-        }
-    } catch (error) {
-        throw new Error('Failed to initialize OKX Wallet: ' + error.message);
+// Wallet type detection
+async function detectWalletType() {
+    if (window.unisat) {
+        return 'unisat';
+    } else if (window.okxwallet) {
+        return 'okx';
     }
+    return null;
 }
 
 // Update initializeWallet to include OKX
@@ -660,8 +185,6 @@ async function initializeWallet() {
                 // Reconnect to the wallet
                 const wallet = currentWalletType === 'unisat' ? 
                     await initUnisatWallet() : 
-                    currentWalletType === 'yours' ?
-                    await initYoursWallet() :
                     currentWalletType === 'okx' ?
                     await initOKXWallet() :
                     null;
@@ -725,188 +248,9 @@ async function initializeWallet() {
         console.log('Connect wallet button clicked');
         showWalletSelection();
     });
-
-    // ... rest of the initialization code ...
 }
 
-// X Auth initialization
-async function initXAuth() {
-    try {
-        // Initialize X OAuth
-        const xAuth = {
-            clientId: 'AAAAAAAAAAAAAAAAAAAAAJBkxgEAAAAAy%2FCih1ywViiV%2FAI9bUvrMUBPkzo%3Dx5EwVeMuKAfrGczqGnQResd9DgTQPg4rkrlsIW0Ct9p2dPbjNF',
-            redirectUri: `${window.location.origin}/auth/callback`,
-            scope: 'read:user',
-            authEndpoint: 'https://api.twitter.com/2/oauth2/authorize'
-        };
-
-        return {
-            signIn: async () => {
-                // Generate PKCE challenge
-                const codeVerifier = generateRandomString(128);
-                const codeChallenge = await generateCodeChallenge(codeVerifier);
-                
-                // Store code verifier for later use
-                sessionStorage.setItem('code_verifier', codeVerifier);
-                
-                // Build auth URL
-                const params = new URLSearchParams({
-                    response_type: 'code',
-                    client_id: xAuth.clientId,
-                    redirect_uri: xAuth.redirectUri,
-                    scope: xAuth.scope,
-                    code_challenge: codeChallenge,
-                    code_challenge_method: 'S256',
-                    state: generateRandomString(32)
-                });
-
-                // Redirect to X auth page
-                window.location.href = `${xAuth.authEndpoint}?${params.toString()}`;
-                
-                // This promise will resolve after redirect back
-                return new Promise((resolve) => {
-                    window.addEventListener('message', async (event) => {
-                        if (event.data.type === 'X_AUTH_CALLBACK') {
-                            const { code } = event.data;
-                            const profile = await exchangeCodeForProfile(code, codeVerifier);
-                            resolve(profile);
-                        }
-                    });
-                });
-            }
-        };
-    } catch (error) {
-        console.error('Failed to initialize X Auth:', error);
-        return null;
-    }
-}
-
-// Helper functions for X Auth
-function generateRandomString(length) {
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let text = '';
-    for (let i = 0; i < length; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
-}
-
-async function generateCodeChallenge(verifier) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(digest)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-}
-
-async function exchangeCodeForProfile(code, verifier) {
-    try {
-        // Exchange code for access token
-        const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-                grant_type: 'authorization_code',
-                code,
-                redirect_uri: `${window.location.origin}/auth/callback`,
-                code_verifier: verifier,
-                client_id: process.env.X_CLIENT_ID
-            })
-        });
-
-        if (!tokenResponse.ok) {
-            throw new Error('Failed to exchange code for token');
-        }
-
-        const { access_token } = await tokenResponse.json();
-
-        // Get user profile
-        const profileResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=profile_image_url,name,username', {
-            headers: {
-                'Authorization': `Bearer ${access_token}`
-            }
-        });
-
-        if (!profileResponse.ok) {
-            throw new Error('Failed to fetch user profile');
-        }
-
-        const { data } = await profileResponse.json();
-        return {
-            username: data.username,
-            displayName: data.name,
-            profileImage: data.profile_image_url
-        };
-    } catch (error) {
-        console.error('Error exchanging code for profile:', error);
-        return null;
-    }
-}
-
-function showWalletError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg z-50';
-    errorDiv.textContent = message;
-    document.body.appendChild(errorDiv);
-    setTimeout(() => errorDiv.remove(), 3000);
-}
-
-// Add modal handling functions
-function showModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-
-    // Add overlay and backdrop
-    modal.classList.remove('hidden');
-    modal.classList.add('modal-overlay');
-    modal.style.display = 'flex';
-
-    // Get the modal content
-    const content = modal.querySelector('.modal-content') || modal.firstElementChild;
-    if (content) {
-        content.classList.add('modal-enter');
-        
-        // Add backdrop blur
-        modal.classList.add('modal-backdrop');
-        
-        // Trigger animations
-        requestAnimationFrame(() => {
-            modal.classList.add('show');
-            content.classList.add('show');
-            modal.classList.add('show');
-        });
-    }
-}
-
-function hideModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-
-    // Get the modal content
-    const content = modal.querySelector('.modal-content') || modal.firstElementChild;
-    if (content) {
-        content.classList.remove('show');
-        content.classList.add('modal-exit');
-        modal.classList.remove('show');
-
-        // Wait for animation to complete
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.style.display = 'none';
-            content.classList.remove('modal-exit');
-            modal.classList.remove('modal-backdrop');
-        }, 300);
-    } else {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-    }
-}
-
-// Update showWalletSelection to use new animation functions
+// Update showWalletSelection function
 function showWalletSelection() {
     console.log('Showing wallet selection...');
     
@@ -918,9 +262,9 @@ function showWalletSelection() {
 
     // Check installed wallets
     const hasUnisat = window.unisat !== undefined;
-    const hasYours = window.yours !== undefined;
     const hasOKX = window.okxwallet !== undefined;
 
+    // Create modal content
     const modalContent = `
         <div class="modal-content border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
              style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
@@ -956,19 +300,6 @@ function showWalletSelection() {
                         </button>
                     ` : ''}
 
-                    ${hasYours ? `
-                        <!-- Yours Wallet (if installed) -->
-                        <button id="yoursBtn" class="wallet-option-btn w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
-                            <div class="relative z-10 flex items-center justify-between px-4">
-                                <div class="flex items-center gap-2">
-                                    <img src="/assets/yours-logo.svg" alt="Yours" class="w-6 h-6">
-                                    <span>Yours Wallet</span>
-                                </div>
-                                <span class="text-xs text-[#00ffa3] bg-[#00ffa3]/10 px-2 py-1 rounded-full">Detected</span>
-                            </div>
-                        </button>
-                    ` : ''}
-
                     ${hasOKX ? `
                         <!-- OKX Wallet (if installed) -->
                         <button id="okxBtn" class="wallet-option-btn w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#ff00ff]/30 bg-[#0F1825]/30">
@@ -987,7 +318,7 @@ function showWalletSelection() {
                         <div class="relative z-10 flex items-center justify-between px-4">
                             <div class="flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                 </svg>
                                 <span>Import Wallet</span>
                             </div>
@@ -1008,7 +339,7 @@ function showWalletSelection() {
                         </div>
                     </button>
 
-                    ${!hasUnisat || !hasYours || !hasOKX ? `
+                    ${!hasUnisat || !hasOKX ? `
                         <div class="mt-6 p-4 rounded-xl bg-[#ff00ff]/5 border border-[#ff00ff]/10">
                             <div class="text-sm text-gray-400">
                                 <div class="flex items-start gap-3">
@@ -1022,12 +353,6 @@ function showWalletSelection() {
                                                 <a href="https://chromewebstore.google.com/detail/unisat-wallet/ppbibelpcjmhbdihakflkdcoccbgbkpo" target="_blank" 
                                                    class="block text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors">
                                                     • Install UniSat Wallet
-                                                </a>
-                                            ` : ''}
-                                            ${!hasYours ? `
-                                                <a href="https://chromewebstore.google.com/detail/yours-wallet/mlbnicldlpdimbjdcncnklfempedeipj" target="_blank"
-                                                   class="block text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors">
-                                                    • Install Yours Wallet
                                                 </a>
                                             ` : ''}
                                             ${!hasOKX ? `
@@ -1055,26 +380,34 @@ function showWalletSelection() {
 
     // Add event listeners
     const unisatBtn = document.getElementById('unisatBtn');
-    const yoursBtn = document.getElementById('yoursBtn');
     const okxBtn = document.getElementById('okxBtn');
     const importWalletBtn = document.getElementById('importWalletBtn');
     const xLoginBtn = document.getElementById('xLoginBtn');
     const generateWalletBtn = document.getElementById('generateWalletBtn');
 
-    if (unisatBtn) unisatBtn.addEventListener('click', () => {
-        hideModal('initialSetupModal');
-        connectUnisatWallet();
-    });
-    
-    if (yoursBtn) yoursBtn.addEventListener('click', () => {
-        hideModal('initialSetupModal');
-        connectYoursWallet();
-    });
+    if (unisatBtn) {
+        unisatBtn.addEventListener('click', async () => {
+            try {
+                hideModal('initialSetupModal');
+                await connectUnisatWallet();
+            } catch (error) {
+                console.error('Error connecting to UniSat wallet:', error);
+                showWalletError(error.message);
+            }
+        });
+    }
 
-    if (okxBtn) okxBtn.addEventListener('click', () => {
-        hideModal('initialSetupModal');
-        connectOKXWallet();
-    });
+    if (okxBtn) {
+        okxBtn.addEventListener('click', async () => {
+            try {
+                hideModal('initialSetupModal');
+                await connectOKXWallet();
+            } catch (error) {
+                console.error('Error connecting to OKX wallet:', error);
+                showWalletError(error.message);
+            }
+        });
+    }
     
     if (importWalletBtn) {
         importWalletBtn.addEventListener('click', () => {
@@ -1083,10 +416,12 @@ function showWalletSelection() {
         });
     }
     
-    if (xLoginBtn) xLoginBtn.addEventListener('click', () => {
-        hideModal('initialSetupModal');
-        authenticateWithX();
-    });
+    if (xLoginBtn) {
+        xLoginBtn.addEventListener('click', () => {
+            hideModal('initialSetupModal');
+            authenticateWithX();
+        });
+    }
     
     if (generateWalletBtn) {
         generateWalletBtn.addEventListener('click', () => {
@@ -1108,572 +443,4 @@ function showWalletSelection() {
             hideModal('initialSetupModal');
         }
     });
-}
-
-// Update other modal functions to use animations
-function showMainWallet() {
-    const mainWalletModal = document.getElementById('mainWalletModal');
-    if (mainWalletModal) {
-        mainWalletModal.classList.remove('hidden');
-        mainWalletModal.style.display = 'flex';
-        mainWalletModal.classList.add('modal-enter');
-        
-        // Setup main wallet events
-        setupMainWalletEvents();
-        
-        // Setup modal navigation
-        setupModalNavigation();
-        
-        // Update balance
-        updateBalanceDisplay();
-        
-        // Set up periodic balance updates
-        setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
-        
-        // Trigger animation
-        requestAnimationFrame(() => {
-            mainWalletModal.classList.add('show');
-            const content = mainWalletModal.querySelector('.modal-content');
-            if (content) {
-                content.classList.add('show');
-            }
-        });
-    }
-}
-
-// Add main wallet menu button setup
-function setupMainWalletEvents() {
-    // Send button
-    const sendBtn = document.getElementById('sendBtn');
-    if (sendBtn) {
-        sendBtn.addEventListener('click', () => {
-            hideModal('mainWalletModal');
-            showModal('sendModal');
-        });
-    }
-
-    // Receive button
-    const receiveBtn = document.getElementById('receiveBtn');
-    if (receiveBtn) {
-        receiveBtn.addEventListener('click', () => {
-            hideModal('mainWalletModal');
-            showModal('receiveModal');
-        });
-    }
-
-    // Profile button
-    const profileBtn = document.getElementById('profileBtn');
-    if (profileBtn) {
-        profileBtn.addEventListener('click', () => {
-            hideModal('mainWalletModal');
-            showModal('profileSetupModal');
-        });
-    }
-
-    // Disconnect button
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    if (disconnectBtn) {
-        disconnectBtn.addEventListener('click', () => {
-            // Clear wallet instance and session
-            window.wallet = null;
-            localStorage.removeItem(WALLET_SESSION_KEY);
-            
-            // Reset the connect button text and state
-            const connectButton = document.getElementById('connectWalletBtn');
-            if (connectButton) {
-                connectButton.textContent = 'Connect Wallet';
-                connectButton.classList.remove('connected');
-            }
-
-            // Close all modals
-            const modals = document.querySelectorAll('[id$="Modal"]');
-            modals.forEach(modal => {
-                modal.style.display = 'none';
-                modal.classList.add('hidden');
-            });
-            
-            // Show the initial setup modal
-            const initialSetupModal = document.getElementById('initialSetupModal');
-            if (initialSetupModal) {
-                initialSetupModal.style.display = 'flex';
-                initialSetupModal.classList.remove('hidden');
-            }
-            
-            // Clear any cached data
-            localStorage.removeItem('memepire_username');
-            localStorage.removeItem('memepire_avatar');
-            localStorage.removeItem('memepire_avatar_hash');
-            localStorage.removeItem('memepire_x_profile');
-            memoryCache.clear();
-        });
-    }
-
-    // Close buttons for each modal
-    const closeButtons = document.querySelectorAll('[id$="CloseBtn"]');
-    closeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modalId = btn.getAttribute('data-modal-target') || 'mainWalletModal';
-            hideModal(modalId);
-            if (modalId !== 'mainWalletModal') {
-                showModal('mainWalletModal');
-            }
-        });
-    });
-
-    // Update wallet balance and address
-    const addressDisplay = document.getElementById('walletAddress');
-    const balanceDisplay = document.getElementById('walletBalance');
-    
-    if (window.wallet) {
-        if (addressDisplay) {
-            const address = window.wallet.getAddress();
-            addressDisplay.textContent = address ? 
-                `${address.slice(0, 6)}...${address.slice(-4)}` : 
-                'No address available';
-        }
-
-        if (balanceDisplay && typeof window.wallet.getBalance === 'function') {
-            window.wallet.getBalance().then(balance => {
-                balanceDisplay.textContent = `${balance || 0} BSV`;
-            }).catch(error => {
-                console.error('Error fetching balance:', error);
-                balanceDisplay.textContent = '0 BSV';
-            });
-        }
-    }
-
-    // Copy address button
-    const copyAddressBtn = document.getElementById('copyAddressBtn');
-    if (copyAddressBtn && window.wallet) {
-        copyAddressBtn.addEventListener('click', async () => {
-            try {
-                const address = window.wallet.getAddress();
-                await navigator.clipboard.writeText(address);
-                copyAddressBtn.innerHTML = `
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    Copied!
-                `;
-                setTimeout(() => {
-                    copyAddressBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                        Copy Address
-                    `;
-                }, 2000);
-            } catch (error) {
-                console.error('Failed to copy address:', error);
-            }
-        });
-    }
-
-    // Call setupReceiveModal at the end
-    setupReceiveModal();
-}
-
-function showImportWallet() {
-    hideModal('initialSetupModal');
-    showModal('importWalletModal');
-}
-
-// Add new wallet generation functions
-async function generateNewWallet() {
-    try {
-        // Generate new mnemonic
-        const mnemonic = await generateMnemonic();
-        
-        // Store mnemonic temporarily
-        sessionStorage.setItem('temp_mnemonic', mnemonic);
-        
-        // Display seed phrase in grid
-        displaySeedPhrase(mnemonic);
-        
-        // Setup event listeners
-        setupSeedPhraseEvents();
-        
-        return true;
-    } catch (error) {
-        console.error('Error generating wallet:', error);
-        showWalletError('Failed to generate wallet. Please try again.');
-        return false;
-    }
-}
-
-function displaySeedPhrase(mnemonic) {
-    const seedPhraseContainer = document.getElementById('seedPhrase');
-    const words = mnemonic.split(' ');
-    
-    // Add opacity-0 class to hide the seed phrase initially
-    seedPhraseContainer.classList.add('opacity-0');
-    
-    seedPhraseContainer.innerHTML = words.map((word, index) => `
-        <div class="relative p-2 rounded-lg bg-gradient-to-r from-[#00ffa3]/10 to-[#00ffff]/10 hover:from-[#00ffa3]/20 hover:to-[#00ffff]/20 transition-all duration-300 group">
-            <span class="absolute top-1 left-2 text-xs text-[#00ffa3]/50">${index + 1}</span>
-            <span class="block text-center text-[#00ffa3] text-sm mt-1">${word}</span>
-        </div>
-    `).join('');
-}
-
-function setupSeedPhraseEvents() {
-    // Reveal seed phrase
-    const revealBtn = document.getElementById('revealSeedPhrase');
-    const blurOverlay = document.getElementById('seedPhraseBlur');
-    const seedPhraseContainer = document.getElementById('seedPhrase');
-    
-    if (revealBtn && blurOverlay && seedPhraseContainer) {
-        revealBtn.addEventListener('click', () => {
-            blurOverlay.style.opacity = '0';
-            // Show the seed phrase with transition
-            seedPhraseContainer.classList.remove('opacity-0');
-            setTimeout(() => {
-                blurOverlay.style.display = 'none';
-            }, 300);
-        });
-    }
-
-    // Copy seed phrase
-    const copyBtn = document.getElementById('copySeedPhrase');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-            const mnemonic = sessionStorage.getItem('temp_mnemonic');
-            if (mnemonic) {
-                try {
-                    await navigator.clipboard.writeText(mnemonic);
-                    copyBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        Copied!
-                    `;
-                    setTimeout(() => {
-                        copyBtn.innerHTML = `
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                            </svg>
-                            Copy Seed Phrase
-                        `;
-                    }, 2000);
-                } catch (error) {
-                    console.error('Failed to copy seed phrase:', error);
-                }
-            }
-        });
-    }
-
-    // Handle checkbox and continue button
-    const checkbox = document.getElementById('seedConfirm');
-    const continueBtn = document.getElementById('continueToPassword');
-    
-    if (checkbox && continueBtn) {
-        checkbox.addEventListener('change', () => {
-            continueBtn.disabled = !checkbox.checked;
-            if (checkbox.checked) {
-                continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-        });
-        
-        continueBtn.addEventListener('click', () => {
-            if (!continueBtn.disabled) {
-                hideModal('seedPhraseModal');
-                showModal('passwordSetupModal');
-                // Initialize password validation after showing the modal
-                setupPasswordValidation();
-            }
-        });
-    }
-}
-
-function setupPasswordValidation() {
-    const passwordInput = document.getElementById('password');
-    const confirmInput = document.getElementById('confirmPassword');
-    const strengthBar = document.getElementById('strengthBar');
-    const strengthLabel = document.getElementById('strengthLabel');
-    const continueBtn = document.getElementById('continueToProfile');
-    
-    // Password requirement checks
-    const lengthCheck = document.getElementById('lengthCheck');
-    const upperCheck = document.getElementById('upperCheck');
-    const numberCheck = document.getElementById('numberCheck');
-    const specialCheck = document.getElementById('specialCheck');
-    
-    const updateStrength = (password) => {
-        let strength = 0;
-        const checks = {
-            length: password.length >= 8,
-            upper: /[A-Z]/.test(password),
-            number: /[0-9]/.test(password),
-            special: /[^A-Za-z0-9]/.test(password)
-        };
-        
-        // Update check marks
-        lengthCheck.innerHTML = checks.length ? '✓' : '';
-        upperCheck.innerHTML = checks.upper ? '✓' : '';
-        numberCheck.innerHTML = checks.number ? '✓' : '';
-        specialCheck.innerHTML = checks.special ? '✓' : '';
-        
-        // Calculate strength
-        strength += checks.length ? 25 : 0;
-        strength += checks.upper ? 25 : 0;
-        strength += checks.number ? 25 : 0;
-        strength += checks.special ? 25 : 0;
-        
-        // Update UI
-        strengthBar.style.width = `${strength}%`;
-        strengthBar.style.background = 
-            strength <= 25 ? '#ff0000' :
-            strength <= 50 ? '#ff9900' :
-            strength <= 75 ? '#ffff00' :
-            '#00ff00';
-            
-        strengthLabel.textContent = 
-            strength <= 25 ? 'Too weak' :
-            strength <= 50 ? 'Weak' :
-            strength <= 75 ? 'Good' :
-            'Strong';
-            
-        return strength === 100;
-    };
-    
-    const updatePasswordMatch = () => {
-        const password = passwordInput.value;
-        const confirm = confirmInput.value;
-        const matchDiv = document.getElementById('passwordMatch');
-        
-        if (confirm) {
-            if (password === confirm) {
-                matchDiv.textContent = 'Passwords match';
-                matchDiv.className = 'text-sm mt-2 text-[#00ffa3]';
-                return true;
-            } else {
-                matchDiv.textContent = 'Passwords do not match';
-                matchDiv.className = 'text-sm mt-2 text-red-500';
-                return false;
-            }
-        }
-        return false;
-    };
-    
-    // Password visibility toggle
-    document.querySelectorAll('.toggle-password').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const input = btn.parentElement.querySelector('input');
-            const type = input.type === 'password' ? 'text' : 'password';
-            input.type = type;
-            
-            btn.innerHTML = type === 'password' ? `
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-            ` : `
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                </svg>
-            `;
-        });
-    });
-    
-    // Input event listeners
-    passwordInput.addEventListener('input', () => {
-        const isStrong = updateStrength(passwordInput.value);
-        const matches = updatePasswordMatch();
-        continueBtn.disabled = !(isStrong && matches);
-        if (isStrong && matches) {
-            continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-    });
-    
-    confirmInput.addEventListener('input', () => {
-        const isStrong = updateStrength(passwordInput.value);
-        const matches = updatePasswordMatch();
-        continueBtn.disabled = !(isStrong && matches);
-        if (isStrong && matches) {
-            continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-    });
-    
-    // Form submission
-    const form = document.getElementById('passwordSetupForm');
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const password = passwordInput.value;
-            const mnemonic = sessionStorage.getItem('temp_mnemonic');
-            
-            if (mnemonic && password) {
-                try {
-                    // Create wallet
-                    const wallet = new BSVWallet();
-                    const result = await wallet.generateNewWallet(password, mnemonic);
-                    
-                    if (result.success) {
-                        // Clear sensitive data
-                        sessionStorage.removeItem('temp_mnemonic');
-                        passwordInput.value = '';
-                        confirmInput.value = '';
-                        
-                        // Store wallet instance
-                        window.wallet = wallet;
-
-                        // Hide password modal
-                        const passwordModal = document.getElementById('passwordSetupModal');
-                        if (passwordModal) {
-                            passwordModal.classList.add('modal-exit');
-                            passwordModal.classList.remove('show');
-                            
-                            setTimeout(() => {
-                                passwordModal.classList.add('hidden');
-                                passwordModal.style.display = 'none';
-                                
-                                // Show success animation
-                                const successModal = document.getElementById('walletCreatedModal');
-                                if (successModal) {
-                                    successModal.classList.remove('hidden');
-                                    successModal.style.display = 'flex';
-                                    
-                                    requestAnimationFrame(() => {
-                                        successModal.querySelector('.success-checkmark').classList.add('animate');
-                                    });
-
-                                    // Wait for animation then show main wallet
-                                    setTimeout(() => {
-                                        successModal.classList.remove('show');
-                                        successModal.classList.add('modal-exit');
-                                        
-                                        setTimeout(() => {
-                                            successModal.classList.add('hidden');
-                                            successModal.style.display = 'none';
-                                            showMainWallet();
-                                        }, 300);
-                                    }, 1500);
-                                } else {
-                                    // If success modal not found, go directly to main wallet
-                                    showMainWallet();
-                                }
-                            }, 300);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Failed to create wallet:', error);
-                    showWalletError('Failed to create wallet. Please try again.');
-                }
-            }
-        });
-    }
-
-    // Add click handler for continue button
-    const continueToProfile = document.getElementById('continueToProfile');
-    if (continueToProfile) {
-        continueToProfile.addEventListener('click', async (e) => {
-            e.preventDefault();
-            if (!continueToProfile.disabled) {
-                // Trigger form submission
-                form.dispatchEvent(new Event('submit'));
-            }
-        });
-    }
-}
-
-function showSuccessAnimation() {
-    const modal = document.getElementById('walletCreatedModal');
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    
-    // Add success animation class
-    const checkmark = modal.querySelector('.success-checkmark');
-    checkmark.classList.add('animate');
-    
-    // Setup get started button
-    const getStartedBtn = document.getElementById('getStartedBtn');
-    if (getStartedBtn) {
-        getStartedBtn.addEventListener('click', () => {
-            hideModal('walletCreatedModal');
-            showMainWallet();
-        });
-    }
-}
-
-async function fetchBalanceFromWhatsOnChain(address) {
-    try {
-        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch balance');
-        }
-        const data = await response.json();
-        // Convert satoshis to BSV (confirmed + unconfirmed balance)
-        const totalBalance = (data.confirmed + data.unconfirmed) / 100000000;
-        return totalBalance;
-    } catch (error) {
-        console.error('Error fetching balance from WhatsOnChain:', error);
-        return 0;
-    }
-}
-
-// Add navigation handlers
-function setupModalNavigation() {
-    // Setup back buttons
-    document.querySelectorAll('.back-to-menu').forEach(button => {
-        button.addEventListener('click', () => {
-            const modal = button.closest('[id$="Modal"]');
-            if (modal) {
-                hideModal(modal.id);
-                showModal('mainWalletModal');
-            }
-        });
-    });
-
-    // Setup close buttons
-    document.querySelectorAll('.close-modal').forEach(button => {
-        button.addEventListener('click', () => {
-            const modal = button.closest('[id$="Modal"]');
-            if (modal) {
-                hideModal(modal.id);
-            }
-        });
-    });
-}
-
-// Update balance display
-async function updateBalanceDisplay() {
-    const balanceDisplay = document.getElementById('walletBalance');
-    const connectBtn = document.getElementById('connectWalletBtn');
-    const availableBalance = document.getElementById('availableBalance');
-    
-    if (window.wallet) {
-        try {
-            // Get the legacy address for WhatsOnChain lookup
-            const address = window.wallet.getLegacyAddress();
-            if (!address) {
-                console.error('No legacy address available');
-                return;
-            }
-
-            // Fetch balance from WhatsOnChain
-            const balance = await fetchBalanceFromWhatsOnChain(address);
-            const formattedBalance = balance.toFixed(8);
-            
-            // Update all balance displays
-            if (balanceDisplay) {
-                balanceDisplay.textContent = formattedBalance;
-            }
-            if (availableBalance) {
-                availableBalance.textContent = formattedBalance;
-            }
-            if (connectBtn) {
-                connectBtn.textContent = `${formattedBalance} BSV`;
-                connectBtn.classList.add('connected');
-            }
-        } catch (error) {
-            console.error('Error updating balance:', error);
-        }
-    }
 }
