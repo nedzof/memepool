@@ -269,8 +269,8 @@ export async function handleConnectWalletClick() {
             return;
         }
 
-        // Otherwise, show wallet selection modal
-        showModal('walletSelectionModal');
+        // If not initialized, show wallet selection list
+        showWalletSelection();
     } catch (error) {
         console.error('Error handling connect wallet click:', error);
         showWalletError('Failed to connect wallet. Please try again.');
