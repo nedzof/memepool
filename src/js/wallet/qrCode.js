@@ -18,15 +18,20 @@ export async function generateQRCode(address) {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
         
-        // Generate new QR code
+        // Generate new QR code with cyan color
         await QRCode.toCanvas(qrCanvas, address, {
             width: 256,
             margin: 1,
             color: {
-                dark: '#FFFFFF',
-                light: '#000000'
+                dark: '#00ffa3',  // Cyan color for QR code
+                light: '#000000'  // Black background
             }
         });
+        
+        // Add glow effect
+        ctx.shadowColor = '#00ffa3';
+        ctx.shadowBlur = 15;
+        ctx.drawImage(qrCanvas, 0, 0);
         
         console.log('QR code generated for address:', address);
     } catch (error) {
@@ -49,12 +54,21 @@ export function setupReceiveModal() {
             
             if (walletAddressInput) {
                 walletAddressInput.value = legacyAddress;
+                console.log('Set legacy address:', legacyAddress);
             }
             
             // Generate QR code with legacy address
-            generateQRCode(legacyAddress).catch(error => {
-                console.error('Failed to generate QR code in receive modal:', error);
-            });
+            const qrCanvas = document.getElementById('qrCode');
+            if (qrCanvas) {
+                // Clear previous QR code
+                const ctx = qrCanvas.getContext('2d');
+                ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+                
+                // Generate new QR code
+                generateQRCode(legacyAddress).catch(error => {
+                    console.error('Failed to generate QR code in receive modal:', error);
+                });
+            }
         } catch (error) {
             console.error('Error setting up receive modal:', error);
         }

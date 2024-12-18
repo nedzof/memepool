@@ -2,6 +2,7 @@ import { showModal, hideModal, showWalletError } from './modalManager.js';
 import { connectUnisatWallet, connectOKXWallet } from './walletInit.js';
 import { generateNewWallet } from './walletGeneration.js';
 import { authenticateWithX } from './auth/xAuth.js';
+import { initializeImportWallet } from './walletImport.js';
 
 // Show wallet selection modal
 export function showWalletSelection() {
@@ -202,6 +203,7 @@ function setupWalletSelectionEvents(hasUnisat, hasOKX) {
         importWalletBtn.addEventListener('click', () => {
             hideModal('initialSetupModal');
             showModal('importWalletModal');
+            initializeImportWallet();
         });
     }
     

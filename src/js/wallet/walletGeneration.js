@@ -47,6 +47,8 @@ function setupSeedPhraseEvents() {
     const revealBtn = document.getElementById('revealSeedPhrase');
     const blurOverlay = document.getElementById('seedPhraseBlur');
     const seedPhraseContainer = document.getElementById('seedPhrase');
+    const continueBtn = document.getElementById('continueToPassword');
+    const seedConfirmCheckbox = document.getElementById('seedConfirm');
     
     if (revealBtn && blurOverlay && seedPhraseContainer) {
         revealBtn.addEventListener('click', () => {
@@ -56,6 +58,24 @@ function setupSeedPhraseEvents() {
             setTimeout(() => {
                 blurOverlay.style.display = 'none';
             }, 300);
+        });
+    }
+
+    // Enable/disable continue button based on checkbox
+    if (seedConfirmCheckbox && continueBtn) {
+        seedConfirmCheckbox.addEventListener('change', () => {
+            continueBtn.disabled = !seedConfirmCheckbox.checked;
+        });
+    }
+
+    // Continue to password setup
+    if (continueBtn) {
+        continueBtn.addEventListener('click', () => {
+            if (!continueBtn.disabled) {
+                hideModal('seedPhraseModal');
+                showModal('passwordSetupModal');
+                setupPasswordValidation();
+            }
         });
     }
 
@@ -150,7 +170,7 @@ export function validateSeedPhrase(seedPhrase) {
 }
 
 // Setup password validation
-function setupPasswordValidation() {
+export function setupPasswordValidation() {
     const passwordInput = document.getElementById('password');
     const confirmInput = document.getElementById('confirmPassword');
     const strengthBar = document.getElementById('strengthBar');
@@ -312,13 +332,13 @@ function setupPasswordValidation() {
 }
 
 // Show success animation
-function showSuccessAnimation() {
+async function showSuccessAnimation() {
     const passwordModal = document.getElementById('passwordSetupModal');
     if (passwordModal) {
         passwordModal.classList.add('modal-exit');
         passwordModal.classList.remove('show');
         
-        setTimeout(() => {
+        setTimeout(async () => {
             passwordModal.classList.add('hidden');
             passwordModal.style.display = 'none';
             
@@ -332,20 +352,124 @@ function showSuccessAnimation() {
                     successModal.querySelector('.success-checkmark').classList.add('animate');
                 });
 
-                // Wait for animation then show main wallet
-                setTimeout(() => {
-                    successModal.classList.remove('show');
-                    successModal.classList.add('modal-exit');
-                    
+                // Validate wallet data before proceeding
+                try {
+                    // Check if wallet instance exists
+                    if (!window.wallet) {
+                        throw new Error('Wallet instance not found');
+                    }
+
+                    // Check if public key is available
+                    const publicKey = window.wallet.getPublicKey();
+                    if (!publicKey) {
+                        throw new Error('Public key not available');
+                    }
+
+                    // Check if legacy address is available
+                    const legacyAddress = await window.wallet.getLegacyAddress();
+                    if (!legacyAddress) {
+                        throw new Error('Legacy address not available');
+                    }
+
+                    // Fetch and validate balance
+                    const balance = await window.wallet.getBalance();
+                    if (balance === undefined || balance === null) {
+                        throw new Error('Could not fetch wallet balance');
+                    }
+
+                    // Update UI elements with balance
+                    const balanceElement = document.getElementById('walletBalance');
+                    const balanceUSDElement = document.getElementById('balanceUSD');
+                    if (balanceElement) {
+                        balanceElement.textContent = balance.toFixed(8);
+                    }
+                    if (balanceUSDElement) {
+                        // Fetch current BSV price and calculate USD value
+                        try {
+                            const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/exchangerate');
+                            const data = await response.json();
+                            const usdValue = (balance * data.rate).toFixed(2);
+                            balanceUSDElement.textContent = `≈ $${usdValue}`;
+                        } catch (error) {
+                            console.error('Error fetching BSV price:', error);
+                            balanceUSDElement.textContent = '≈ $0.00';
+                        }
+                    }
+
+                    // Check connection type
+                    const connectionType = window.wallet.getConnectionType();
+                    if (!connectionType) {
+                        throw new Error('Connection type not determined');
+                    }
+
+                    // Wait for animation then show main wallet
                     setTimeout(() => {
-                        successModal.classList.add('hidden');
-                        successModal.style.display = 'none';
-                        showMainWallet();
-                    }, 300);
-                }, 1500);
+                        successModal.classList.remove('show');
+                        successModal.classList.add('modal-exit');
+                        
+                        setTimeout(() => {
+                            successModal.classList.add('hidden');
+                            successModal.style.display = 'none';
+                            showMainWallet();
+                        }, 300);
+                    }, 1500);
+                } catch (error) {
+                    console.error('Wallet validation failed:', error);
+                    
+                    // Hide success animation
+                    successModal.classList.add('hidden');
+                    successModal.style.display = 'none';
+                    
+                    // Show error dialog
+                    showWalletError(`Failed to initialize wallet: ${error.message}. Please try again.`);
+                    
+                    // Reset wallet state
+                    window.wallet = null;
+                    
+                    // Show wallet selection modal again
+                    showModal('walletSelectionModal');
+                }
             } else {
-                // If success modal not found, go directly to main wallet
-                showMainWallet();
+                // If success modal not found, perform validation before showing main wallet
+                try {
+                    if (!window.wallet) {
+                        throw new Error('Wallet instance not found');
+                    }
+                    
+                    const publicKey = window.wallet.getPublicKey();
+                    const legacyAddress = await window.wallet.getLegacyAddress();
+                    const balance = await window.wallet.getBalance();
+                    const connectionType = window.wallet.getConnectionType();
+                    
+                    if (!publicKey || !legacyAddress || balance === undefined || !connectionType) {
+                        throw new Error('Required wallet data not available');
+                    }
+                    
+                    // Update UI elements with balance
+                    const balanceElement = document.getElementById('walletBalance');
+                    const balanceUSDElement = document.getElementById('balanceUSD');
+                    if (balanceElement) {
+                        balanceElement.textContent = balance.toFixed(8);
+                    }
+                    if (balanceUSDElement) {
+                        try {
+                            const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/exchangerate');
+                            const data = await response.json();
+                            const usdValue = (balance * data.rate).toFixed(2);
+                            balanceUSDElement.textContent = `≈ $${usdValue}`;
+                        } catch (error) {
+                            console.error('Error fetching BSV price:', error);
+                            balanceUSDElement.textContent = '≈ $0.00';
+                        }
+                    }
+                    
+                    showMainWallet();
+                } catch (error) {
+                    console.error('Wallet validation failed:', error);
+                    showWalletError(`Failed to initialize wallet: ${error.message}. Please try again.`);
+                    window.wallet = null;
+                    showModal('walletSelectionModal');
+                }
             }
         }, 300);
     }

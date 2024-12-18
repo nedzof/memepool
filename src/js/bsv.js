@@ -213,12 +213,15 @@ export async function createWalletFromMnemonic(mnemonic) {
         // Create BSV private key from decimal string
         const privateKey = new bsv.PrivateKey(privateKeyDec);
         
-        // Create public key and address
+        // Create public key and addresses
         const publicKey = privateKey.toPublicKey();
         const address = publicKey.toAddress();
+        const legacyAddress = publicKey.toAddress().toString();
         
         return {
             address: address.toString(),
+            legacyAddress: legacyAddress,
+            publicKey: publicKey.toString(),
             privateKey: privateKey.toString(),
             sign: (tx) => tx.sign(privateKey)
         };

@@ -1,9 +1,13 @@
 import { generateMnemonic, createWalletFromMnemonic } from './bsv.js';
+import { fetchBalanceFromWhatsOnChain } from './wallet/blockchain.js';
 
 export class BSVWallet {
     constructor() {
         this.wallet = null;
         this.encryptedMnemonic = null;
+        this.publicKey = null;
+        this.connectionType = 'manual';
+        this.balance = 0;
     }
 
     async generateNewWallet(password, mnemonic = null) {
@@ -15,6 +19,17 @@ export class BSVWallet {
 
             // Create wallet from mnemonic
             this.wallet = await createWalletFromMnemonic(mnemonic);
+            
+            // Store public key
+            this.publicKey = this.wallet.publicKey;
+
+            // Fetch and store initial balance
+            try {
+                this.balance = await fetchBalanceFromWhatsOnChain(this.wallet.legacyAddress);
+            } catch (error) {
+                console.error('Error fetching initial balance:', error);
+                this.balance = 0;
+            }
 
             // Encrypt mnemonic with password
             const encoder = new TextEncoder();
@@ -63,7 +78,9 @@ export class BSVWallet {
 
             return {
                 success: true,
-                address: this.wallet.address
+                address: this.wallet.address,
+                publicKey: this.publicKey,
+                balance: this.balance
             };
         } catch (error) {
             console.error('Error generating wallet:', error);
@@ -73,6 +90,31 @@ export class BSVWallet {
 
     getAddress() {
         return this.wallet ? this.wallet.address : null;
+    }
+
+    getLegacyAddress() {
+        return this.wallet ? this.wallet.legacyAddress : null;
+    }
+
+    getPublicKey() {
+        return this.publicKey;
+    }
+
+    getConnectionType() {
+        return this.connectionType;
+    }
+
+    async getBalance() {
+        try {
+            // Fetch fresh balance from WhatsOnChain
+            if (this.wallet && this.wallet.legacyAddress) {
+                this.balance = await fetchBalanceFromWhatsOnChain(this.wallet.legacyAddress);
+            }
+            return this.balance;
+        } catch (error) {
+            console.error('Error fetching balance:', error);
+            return this.balance; // Return last known balance on error
+        }
     }
 
     async sign(tx) {
