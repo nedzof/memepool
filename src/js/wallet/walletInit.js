@@ -2,7 +2,7 @@ import { showModal, hideModal, showMainWallet, showWalletError } from './modalMa
 import { initUnisatWallet, initOKXWallet } from './walletInterfaces.js';
 import { updateProfileWithPersistence } from './cache.js';
 import { updateBalanceDisplay } from './walletEvents.js';
-import { showWalletSelection } from './walletSelection.js';
+import { showWalletSelection, handleConnectWalletClick } from './walletSelection.js';
 
 // Wallet type detection
 export async function detectWalletType() {
@@ -155,7 +155,7 @@ export async function initializeWallet() {
     const walletType = await detectWalletType();
     
     // Update UI elements
-    const connectBtn = document.getElementById('connectWalletBtn');
+    const connectBtn = document.getElementById('connectBtn');
     if (!connectBtn) {
         console.error('Connect wallet button not found');
         return;
@@ -181,8 +181,5 @@ export async function initializeWallet() {
 
     // Connect wallet button
     console.log('Setting up connect wallet button...');
-    connectBtn.addEventListener('click', () => {
-        console.log('Connect wallet button clicked');
-        showWalletSelection();
-    });
+    connectBtn.addEventListener('click', handleConnectWalletClick);
 } 

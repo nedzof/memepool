@@ -238,3 +238,41 @@ function setupWalletSelectionEvents(hasUnisat, hasOKX) {
         });
     }
 } 
+
+// Check if wallet is already initialized
+async function isWalletInitialized() {
+    if (!window.wallet) {
+        return false;
+    }
+
+    try {
+        // Check all required properties
+        const publicKey = window.wallet.getPublicKey();
+        const legacyAddress = await window.wallet.getLegacyAddress();
+        const balance = await window.wallet.getBalance();
+        const connectionType = window.wallet.getConnectionType();
+
+        return !!(publicKey && legacyAddress && balance !== undefined && connectionType);
+    } catch (error) {
+        console.error('Error checking wallet initialization:', error);
+        return false;
+    }
+}
+
+// Handle connect wallet button click
+export async function handleConnectWalletClick() {
+    try {
+        // Check if wallet is already initialized
+        if (await isWalletInitialized()) {
+            // If wallet is already initialized, show main wallet modal directly
+            showMainWallet();
+            return;
+        }
+
+        // Otherwise, show wallet selection modal
+        showModal('walletSelectionModal');
+    } catch (error) {
+        console.error('Error handling connect wallet click:', error);
+        showWalletError('Failed to connect wallet. Please try again.');
+    }
+} 
