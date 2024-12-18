@@ -1,14 +1,8 @@
-import { Buffer } from 'buffer';
 import { bsv, generateMnemonic } from './bsv.js';
 import BSVWallet from './BSVWallet.js';
-import { setupReceiveModal } from './qrCode.js';
-import bitcoin from 'bitcoinjs-lib';
-
-// Make Buffer available globally
-if (typeof window !== 'undefined') {
-    window.Buffer = Buffer;
-    globalThis.Buffer = Buffer;
-}
+import { setupReceiveModal, generateQRCode } from './qrCode.js';
+import { Buffer } from 'buffer';
+import * as bitcoin from 'bitcoinjs-lib';
 
 // Export all necessary functions
 export {
@@ -259,22 +253,8 @@ async function retrieveUsernameDataFromChain(username) {
             return cachedData;
         }
 
-        // Create a BSV script to search for username registration
-        const script = new bsv.Script()
-            .add(bsv.Opcode.OP_RETURN)
-            .add(Buffer.from('MEMEPIRE_USERNAME'))
-            .add(Buffer.from(normalizedUsername));
-
-        // Search for transactions with this script
-        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/script/search`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                script: script.toHex()
-            })
-        });
+        // Search for username registration directly
+        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${username}/history`);
 
         if (!response.ok) {
             throw new Error('Failed to retrieve username data');
@@ -289,8 +269,8 @@ async function retrieveUsernameDataFromChain(username) {
         const userData = {
             username: normalizedUsername,
             registrationTx: data[data.length - 1].tx_hash,
-            timestamp: parseInt(data[data.length - 1].timestamp),
-            address: data[data.length - 1].address
+            timestamp: Date.now(),
+            address: username
         };
 
         // Cache the result
@@ -312,62 +292,11 @@ async function retrieveAvatarDataFromChain(address) {
             return cachedData;
         }
 
-        // Create a BSV script to search for avatar registration
-        const script = new bsv.Script()
-            .add(bsv.Opcode.OP_RETURN)
-            .add(Buffer.from('MEMEPIRE_AVATAR'));
-
-        // Search for transactions with this script from the specific address
-        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/script/search`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                script: script.toHex(),
-                address: address
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to retrieve avatar data');
-        }
-
-        const data = await response.json();
-        if (data.length === 0) {
-            return null;
-        }
-
-        // Get the most recent avatar transaction
-        const latestTx = data[data.length - 1];
-        
-        // Fetch the transaction details to get the avatar data
-        const txResponse = await fetch(`https://api.whatsonchain.com/v1/bsv/main/tx/${latestTx.tx_hash}/hex`);
-        if (!txResponse.ok) {
-            throw new Error('Failed to fetch avatar transaction data');
-        }
-
-        const txHex = await txResponse.text();
-        const tx = new bsv.Transaction(txHex);
-        
-        // Extract avatar data from OP_RETURN output
-        const avatarOutput = tx.outputs.find(output => {
-            const script = output.script;
-            return script.chunks.length > 1 && 
-                   script.chunks[1].buf && 
-                   script.chunks[1].buf.toString() === 'MEMEPIRE_AVATAR';
-        });
-
-        if (!avatarOutput) {
-            return null;
-        }
-
-        // The avatar data is in the third chunk (after OP_RETURN and identifier)
-        const avatarData = avatarOutput.script.chunks[2].buf;
+        // For now, return a default avatar info
         const avatarInfo = {
-            avatarData: `data:image/png;base64,${avatarData.toString('base64')}`,
-            registrationTx: latestTx.tx_hash,
-            timestamp: parseInt(latestTx.timestamp)
+            avatarData: null, // Default to no avatar
+            registrationTx: null,
+            timestamp: Date.now()
         };
 
         // Cache the result
@@ -520,18 +449,12 @@ async function updateProfileWithPersistence(address) {
             updateUIWithProfileData(cachedProfile);
         }
 
-        // Fetch fresh data from blockchain
-        const [usernameData, avatarData] = await Promise.all([
-            retrieveUsernameDataFromChain(address),
-            retrieveAvatarDataFromChain(address)
-        ]);
-
-        // Combine and save new profile data
+        // For now, just use the address as the username
         const profileData = {
-            username: usernameData?.username || generateRandomUsername(),
-            displayName: usernameData?.displayName,
-            avatar: avatarData?.avatarData,
-            registrationTx: usernameData?.registrationTx,
+            username: address.slice(0, 8) + '...' + address.slice(-4),
+            displayName: null,
+            avatar: null,
+            registrationTx: null,
             lastFetched: Date.now()
         };
 
@@ -622,88 +545,100 @@ async function connectOKXWallet() {
     }
 }
 
-// Function to convert bc1 to legacy address
-function bc1ToLegacy(bc1Address) {
-    try {
-        // Decode the bc1 address
-        const decoded = bitcoin.address.fromBech32(bc1Address);
-        
-        // Convert to legacy address format
-        const p2wpkh = bitcoin.payments.p2wpkh({
-            hash: decoded.data
-        });
-        
-        // Convert to p2pkh (legacy)
-        const p2pkh = bitcoin.payments.p2pkh({
-            hash: p2wpkh.hash
-        });
-
-        return p2pkh.address;
-    } catch (error) {
-        console.error('Error converting address:', error);
-        throw new Error('Invalid bc1 address');
-    }
-}
-
 // Initialize OKX wallet
 async function initOKXWallet() {
     try {
+        console.log('Initializing OKX Wallet...');
         if (!window.okxwallet) {
+            console.error('OKX Wallet extension not found');
             throw new Error('OKX Wallet not found. Please install OKX Wallet extension.');
         }
 
         // Request Bitcoin account access
-        await window.okxwallet.bitcoin.connect();
-        
-        // Get Bitcoin accounts
+        console.log('Requesting Bitcoin accounts...');
         const accounts = await window.okxwallet.bitcoin.requestAccounts();
+        console.log('Bitcoin accounts received:', accounts);
         
         if (!accounts || accounts.length === 0) {
+            console.error('No accounts found in OKX Wallet');
             throw new Error('No accounts found in OKX Wallet');
         }
 
-        // Convert bc1 address to legacy format
-        const bc1Address = accounts[0];
-        const legacyAddress = bc1ToLegacy(bc1Address);
+        // Get public key
+        console.log('Requesting public key...');
+        let publicKey;
+        try {
+            publicKey = await window.okxwallet.bitcoin.getPublicKey();
+            console.log('Public key received:', publicKey);
+            
+            // Clean public key (remove 0x prefix if present)
+            const cleanPubKey = publicKey.replace('0x', '');
+            console.log('Cleaned public key:', cleanPubKey);
 
-        // Create a wallet interface
-        const wallet = {
-            getAddress: () => legacyAddress,
-            getBalance: async () => {
-                try {
-                    // Get balance from WhatsOnChain API
-                    const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${legacyAddress}/balance`);
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch balance');
+            // Convert public key to bytes
+            const pubKeyBytes = cleanPubKey.match(/.{1,2}/g).map(byte => parseInt(byte, 16));
+            console.log('Public key bytes:', pubKeyBytes);
+
+            // Create legacy address using bitcoinjs-lib
+            const { address } = bitcoin.payments.p2pkh({
+                pubkey: Buffer.from(pubKeyBytes),
+                network: bitcoin.networks.bitcoin
+            });
+            console.log('Legacy address calculated:', address);
+
+            // Generate QR code with the legacy address
+            await generateQRCode(address);
+
+            // Create a wallet interface
+            const wallet = {
+                getAddress: () => accounts[0],
+                getLegacyAddress: () => address,
+                getPublicKey: () => publicKey,
+                getBalance: async () => {
+                    try {
+                        return await fetchBalanceFromWhatsOnChain(address);
+                    } catch (error) {
+                        console.error('Error getting balance:', error);
+                        return 0;
                     }
-                    const data = await response.json();
-                    return data.confirmed / 1e8; // Convert satoshis to BSV
-                } catch (error) {
-                    console.error('Error getting balance:', error);
-                    return 0;
+                },
+                getPrivateKey: () => {
+                    throw new Error('Private key access not available through OKX Wallet');
+                },
+                getUtxos: async () => {
+                    throw new Error('UTXO access not available through OKX Wallet');
+                },
+                send: async (toAddress, amount) => {
+                    try {
+                        const txHash = await window.okxwallet.bitcoin.sendTransaction({
+                            to: toAddress,
+                            value: '0x' + (amount * 1e8).toString(16)
+                        });
+                        return { txid: txHash };
+                    } catch (error) {
+                        throw new Error('Failed to send transaction: ' + error.message);
+                    }
                 }
-            },
-            getPrivateKey: () => {
-                throw new Error('Private key access not available through OKX Wallet');
-            },
-            getUtxos: async () => {
-                throw new Error('UTXO access not available through OKX Wallet');
-            },
-            send: async (toAddress, amount) => {
-                try {
-                    // Convert legacy address back to bc1 for sending
-                    const txHash = await window.okxwallet.bitcoin.send({
-                        to: toAddress,
-                        value: amount * 1e8 // Convert BSV to satoshis
-                    });
-                    return { txid: txHash };
-                } catch (error) {
-                    throw new Error('Failed to send transaction: ' + error.message);
-                }
-            }
-        };
+            };
 
-        return wallet;
+            // Log the wallet interface data
+            console.log('Wallet interface created:', {
+                currentBc1Address: wallet.getAddress(),
+                legacyAddress: wallet.getLegacyAddress(),
+                publicKey: wallet.getPublicKey()
+            });
+
+            // Set the legacy address in the receive modal
+            const walletAddressInput = document.getElementById('walletAddress');
+            if (walletAddressInput) {
+                walletAddressInput.value = wallet.getLegacyAddress();
+            }
+
+            return wallet;
+        } catch (e) {
+            console.error('Error getting public key:', e);
+            throw e;
+        }
     } catch (error) {
         throw new Error('Failed to initialize OKX Wallet: ' + error.message);
     }
@@ -1180,6 +1115,15 @@ function showMainWallet() {
         // Setup main wallet events
         setupMainWalletEvents();
         
+        // Setup modal navigation
+        setupModalNavigation();
+        
+        // Update balance
+        updateBalanceDisplay();
+        
+        // Set up periodic balance updates
+        setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
+        
         // Trigger animation
         requestAnimationFrame(() => {
             mainWalletModal.classList.add('show');
@@ -1295,7 +1239,7 @@ function setupMainWalletEvents() {
         });
     }
 
-    // Setup receive modal
+    // Call setupReceiveModal at the end
     setupReceiveModal();
 }
 
@@ -1629,5 +1573,64 @@ function showSuccessAnimation() {
             hideModal('walletCreatedModal');
             showMainWallet();
         });
+    }
+}
+
+async function fetchBalanceFromWhatsOnChain(address) {
+    try {
+        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch balance');
+        }
+        const data = await response.json();
+        // Convert satoshis to BSV
+        return data.confirmed / 100000000;
+    } catch (error) {
+        console.error('Error fetching balance:', error);
+        return 0;
+    }
+}
+
+// Add navigation handlers
+function setupModalNavigation() {
+    // Setup back buttons
+    document.querySelectorAll('.back-to-menu').forEach(button => {
+        button.addEventListener('click', () => {
+            const modal = button.closest('[id$="Modal"]');
+            if (modal) {
+                hideModal(modal.id);
+                showModal('mainWalletModal');
+            }
+        });
+    });
+
+    // Setup close buttons
+    document.querySelectorAll('.close-modal').forEach(button => {
+        button.addEventListener('click', () => {
+            const modal = button.closest('[id$="Modal"]');
+            if (modal) {
+                hideModal(modal.id);
+            }
+        });
+    });
+}
+
+// Update balance display
+async function updateBalanceDisplay() {
+    const balanceDisplay = document.getElementById('walletBalance');
+    const connectBtn = document.getElementById('connectWalletBtn');
+    
+    if (window.wallet) {
+        try {
+            const balance = await window.wallet.getBalance();
+            if (balanceDisplay) {
+                balanceDisplay.textContent = balance.toFixed(8);
+            }
+            if (connectBtn) {
+                connectBtn.innerHTML = `${balance.toFixed(8)} BSV`;
+            }
+        } catch (error) {
+            console.error('Error updating balance:', error);
+        }
     }
 }

@@ -500,96 +500,132 @@
     </div>
 </div>
 
+<!-- Navigation Bar Template (Updated without border) -->
+<div class="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4 bg-black/40 backdrop-blur-xl">
+    <div class="flex items-center gap-4">
+        <button class="back-to-menu text-white/70 hover:text-white transition-colors flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            <span class="text-sm font-medium">Back</span>
+        </button>
+    </div>
+    <button class="close-modal text-white/70 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </button>
+</div>
+
 <!-- Send Modal -->
 <div id="sendModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+    <div class="border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl modal-content"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
-        <button id="closeSendModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-
-        <div class="space-y-8">
-            <div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Send BSV</h2>
-                <p class="text-gray-400 text-sm mt-1">Send BSV to another wallet</p>
-            </div>
-
-            <div class="space-y-6">
-                <div class="rounded-xl p-6 border border-[#ff00ff]/20 bg-black/30">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="text-sm text-gray-400">Available Balance</div>
-                        <div class="text-lg font-bold text-white balance-value" id="availableBalance">0.00000000 BSV</div>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-sm text-gray-400 mb-2 block">Recipient Address</label>
-                        <div class="relative">
-                            <input type="text" id="recipientAddress" 
-                                   class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm pr-10"
-                                   placeholder="Enter BSV address">
-                            <button class="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors"
-                                    id="pasteAddress">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between mb-2">
-                            <label class="text-sm text-gray-400">Amount (BSV)</label>
-                            <button id="maxAmount" 
-                                    class="text-sm text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                </svg>
-                                MAX
-                            </button>
-                        </div>
-                        <div class="relative">
-                            <input type="number" id="sendAmount" step="0.00000001" 
-                                   class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
-                                   placeholder="0.00000000">
-                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">BSV</div>
-                        </div>
-                    </div>
-                </div>
-
-                <button id="confirmSend" disabled 
-                        class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
-                        style="background: linear-gradient(45deg, #ff00ff, #00ffff);
-                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
-                    <div class="relative z-10">Send BSV</div>
-                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
+        
+        <!-- Navigation Bar (without border) -->
+        <div class="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4 bg-black/40 backdrop-blur-xl">
+            <div class="flex items-center gap-4">
+                <button class="back-to-menu text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Back</span>
                 </button>
             </div>
+            <button class="close-modal text-white/70 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Content with green glow effect -->
+        <div class="pt-16 p-8">
+            <!-- Add subtle green glow to inner containers -->
+            <div class="rounded-xl p-6 border border-[#00ffa3]/20 bg-black/30 transition-all duration-300 hover:border-[#00ffa3]/40"
+                 style="box-shadow: 0 0 20px rgba(0, 255, 163, 0.1);">
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-400">Available Balance</div>
+                    <div class="flex items-baseline gap-2">
+                        <div class="text-2xl font-bold bg-gradient-to-r from-[#00ffa3] to-[#00ffff] text-transparent bg-clip-text balance-value" id="availableBalance">0.00000000</div>
+                        <div class="text-[#00ffa3] text-sm">BSV</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm text-gray-400 mb-2 block">Recipient Address</label>
+                    <div class="relative">
+                        <input type="text" id="recipientAddress" 
+                               class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm pr-10"
+                               placeholder="Enter BSV address">
+                        <button class="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors"
+                                id="pasteAddress">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm text-gray-400">Amount (BSV)</label>
+                        <button id="maxAmount" 
+                                class="text-sm text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            MAX
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="number" id="sendAmount" step="0.00000001" 
+                               class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
+                               placeholder="0.00000000">
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">BSV</div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="confirmSend" disabled 
+                    class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                    style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                           box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                <div class="relative z-10">Send BSV</div>
+                <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
         </div>
     </div>
 </div>
 
 <!-- Receive Modal -->
 <div id="receiveModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
-    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl modal-content"
+    <div class="border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl modal-content"
          style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
                 box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
-        <button id="closeReceiveModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-
-        <div class="space-y-8">
-            <div class="text-center">
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#00ffa3] to-[#00ffff] text-transparent bg-clip-text">Receive BSV</h2>
-                <p class="text-gray-400 text-sm mt-1">Scan QR code or copy address</p>
+        
+        <!-- Navigation Bar (without border) -->
+        <div class="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4 bg-black/40 backdrop-blur-xl">
+            <div class="flex items-center gap-4">
+                <button class="back-to-menu text-white/70 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </button>
+                <h3 class="text-lg font-bold text-white">Receive BSV</h3>
             </div>
-            
+            <button class="close-modal text-white/70 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Content with green glow effect -->
+        <div class="pt-16 p-8">
             <!-- QR Code Container with purple-cyan-blue gradient border -->
             <div class="flex justify-center">
                 <div class="p-4 rounded-2xl relative group transition-all duration-300 hover:scale-[1.02]"
@@ -717,5 +753,4 @@
                 </button>
             </form>
         </div>
-    </div>
-</div> 
+    </div> 

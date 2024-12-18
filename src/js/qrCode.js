@@ -59,13 +59,13 @@ export function setupReceiveModal() {
                 receiveModal.classList.remove('hidden');
                 receiveModal.style.display = 'flex';
 
-                // Set address
+                // Set address to legacy address
                 if (addressInput) {
-                    addressInput.value = address;
+                    addressInput.value = window.wallet.getLegacyAddress();
                 }
 
-                // Generate QR code
-                await generateQRCode(address);
+                // Generate QR code with the legacy address
+                await generateQRCode(window.wallet.getLegacyAddress());
 
                 // Add animation classes
                 receiveModal.classList.add('modal-enter');

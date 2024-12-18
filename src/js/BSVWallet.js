@@ -1,184 +1,136 @@
-import { bsv, createWalletFromMnemonic, validateMnemonic } from './bsv.js';
+import { generateMnemonic, createWalletFromMnemonic } from './bsv.js';
 
 export class BSVWallet {
     constructor() {
-        this.isInitialized = false;
-        this.balance = 0;
-        this.address = '';
-        this.transactions = [];
         this.wallet = null;
+        this.encryptedMnemonic = null;
     }
 
-    async generateNewWallet(password, mnemonic) {
+    async generateNewWallet(password, mnemonic = null) {
         try {
-            // Validate mnemonic
-            if (!validateMnemonic(mnemonic)) {
-                throw new Error('Invalid mnemonic');
+            // If no mnemonic is provided, generate a new one
+            if (!mnemonic) {
+                mnemonic = await generateMnemonic();
             }
 
             // Create wallet from mnemonic
             this.wallet = await createWalletFromMnemonic(mnemonic);
-            this.address = this.wallet.getAddress();
-            this.isInitialized = true;
-            await this.updateBalance();
 
-            return { success: true };
+            // Encrypt mnemonic with password
+            const encoder = new TextEncoder();
+            const mnemonicData = encoder.encode(mnemonic);
+            const passwordData = encoder.encode(password);
+
+            // Generate key from password
+            const key = await crypto.subtle.importKey(
+                'raw',
+                passwordData,
+                { name: 'PBKDF2' },
+                false,
+                ['deriveBits', 'deriveKey']
+            );
+
+            // Generate encryption key
+            const encryptionKey = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: new Uint8Array(16),
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                },
+                key,
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt', 'decrypt']
+            );
+
+            // Encrypt mnemonic
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const encryptedData = await crypto.subtle.encrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: iv
+                },
+                encryptionKey,
+                mnemonicData
+            );
+
+            // Store encrypted mnemonic and IV
+            this.encryptedMnemonic = {
+                data: new Uint8Array(encryptedData),
+                iv: iv
+            };
+
+            return {
+                success: true,
+                address: this.wallet.address
+            };
         } catch (error) {
+            console.error('Error generating wallet:', error);
             throw new Error('Failed to generate wallet: ' + error.message);
         }
     }
 
-    async importFromMnemonic(mnemonic, password = '') {
-        try {
-            // Validate mnemonic
-            if (!validateMnemonic(mnemonic)) {
-                throw new Error('Invalid mnemonic');
-            }
-
-            // Create wallet from mnemonic
-            this.wallet = await createWalletFromMnemonic(mnemonic);
-            this.address = this.wallet.getAddress();
-            this.isInitialized = true;
-            await this.updateBalance();
-
-            return { success: true };
-        } catch (error) {
-            throw new Error('Failed to import mnemonic: ' + error.message);
-        }
-    }
-
-    async importFromPrivateKey(privateKey, password = '') {
-        try {
-            // Validate private key format
-            if (!/^[0-9a-fA-F]{64}$/.test(privateKey)) {
-                throw new Error('Invalid private key format');
-            }
-
-            // Create wallet from private key
-            this.wallet = await bsv.Wallet.fromPrivateKey(privateKey);
-            this.address = this.wallet.getAddress();
-            this.isInitialized = true;
-            await this.updateBalance();
-
-            return { success: true };
-        } catch (error) {
-            throw new Error('Failed to import private key: ' + error.message);
-        }
-    }
-
-    async updateBalance() {
-        if (!this.isInitialized || !this.wallet) {
-            throw new Error('Wallet not initialized');
-        }
-
-        try {
-            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${this.address}/balance`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch balance');
-            }
-
-            const data = await response.json();
-            this.balance = data.confirmed / 100000000; // Convert satoshis to BSV
-            return this.balance;
-        } catch (error) {
-            console.error('Error updating balance:', error);
-            return this.balance;
-        }
-    }
-
-    getBalance() {
-        return this.balance;
-    }
-
     getAddress() {
-        return this.address;
+        return this.wallet ? this.wallet.address : null;
     }
 
-    getTransactions() {
-        return this.transactions;
-    }
-
-    async getUtxos() {
-        if (!this.isInitialized || !this.wallet) {
+    async sign(tx) {
+        if (!this.wallet) {
             throw new Error('Wallet not initialized');
+        }
+        return this.wallet.sign(tx);
+    }
+
+    async decrypt(password) {
+        if (!this.encryptedMnemonic) {
+            throw new Error('No encrypted mnemonic available');
         }
 
         try {
-            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${this.address}/unspent`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch UTXOs');
-            }
+            const encoder = new TextEncoder();
+            const passwordData = encoder.encode(password);
 
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching UTXOs:', error);
-            return [];
-        }
-    }
+            // Generate key from password
+            const key = await crypto.subtle.importKey(
+                'raw',
+                passwordData,
+                { name: 'PBKDF2' },
+                false,
+                ['deriveBits', 'deriveKey']
+            );
 
-    async send(toAddress, amount) {
-        if (!this.isInitialized || !this.wallet) {
-            throw new Error('Wallet not initialized');
-        }
-
-        if (amount > this.balance) {
-            throw new Error('Insufficient balance');
-        }
-
-        try {
-            const utxos = await this.getUtxos();
-            const tx = new bsv.Transaction()
-                .from(utxos)
-                .to(toAddress, Math.floor(amount * 100000000)) // Convert BSV to satoshis
-                .change(this.address)
-                .sign(this.wallet.getPrivateKey());
-
-            const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/tx/raw', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            // Generate decryption key
+            const decryptionKey = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: new Uint8Array(16),
+                    iterations: 100000,
+                    hash: 'SHA-256'
                 },
-                body: JSON.stringify({
-                    txhex: tx.toString()
-                })
-            });
+                key,
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt', 'decrypt']
+            );
 
-            if (!response.ok) {
-                throw new Error('Failed to broadcast transaction');
-            }
+            // Decrypt mnemonic
+            const decryptedData = await crypto.subtle.decrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: this.encryptedMnemonic.iv
+                },
+                decryptionKey,
+                this.encryptedMnemonic.data
+            );
 
-            const { txid } = await response.json();
-            
-            // Update local state
-            this.balance -= amount;
-            this.transactions.unshift({
-                txid,
-                type: 'send',
-                amount,
-                to: toAddress,
-                timestamp: new Date().toISOString()
-            });
-
-            return { txid };
+            const decoder = new TextDecoder();
+            return decoder.decode(decryptedData);
         } catch (error) {
-            throw new Error('Failed to send transaction: ' + error.message);
+            throw new Error('Failed to decrypt mnemonic');
         }
-    }
-
-    getPrivateKey() {
-        if (!this.isInitialized || !this.wallet) {
-            throw new Error('Wallet not initialized');
-        }
-        return this.wallet.getPrivateKey();
-    }
-
-    disconnect() {
-        this.isInitialized = false;
-        this.balance = 0;
-        this.address = '';
-        this.transactions = [];
-        this.wallet = null;
     }
 }
 
+// Add both named and default exports
 export default BSVWallet; 
