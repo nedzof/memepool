@@ -1,10 +1,11 @@
 import { showModal, hideModal } from './modalManager.js';
 import { setupReceiveModal } from './qrCode.js';
 import { clearAllCache } from './cache.js';
-import { fetchBalanceFromWhatsOnChain } from './blockchain.js';
 
 // Setup main wallet events
 export function setupMainWalletEvents() {
+    console.log('Setting up main wallet events');
+    
     // Send button
     const sendBtn = document.getElementById('sendBtn');
     if (sendBtn) {
@@ -51,15 +52,24 @@ export function setupMainWalletEvents() {
         });
     });
 
-    // Update wallet balance and address
+    // Update wallet display
     updateWalletDisplay();
 }
 
 // Handle wallet disconnect
 export function handleDisconnect() {
-    // Clear wallet instance and session
+    console.log('Handling wallet disconnect');
+    
+    // Clear wallet instance
     window.wallet = null;
-    localStorage.removeItem('memepire_wallet_session');
+    
+    // Clear session and mark as disconnected
+    const session = localStorage.getItem('memepire_wallet_session');
+    if (session) {
+        const sessionData = JSON.parse(session);
+        sessionData.isConnected = false;
+        localStorage.setItem('memepire_wallet_session', JSON.stringify(sessionData));
+    }
     
     // Reset the connect button text and state
     const connectButton = document.getElementById('connectWalletBtn');
@@ -71,109 +81,80 @@ export function handleDisconnect() {
     // Close all modals
     const modals = document.querySelectorAll('[id$="Modal"]');
     modals.forEach(modal => {
-        modal.style.display = 'none';
-        modal.classList.add('hidden');
+        hideModal(modal.id);
     });
-    
-    // Show the initial setup modal
-    const initialSetupModal = document.getElementById('initialSetupModal');
-    if (initialSetupModal) {
-        initialSetupModal.style.display = 'flex';
-        initialSetupModal.classList.remove('hidden');
-    }
     
     // Clear all cached data
     clearAllCache();
 }
 
 // Update wallet display
-export function updateWalletDisplay() {
-    const addressDisplay = document.getElementById('walletAddress');
-    const balanceDisplay = document.getElementById('walletBalance');
-    const walletTypeDisplay = document.getElementById('walletType');
+export async function updateWalletDisplay() {
+    console.log('Updating wallet display');
     
-    if (window.wallet) {
-        // Get wallet type
-        const walletType = window.wallet.getAddress().startsWith('0x') ? 'OKX' : 'UniSat';
-        
+    if (!window.wallet) {
+        console.log('No wallet instance found');
+        return;
+    }
+
+    try {
+        // Get wallet type and address
+        const walletType = window.wallet.type || window.wallet.getConnectionType();
+        const address = await window.wallet.getAddress();
+        console.log('Wallet type:', walletType, 'Address:', address);
+
+        // Update address display
+        const addressDisplay = document.getElementById('walletAddress');
         if (addressDisplay) {
-            const address = window.wallet.getAddress();
-            addressDisplay.textContent = address ? 
-                `${address.slice(0, 6)}...${address.slice(-4)}` : 
-                'No address available';
+            addressDisplay.textContent = address;
         }
 
+        // Update balance
+        await updateBalanceDisplay();
+
+        // Update wallet type display
+        const walletTypeDisplay = document.getElementById('walletType');
         if (walletTypeDisplay) {
-            walletTypeDisplay.textContent = `Connected with ${walletType}`;
+            walletTypeDisplay.textContent = walletType.toUpperCase();
         }
-
-        if (balanceDisplay && typeof window.wallet.getBalance === 'function') {
-            window.wallet.getBalance().then(balance => {
-                const formattedBalance = balance.toFixed(8);
-                balanceDisplay.textContent = `${formattedBalance} BSV`;
-                
-                // Update connect button
-                const connectBtn = document.getElementById('connectWalletBtn');
-                if (connectBtn) {
-                    connectBtn.textContent = `${formattedBalance} BSV`;
-                    connectBtn.classList.add('connected');
-                }
-            }).catch(error => {
-                console.error('Error fetching balance:', error);
-                balanceDisplay.textContent = '0 BSV';
-            });
-        }
+    } catch (error) {
+        console.error('Error updating wallet display:', error);
     }
 }
 
 // Update balance display
 export async function updateBalanceDisplay() {
-    const balanceDisplay = document.getElementById('walletBalance');
-    const connectBtn = document.getElementById('connectWalletBtn');
-    const availableBalance = document.getElementById('availableBalance');
-    const walletTypeDisplay = document.getElementById('walletType');
+    console.log('Updating balance display');
     
-    if (window.wallet) {
-        try {
-            // Get the legacy address for WhatsOnChain lookup
-            const address = window.wallet.getLegacyAddress();
-            if (!address) {
-                console.error('No legacy address available');
-                return;
-            }
+    if (!window.wallet) {
+        console.log('No wallet instance found');
+        return;
+    }
 
-            // Get wallet type
-            const walletType = window.wallet.getAddress().startsWith('0x') ? 'OKX' : 'UniSat';
-            
-            // Update wallet type display
-            if (walletTypeDisplay) {
-                walletTypeDisplay.textContent = `Connected with ${walletType}`;
-            }
+    try {
+        // Get wallet type and address
+        const walletType = window.wallet.type || window.wallet.getConnectionType();
+        const address = await window.wallet.getAddress();
+        console.log('Wallet type:', walletType, 'Address:', address);
 
-            // Fetch balance from WhatsOnChain
-            const balance = await fetchBalanceFromWhatsOnChain(address);
-            const formattedBalance = balance.toFixed(8);
-            
-            // Update all balance displays
-            if (balanceDisplay) {
-                balanceDisplay.textContent = formattedBalance;
-            }
-            if (availableBalance) {
-                availableBalance.textContent = formattedBalance;
-            }
-            if (connectBtn) {
-                connectBtn.textContent = `${formattedBalance} BSV`;
-                connectBtn.classList.add('connected');
-            }
-        } catch (error) {
-            console.error('Error updating balance:', error);
-            // Set default values on error
-            if (balanceDisplay) balanceDisplay.textContent = '0';
-            if (availableBalance) availableBalance.textContent = '0';
-            if (connectBtn) {
-                connectBtn.textContent = '0 BSV';
-                connectBtn.classList.add('connected');
-            }
+        // Get balance
+        const balance = await window.wallet.getBalance();
+        const formattedBalance = balance.toFixed(8);
+        console.log('Formatted balance:', formattedBalance);
+
+        // Update balance displays
+        const balanceDisplays = document.querySelectorAll('.balance-value');
+        balanceDisplays.forEach(display => {
+            display.textContent = formattedBalance;
+        });
+
+        // Update connect button if it exists
+        const connectButton = document.getElementById('connectWalletBtn');
+        if (connectButton) {
+            connectButton.textContent = `${formattedBalance} BSV`;
+            connectButton.classList.add('connected');
         }
+    } catch (error) {
+        console.error('Error updating balance display:', error);
     }
 } 

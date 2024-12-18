@@ -8,33 +8,62 @@ export function initializeImportWallet() {
     const passwordSetupModal = document.getElementById('passwordSetupModal');
     const seedPhraseInputs = document.getElementById('seedPhraseInputs');
     const importWalletForm = document.getElementById('importWalletForm');
-    const passwordSetupForm = document.getElementById('passwordSetupForm');
     const confirmImportBtn = document.getElementById('confirmImport');
 
     let seedPhrase = ''; // Store the seed phrase temporarily
 
-    // Create 12 seed input boxes with labels
-    for (let i = 1; i <= 12; i++) {
-        const inputContainer = document.createElement('div');
-        inputContainer.className = 'relative p-2';
-        
-        const label = document.createElement('div');
-        label.className = 'absolute -top-2 left-2 text-xs text-gray-400 z-20 px-1 bg-[#120c34]';
-        label.textContent = i;
-        
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'seed-word w-full bg-black/30 rounded-xl p-3 text-white text-sm backdrop-blur-sm relative z-10 border border-[#00ffa3]/20 focus:border-[#00ffa3] outline-none transition-colors';
-        input.placeholder = `Word ${i}`;
-        input.setAttribute('data-index', i);
-        
-        const bgGradient = document.createElement('div');
-        bgGradient.className = 'absolute inset-0 rounded-xl bg-gradient-to-r from-[#00ffa3] to-[#00ffff] opacity-10';
-        
-        inputContainer.appendChild(bgGradient);
-        inputContainer.appendChild(label);
-        inputContainer.appendChild(input);
-        seedPhraseInputs.appendChild(inputContainer);
+    // Setup navigation buttons
+    const backButtons = document.querySelectorAll('.back-to-menu');
+    const closeButtons = document.querySelectorAll('.close-modal');
+
+    backButtons.forEach(btn => {
+        btn.className = 'back-to-menu flex items-center gap-2 text-[#14F195]/70 hover:text-[#14F195] transition-colors duration-300 group';
+        btn.innerHTML = `
+            <svg class="w-5 h-5 group-hover:transform group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            <span class="text-sm font-medium">Back</span>
+        `;
+        btn.addEventListener('click', () => {
+            hideModal('importWalletModal');
+            hideModal('seedPhraseModal');
+            hideModal('passwordSetupModal');
+            showModal('initialSetupModal');
+        });
+    });
+
+    closeButtons.forEach(btn => {
+        btn.className = 'close-modal p-2 rounded-lg text-[#14F195]/70 hover:text-[#14F195] hover:bg-[#14F195]/10 transition-all duration-300';
+        btn.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        `;
+        btn.addEventListener('click', () => {
+            hideModal('importWalletModal');
+            hideModal('seedPhraseModal');
+            hideModal('passwordSetupModal');
+            showModal('initialSetupModal');
+        });
+    });
+
+    // Create the seed phrase grid
+    if (seedPhraseInputs) {
+        seedPhraseInputs.innerHTML = Array.from({ length: 12 }, (_, i) => `
+            <div class="relative group">
+                <span class="absolute top-1 left-2 text-xs text-[#14F195] z-20">${i + 1}</span>
+                <input type="text" 
+                       class="seed-word w-full bg-[#0F1825] rounded-lg p-4 pt-6 text-white text-center font-medium relative z-10 
+                              border border-[#14F195]/30 focus:border-[#14F195] outline-none transition-all duration-300
+                              group-hover:border-[#14F195]/50 group-hover:shadow-[0_0_15px_rgba(20,241,149,0.15)]
+                              focus:shadow-[0_0_20px_rgba(20,241,149,0.3)] focus:bg-[#0F1825]/80"
+                       placeholder="Enter word ${i + 1}">
+                <div class="absolute inset-0 rounded-lg bg-gradient-to-r from-[#14F195]/5 to-[#14F195]/10 opacity-0 
+                            group-hover:opacity-100 transition-all duration-300"></div>
+                <div class="absolute inset-0 rounded-lg bg-[#14F195]/5 opacity-0 group-hover:opacity-100 
+                            blur-xl transition-all duration-300"></div>
+            </div>
+        `).join('');
     }
 
     // Handle seed phrase input navigation
@@ -103,7 +132,9 @@ export function initializeImportWallet() {
     // Enable/disable import button based on form completion
     function checkSeedPhraseCompletion() {
         const allWordsEntered = Array.from(seedInputs).every(input => input.value.trim());
-        confirmImportBtn.disabled = !allWordsEntered;
+        if (confirmImportBtn) {
+            confirmImportBtn.disabled = !allWordsEntered;
+        }
     }
 }
 

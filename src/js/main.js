@@ -1,7 +1,9 @@
 import { initializeBlocks, centerBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
 import BSVWallet from './BSVWallet.js';
-import { initializeWallet } from './walletUI.js';
+import { initializeWallet, getLastWalletSession } from './wallet/walletInit.js';
+import { showMainWallet, showWalletError } from './wallet/modalManager.js';
+import { showWalletSelection, handleConnectWalletClick } from './wallet/walletSelection.js';
 import bsv from './bsv.js';
 import { Wallet } from './bsv.js';
 
@@ -114,6 +116,20 @@ async function initializeApp() {
         
         console.log('Initializing wallet UI...');
         await initializeWallet();
+
+        // Set up connect wallet button click handler with enhanced feedback
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        if (connectWalletBtn) {
+            // Remove any existing listeners
+            const newConnectWalletBtn = connectWalletBtn.cloneNode(true);
+            connectWalletBtn.parentNode.replaceChild(newConnectWalletBtn, connectWalletBtn);
+            
+            // Add the click handler
+            newConnectWalletBtn.addEventListener('click', handleConnectWalletClick);
+            
+            // Add Solana-style classes
+            newConnectWalletBtn.classList.add('neon-button', 'ripple');
+        }
 
         console.log('Setting up event listeners...');
         setupEventListeners();

@@ -19,11 +19,19 @@ export async function detectWalletType() {
 // Save wallet session
 export function saveWalletSession(walletType, address) {
     try {
-        localStorage.setItem('memepire_wallet_session', JSON.stringify({
+        const sessionData = {
             type: walletType,
             address: address,
-            timestamp: Date.now()
-        }));
+            timestamp: Date.now(),
+            isConnected: true
+        };
+        localStorage.setItem('memepire_wallet_session', JSON.stringify(sessionData));
+        
+        // Update button state
+        const connectBtn = document.getElementById('connectWalletBtn');
+        if (connectBtn) {
+            connectBtn.classList.add('connected');
+        }
     } catch (error) {
         console.error('Error saving wallet session:', error);
     }
@@ -112,7 +120,7 @@ export async function initializeWallet() {
     
     // Check for existing session
     const lastSession = getLastWalletSession();
-    if (lastSession) {
+    if (lastSession && lastSession.isConnected) {
         console.log('Found existing wallet session:', lastSession);
         
         // Verify wallet is still available
@@ -132,6 +140,15 @@ export async function initializeWallet() {
                 
                 window.wallet = wallet;
                 
+                // Update button state
+                const connectBtn = document.getElementById('connectWalletBtn');
+                if (connectBtn) {
+                    connectBtn.classList.add('connected');
+                    // Update balance display
+                    const balance = await wallet.getBalance();
+                    connectBtn.textContent = `${balance.toFixed(8)} BSV`;
+                }
+                
                 // Update balance display immediately
                 await updateBalanceDisplay();
                 
@@ -142,11 +159,12 @@ export async function initializeWallet() {
                 if (wallet.getAddress() === lastSession.address) {
                     console.log('Successfully reconnected to previous wallet session');
                     await updateProfileWithPersistence(wallet.getAddress());
-                    showMainWallet();
                     return;
                 }
             } catch (error) {
                 console.error('Failed to reconnect to previous session:', error);
+                // Clear invalid session
+                localStorage.removeItem('memepire_wallet_session');
             }
         }
     }
@@ -179,7 +197,9 @@ export async function initializeWallet() {
         }
     });
 
-    // Connect wallet button
-    console.log('Setting up connect wallet button...');
-    connectBtn.addEventListener('click', handleConnectWalletClick);
+    // Reset connect button state
+    if (connectBtn) {
+        connectBtn.textContent = 'Connect Wallet';
+        connectBtn.classList.remove('connected');
+    }
 } 
