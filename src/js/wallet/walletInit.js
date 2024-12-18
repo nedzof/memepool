@@ -155,7 +155,7 @@ export async function initializeWallet() {
     const walletType = await detectWalletType();
     
     // Update UI elements
-    const connectBtn = document.getElementById('connectBtn');
+    const connectBtn = document.getElementById('connectWalletBtn');
     if (!connectBtn) {
         console.error('Connect wallet button not found');
         return;
