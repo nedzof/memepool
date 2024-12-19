@@ -45,6 +45,7 @@ export function setupReceiveModal() {
     const closeReceiveModal = document.getElementById('closeReceiveModal');
     const copyAddressBtn = document.getElementById('copyAddress');
     const addressInput = document.getElementById('walletAddress');
+    const receiveModal = document.getElementById('receiveModal');
 
     if (receiveBtn) {
         receiveBtn.addEventListener('click', async () => {
@@ -54,7 +55,6 @@ export function setupReceiveModal() {
             if (!address) return;
 
             // Show modal
-            const receiveModal = document.getElementById('receiveModal');
             if (receiveModal) {
                 receiveModal.classList.remove('hidden');
                 receiveModal.style.display = 'flex';
@@ -80,16 +80,47 @@ export function setupReceiveModal() {
         });
     }
 
+    // Setup close button
     if (closeReceiveModal) {
         closeReceiveModal.addEventListener('click', () => {
-            const receiveModal = document.getElementById('receiveModal');
             if (receiveModal) {
                 receiveModal.classList.remove('show');
                 receiveModal.classList.add('modal-exit');
                 setTimeout(() => {
                     receiveModal.classList.add('hidden');
                     receiveModal.style.display = 'none';
+                    
+                    // Show main wallet modal
+                    const mainModal = document.getElementById('mainWalletModal');
+                    if (mainModal) {
+                        mainModal.classList.remove('hidden');
+                        mainModal.style.display = 'flex';
+                        mainModal.classList.add('show');
+                    }
                 }, 300);
+            }
+        });
+    }
+
+    // Setup back button
+    const backBtn = receiveModal?.querySelector('.back-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            console.log('Back button clicked in receive modal');
+            if (receiveModal) {
+                // Hide receive modal
+                receiveModal.classList.remove('show');
+                receiveModal.classList.add('hidden');
+                receiveModal.style.display = 'none';
+                
+                // Show main wallet modal
+                const mainModal = document.getElementById('mainWalletModal');
+                if (mainModal) {
+                    console.log('Showing main wallet modal');
+                    mainModal.classList.remove('hidden');
+                    mainModal.style.display = 'flex';
+                    mainModal.classList.add('show');
+                }
             }
         });
     }

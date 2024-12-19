@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer';
 import * as bitcoin from 'bitcoinjs-lib';
 import { generateQRCode } from './qrCode.js';
-import { fetchBalance } from './blockchain.js';
+import { fetchBalanceFromWhatsOnChain } from './blockchain.js';
 
 // Get balance from provider directly
 async function getBalanceFromProvider() {
@@ -84,7 +84,7 @@ export async function initUnisatWallet() {
             getConnectionType: () => 'unisat',
             getBalance: async () => {
                 try {
-                    return await fetchBalance(address);
+                    return await fetchBalanceFromWhatsOnChain(address);
                 } catch (error) {
                     console.error('Error getting balance:', error);
                     return 0;
@@ -115,7 +115,7 @@ export async function initOKXWallet() {
             getConnectionType: () => 'okx',
             getBalance: async () => {
                 try {
-                    return await fetchBalance(address);
+                    return await fetchBalanceFromWhatsOnChain(address);
                 } catch (error) {
                     console.error('Error getting balance:', error);
                     return 0;

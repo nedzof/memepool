@@ -1,4 +1,4 @@
-import { showModal, hideModal, showMainWallet } from './modalManager.js';
+import { showModal, hideModal, showMainWallet, showWalletSelection } from './modalManager.js';
 import { setupReceiveModal } from './qrCode.js';
 import { clearAllCache } from './cache.js';
 import { validateWalletProperties } from './validation.js';
@@ -199,28 +199,68 @@ export function setupMainWalletEvents() {
 export async function handleDisconnect() {
     console.log('Handling wallet disconnect');
     
-    // Clear wallet instance
-    window.wallet = null;
-    
-    // Clear session and mark as disconnected
-    const session = localStorage.getItem('memepire_wallet_session');
-    if (session) {
-        const sessionData = JSON.parse(session);
-        sessionData.isConnected = false;
-        localStorage.setItem('memepire_wallet_session', JSON.stringify(sessionData));
+    try {
+        // Clear wallet instance
+        window.wallet = null;
+        
+        // Clear all session data
+        localStorage.removeItem('memepire_wallet_session');
+        sessionStorage.clear();
+        
+        // Close all modals properly
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (modal.id) {
+                hideModal(modal.id);
+            } else {
+                modal.classList.remove('show', 'modal-enter');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Ensure main wallet modal is closed
+        const mainWalletModal = document.getElementById('mainWalletModal');
+        if (mainWalletModal) {
+            hideModal('mainWalletModal');
+            mainWalletModal.classList.remove('show', 'modal-enter');
+            mainWalletModal.classList.add('hidden');
+            mainWalletModal.style.display = 'none';
+        }
+        
+        // Reset connect wallet button
+        const connectButton = document.getElementById('connectWalletBtn');
+        if (connectButton) {
+            // Remove all existing event listeners
+            const newButton = connectButton.cloneNode(false); // shallow clone to remove all listeners
+            newButton.id = 'connectWalletBtn';
+            newButton.textContent = 'Connect Wallet';
+            newButton.className = connectButton.className.replace(/\bconnected\b/g, '').trim();
+            newButton.removeAttribute('data-wallet-connected');
+            
+            // Add click handler for showing wallet selection
+            newButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Connect button clicked after disconnect');
+                showWalletSelection();
+            };
+            
+            // Replace old button
+            connectButton.parentNode.replaceChild(newButton, connectButton);
+            console.log('Connect button reinitialized');
+        }
+        
+        // Clear any cached data
+        clearAllCache();
+        
+        // Force a small delay to ensure modals are closed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('Disconnect complete - session cleared, modals closed, button reset');
+    } catch (error) {
+        console.error('Error during disconnect:', error);
     }
-    
-    // Close all modals
-    const modals = document.querySelectorAll('[id$="Modal"]');
-    modals.forEach(modal => {
-        hideModal(modal.id);
-    });
-    
-    // Clear all cached data
-    clearAllCache();
-    
-    // Update button state and click handler
-    await handleConnectWalletButton();
 }
 
 // Update wallet display

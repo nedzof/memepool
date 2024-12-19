@@ -5,82 +5,134 @@ import { Buffer } from 'buffer';
 const API_COOLDOWN = 2000; // 2 seconds between requests
 let lastRequestTime = 0;
 
-// Helper function to handle rate limiting
+// Rate limiting helper
 async function rateLimitedFetch(url, options = {}) {
-    console.log('Fetching from:', url);
-    try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Fetch error:', error);
-        throw error;
+    const now = Date.now();
+    const timeToWait = Math.max(0, API_COOLDOWN - (now - lastRequestTime));
+    
+    if (timeToWait > 0) {
+        await new Promise(resolve => setTimeout(resolve, timeToWait));
     }
+    
+    lastRequestTime = Date.now();
+    
+    // Make direct API call with proper headers
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+    });
 }
 
 // Cache for balance data
 const balanceCache = new Map();
 const CACHE_DURATION = 30000; // 30 seconds
 
-// Fetch balance from GorillaPool
-export async function fetchBalanceFromGorillaPool(address) {
-    console.log('Fetching balance for address:', address);
+// Convert public key to legacy address
+function publicKeyToLegacyAddress(publicKey) {
     try {
-        // Remove 0x prefix if present
-        const cleanAddress = address.startsWith('0x') ? address.slice(2) : address;
-        
-        // GorillaPool API endpoint
-        const url = `https://api.gorillapool.io/address/${cleanAddress}/balance`;
-        
-        const data = await rateLimitedFetch(url);
-        console.log('GorillaPool response:', data);
-        
-        if (data && typeof data.balance !== 'undefined') {
-            // Convert satoshis to BSV
-            const balanceInBSV = data.balance / 100000000;
-            console.log('Balance in BSV:', balanceInBSV);
-            return balanceInBSV;
-        }
-        
-        return 0;
+        // Remove '0x' prefix if present
+        const cleanPubKey = publicKey.startsWith('0x') ? publicKey.slice(2) : publicKey;
+        // Create public key buffer
+        const pubKeyBuffer = Buffer.from(cleanPubKey, 'hex');
+        // Create BSV public key and convert to legacy address
+        const bsvPubKey = new bsv.PublicKey(pubKeyBuffer);
+        return bsvPubKey.toAddress().toString();
     } catch (error) {
-        console.error('Error fetching balance from GorillaPool:', error);
-        return 0;
+        console.error('Error converting public key to legacy address:', error);
+        return null;
     }
 }
 
-// Backup balance fetch from WhatsOnChain
-async function fetchBalanceFromWhatsOnChain(address) {
+// Fetch balance from WhatsOnChain API
+export async function fetchBalanceFromWhatsOnChain(address, isRecursive = false) {
     try {
-        const cleanAddress = address.startsWith('0x') ? address.slice(2) : address;
-        const url = `https://api.whatsonchain.com/v1/bsv/main/address/${cleanAddress}/balance`;
-        const data = await rateLimitedFetch(url);
-        return data.confirmed / 100000000; // Convert satoshis to BSV
+        // Check if address is a public key and convert if needed
+        let queryAddress = address;
+        if (address.startsWith('0x')) {
+            queryAddress = publicKeyToLegacyAddress(address);
+            if (!queryAddress) {
+                throw new Error('Failed to convert public key to legacy address');
+            }
+            console.log('Converted public key to legacy address:', queryAddress);
+        }
+
+        // Check cache first
+        const cachedData = balanceCache.get(queryAddress);
+        if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
+            console.log('Using cached balance for address:', queryAddress);
+            return cachedData.balance;
+        }
+
+        console.log('Fetching balance for address:', queryAddress);
+        
+        // Only try wallet instance if not called recursively
+        if (!isRecursive && window.wallet?.getBalanceFromProvider) {
+            try {
+                const balance = await window.wallet.getBalanceFromProvider();
+                if (typeof balance === 'number' && !isNaN(balance)) {
+                    // Cache the result
+                    balanceCache.set(queryAddress, {
+                        balance,
+                        timestamp: Date.now()
+                    });
+                    return balance;
+                }
+            } catch (error) {
+                console.warn('Failed to get balance from wallet instance:', error);
+            }
+        }
+
+        // Fallback to WhatsOnChain API
+        const response = await rateLimitedFetch(
+            `https://api.whatsonchain.com/v1/bsv/main/address/${queryAddress}/balance`,
+            {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`WhatsOnChain API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Balance data:', data);
+        
+        // Convert satoshis to BSV
+        const balanceBSV = data.confirmed / 100000000;
+        
+        // Cache the result
+        balanceCache.set(queryAddress, {
+            balance: balanceBSV,
+            timestamp: Date.now()
+        });
+        
+        return balanceBSV;
     } catch (error) {
         console.error('Error fetching balance from WhatsOnChain:', error);
-        throw error;
+        
+        // Try to get cached balance if available
+        const cachedData = balanceCache.get(address);
+        if (cachedData) {
+            console.log('Using stale cached balance due to error');
+            return cachedData.balance;
+        }
+        
+        // Return 0 as last resort fallback
+        return 0;
     }
 }
 
-// Main balance fetch function with fallback
-export async function fetchBalance(address) {
-    try {
-        // Try GorillaPool first
-        const balance = await fetchBalanceFromGorillaPool(address);
-        return balance;
-    } catch (error) {
-        console.log('GorillaPool failed, trying WhatsOnChain...');
-        try {
-            // Fallback to WhatsOnChain
-            return await fetchBalanceFromWhatsOnChain(address);
-        } catch (whatsOnChainError) {
-            console.error('Both APIs failed:', error, whatsOnChainError);
-            return 0;
-        }
-    }
-}
+// Export the main balance fetch function
+export const fetchBalance = fetchBalanceFromWhatsOnChain;
 
 // Check username availability on chain
 export async function checkUsernameAvailability(username) {

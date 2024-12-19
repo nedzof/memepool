@@ -1,13 +1,13 @@
 /* Solana-style Animations and Effects */
 .modal-overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 50;
-    animation: fadeIn 0.3s ease-out;
+    position: fixed !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(8px) !important;
+    z-index: 9999 !important;
 }
 
 .modal-backdrop {
@@ -15,16 +15,23 @@
 }
 
 .modal-content {
-    max-width: 32rem;
-    width: 100%;
-    margin: 1rem;
-    animation: slideUp 0.3s ease-out;
-    transform-origin: center;
+    position: relative !important;
+    max-width: 32rem !important;
+    width: 100% !important;
+    margin: 1rem !important;
+    background-color: rgba(18, 12, 52, 0.95) !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 0 30px rgba(0, 255, 163, 0.2) !important;
+    transform: translateY(0) scale(1) !important;
+    opacity: 1 !important;
+    transition: all 0.3s ease-out !important;
 }
 
 /* Show/Hide states */
 .hidden {
     display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .show {
@@ -132,17 +139,17 @@
 
 /* Modal transitions */
 .modal-enter {
-    animation: modalEnter 0.3s ease-out forwards;
+    animation: modalEnter 0.3s ease-out forwards !important;
 }
 
 .modal-exit {
-    animation: modalExit 0.3s ease-out forwards;
+    animation: modalExit 0.3s ease-in forwards !important;
 }
 
 @keyframes modalEnter {
     from {
         opacity: 0;
-        transform: scale(0.95) translateY(-10px);
+        transform: scale(0.95) translateY(10px);
     }
     to {
         opacity: 1;
@@ -159,6 +166,53 @@
         opacity: 0;
         transform: scale(0.95) translateY(10px);
     }
+}
+
+/* Modal backdrop blur */
+[id$="Modal"] {
+    backdrop-filter: blur(8px);
+}
+
+/* Neon card effect */
+.neon-card {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.neon-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg,
+        rgba(0, 255, 163, 0.1),
+        rgba(0, 255, 255, 0.1)
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.neon-card:hover::before {
+    opacity: 1;
+}
+
+.neon-card::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(45deg,
+        rgba(0, 255, 163, 0.5),
+        rgba(0, 255, 255, 0.5)
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: -1;
+    filter: blur(8px);
+}
+
+.neon-card:hover::after {
+    opacity: 0.2;
 }
 
 /* Hover effects */

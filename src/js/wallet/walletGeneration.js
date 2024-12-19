@@ -1,6 +1,9 @@
 import { showModal, hideModal, showWalletError, showMainWallet } from './modalManager.js';
 import { generateMnemonic } from '../bsv.js';
 import BSVWallet from '../BSVWallet.js';
+import { createSession } from './auth/session.js';
+import { handleConnectWalletButton } from './walletEvents.js';
+import { setupMainWalletEvents } from './walletEvents.js';
 
 // Generate new wallet
 export async function generateNewWallet() {
@@ -307,12 +310,37 @@ export function setupPasswordValidation() {
                         // Store wallet instance
                         window.wallet = wallet;
 
+                        // Get wallet data
+                        const publicKey = await wallet.getPublicKey();
+                        const legacyAddress = await wallet.getLegacyAddress();
+                        const balance = await wallet.getBalance();
+
+                        // Create session with complete wallet data
+                        const sessionData = {
+                            loginType: 'manual',
+                            publicKey,
+                            legacyAddress,
+                            isConnected: true,
+                            type: 'manual',
+                            balance,
+                            connectionType: 'manual'
+                        };
+                        
+                        createSession(sessionData);
+
+                        // Set wallet properties to match session
+                        wallet.type = 'manual';
+                        wallet.connectionType = 'manual';
+                        wallet.publicKey = publicKey;
+                        wallet.legacyAddress = legacyAddress;
+                        wallet.balance = balance;
+
                         // Hide password modal and show success animation
                         showSuccessAnimation();
                     }
                 } catch (error) {
-                    console.error('Failed to create wallet:', error);
-                    showWalletError('Failed to create wallet. Please try again.');
+                    console.error('Error during wallet setup:', error);
+                    showWalletError('Failed to setup wallet. Please try again.');
                 }
             }
         });
@@ -348,128 +376,146 @@ async function showSuccessAnimation() {
                 successModal.classList.remove('hidden');
                 successModal.style.display = 'flex';
                 
-                requestAnimationFrame(() => {
-                    successModal.querySelector('.success-checkmark').classList.add('animate');
-                });
+                // Create Solana-style success animation
+                const animationContainer = successModal.querySelector('.success-checkmark') || document.createElement('div');
+                animationContainer.className = 'success-checkmark relative w-32 h-32';
+                
+                // Set the animation HTML
+                animationContainer.innerHTML = `
+                    <div class="relative w-full h-full">
+                        <!-- Animation content -->
+                        <!-- ... existing animation HTML ... -->
+                    </div>
+                `;
+                
+                // Ensure the animation container is in the modal
+                if (!successModal.querySelector('.success-checkmark')) {
+                    successModal.appendChild(animationContainer);
+                }
+                
+                // Add required styles
+                const styleId = 'success-animation-styles';
+                if (!document.getElementById(styleId)) {
+                    const style = document.createElement('style');
+                    style.id = styleId;
+                    style.textContent = `
+                        /* ... existing styles ... */
+                    `;
+                    document.head.appendChild(style);
+                }
 
-                // Validate wallet data before proceeding
-                try {
-                    // Check if wallet instance exists
-                    if (!window.wallet) {
-                        throw new Error('Wallet instance not found');
-                    }
+                // Wait for a short delay to ensure animation starts
+                await new Promise(resolve => setTimeout(resolve, 100));
 
-                    // Check if public key is available
-                    const publicKey = window.wallet.getPublicKey();
-                    if (!publicKey) {
-                        throw new Error('Public key not available');
-                    }
+                // Continue with validation after animation
+                setTimeout(async () => {
+                    try {
+                        // ... existing validation code ...
 
-                    // Check if legacy address is available
-                    const legacyAddress = await window.wallet.getLegacyAddress();
-                    if (!legacyAddress) {
-                        throw new Error('Legacy address not available');
-                    }
-
-                    // Fetch and validate balance
-                    const balance = await window.wallet.getBalance();
-                    if (balance === undefined || balance === null) {
-                        throw new Error('Could not fetch wallet balance');
-                    }
-
-                    // Update UI elements with balance
-                    const balanceElement = document.getElementById('walletBalance');
-                    const balanceUSDElement = document.getElementById('balanceUSD');
-                    if (balanceElement) {
-                        balanceElement.textContent = balance.toFixed(8);
-                    }
-                    if (balanceUSDElement) {
-                        // Fetch current BSV price and calculate USD value
-                        try {
-                            const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/exchangerate');
-                            const data = await response.json();
-                            const usdValue = (balance * data.rate).toFixed(2);
-                            balanceUSDElement.textContent = `≈ $${usdValue}`;
-                        } catch (error) {
-                            console.error('Error fetching BSV price:', error);
-                            balanceUSDElement.textContent = '≈ $0.00';
-                        }
-                    }
-
-                    // Check connection type
-                    const connectionType = window.wallet.getConnectionType();
-                    if (!connectionType) {
-                        throw new Error('Connection type not determined');
-                    }
-
-                    // Wait for animation then show main wallet
-                    setTimeout(() => {
-                        successModal.classList.remove('show');
-                        successModal.classList.add('modal-exit');
+                        // After successful validation, transition to main wallet
+                        console.log('Validation successful, transitioning to main wallet...');
                         
-                        setTimeout(() => {
-                            successModal.classList.add('hidden');
-                            successModal.style.display = 'none';
-                            showMainWallet();
-                        }, 300);
-                    }, 1500);
-                } catch (error) {
-                    console.error('Wallet validation failed:', error);
-                    
-                    // Hide success animation
-                    successModal.classList.add('hidden');
-                    successModal.style.display = 'none';
-                    
-                    // Show error dialog
-                    showWalletError(`Failed to initialize wallet: ${error.message}. Please try again.`);
-                    
-                    // Reset wallet state
-                    window.wallet = null;
-                    
-                    // Show wallet selection modal again
-                    showModal('walletSelectionModal');
-                }
-            } else {
-                // If success modal not found, perform validation before showing main wallet
-                try {
-                    if (!window.wallet) {
-                        throw new Error('Wallet instance not found');
-                    }
-                    
-                    const publicKey = window.wallet.getPublicKey();
-                    const legacyAddress = await window.wallet.getLegacyAddress();
-                    const balance = await window.wallet.getBalance();
-                    const connectionType = window.wallet.getConnectionType();
-                    
-                    if (!publicKey || !legacyAddress || balance === undefined || !connectionType) {
-                        throw new Error('Required wallet data not available');
-                    }
-                    
-                    // Update UI elements with balance
-                    const balanceElement = document.getElementById('walletBalance');
-                    const balanceUSDElement = document.getElementById('balanceUSD');
-                    if (balanceElement) {
-                        balanceElement.textContent = balance.toFixed(8);
-                    }
-                    if (balanceUSDElement) {
-                        try {
-                            const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/exchangerate');
-                            const data = await response.json();
-                            const usdValue = (balance * data.rate).toFixed(2);
-                            balanceUSDElement.textContent = `≈ $${usdValue}`;
-                        } catch (error) {
-                            console.error('Error fetching BSV price:', error);
-                            balanceUSDElement.textContent = '≈ $0.00';
+                        // Hide success modal
+                        successModal.classList.add('hidden');
+                        successModal.style.display = 'none';
+                        
+                        // Show main wallet modal
+                        console.log('Showing main wallet modal...');
+                        const mainWalletModal = document.getElementById('mainWalletModal');
+                        if (mainWalletModal) {
+                            mainWalletModal.classList.remove('hidden');
+                            mainWalletModal.style.display = 'flex';
+                            mainWalletModal.classList.add('show');
+                            
+                            // Initialize main wallet event listeners
+                            console.log('Setting up main wallet event listeners...');
+                            setupMainWalletEvents();
+                            
+                            // Setup close and back buttons
+                            console.log('Setting up close and back buttons...');
+                            const closeButtons = mainWalletModal.querySelectorAll('.modal-close, .close-btn, [id$="CloseBtn"]');
+                            closeButtons.forEach(btn => {
+                                btn.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('Close button clicked');
+                                    
+                                    // Hide all modals while maintaining login state
+                                    const allModals = document.querySelectorAll('.modal');
+                                    allModals.forEach(modal => {
+                                        modal.classList.remove('show');
+                                        modal.classList.add('hidden');
+                                        modal.style.display = 'none';
+                                    });
+                                });
+                            });
+
+                            // Handle back buttons
+                            const backButtons = mainWalletModal.querySelectorAll('.back-btn, [id$="BackBtn"]');
+                            backButtons.forEach(btn => {
+                                btn.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('Back button clicked');
+                                    
+                                    // Get current modal
+                                    const currentModal = btn.closest('.modal');
+                                    if (currentModal) {
+                                        // Hide current modal
+                                        currentModal.classList.remove('show');
+                                        currentModal.classList.add('hidden');
+                                        currentModal.style.display = 'none';
+                                        
+                                        // Always show main wallet modal when clicking back
+                                        const mainModal = document.getElementById('mainWalletModal');
+                                        if (mainModal) {
+                                            console.log('Showing main wallet modal...');
+                                            mainModal.classList.remove('hidden');
+                                            mainModal.style.display = 'flex';
+                                            mainModal.classList.add('show');
+                                            
+                                            // Re-initialize main wallet event listeners
+                                            setupMainWalletEvents();
+                                        }
+                                    }
+                                });
+                            });
                         }
+                        
+                        // Update connect button
+                        const connectButton = document.getElementById('connectWalletBtn');
+                        if (connectButton) {
+                            console.log('Setting up connect button...');
+                            const balance = await window.wallet.getBalance();
+                            
+                            // Create new button to remove old event listeners
+                            const newButton = connectButton.cloneNode(true);
+                            newButton.textContent = balance > 0 ? `${balance.toFixed(8)} BSV` : 'Connected';
+                            newButton.classList.add('connected');
+                            newButton.dataset.walletConnected = 'true';
+                            
+                            // Add new click handler
+                            newButton.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Connect button clicked, showing main wallet modal...');
+                                const mainModal = document.getElementById('mainWalletModal');
+                                if (mainModal) {
+                                    mainModal.classList.remove('hidden');
+                                    mainModal.style.display = 'flex';
+                                    mainModal.classList.add('show');
+                                }
+                            });
+                            
+                            // Replace old button
+                            connectButton.parentNode.replaceChild(newButton, connectButton);
+                            console.log('Connect button setup complete');
+                        }
+                    } catch (error) {
+                        console.error('Error during transition:', error);
+                        showWalletError('Failed to complete wallet setup. Please try again.');
                     }
-                    
-                    showMainWallet();
-                } catch (error) {
-                    console.error('Wallet validation failed:', error);
-                    showWalletError(`Failed to initialize wallet: ${error.message}. Please try again.`);
-                    window.wallet = null;
-                    showModal('walletSelectionModal');
-                }
+                }, 1500);
             }
         }, 300);
     }

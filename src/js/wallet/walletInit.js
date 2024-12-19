@@ -1,7 +1,7 @@
 import { showModal, hideModal, showMainWallet, showWalletError } from './modalManager.js';
 import { initUnisatWallet, initOKXWallet } from './walletInterfaces.js';
 import { updateProfileWithPersistence } from './cache.js';
-import { updateBalanceDisplay } from './walletEvents.js';
+import { updateBalanceDisplay, handleConnectWalletButton } from './walletEvents.js';
 import { showWalletSelection, handleConnectWalletClick } from './walletSelection.js';
 
 // Wallet type detection
@@ -56,27 +56,38 @@ export async function connectUnisatWallet() {
             throw new Error('Failed to initialize UniSat wallet');
         }
         
+        // Get the address to verify connection
+        const address = await wallet.getAddress();
+        if (!address) {
+            throw new Error('Failed to get wallet address');
+        }
+        
+        // Only set the wallet and save session if we have a valid address
         window.wallet = wallet;
         
         // Save wallet session
-        saveWalletSession('unisat', wallet.getAddress());
+        saveWalletSession('unisat', address);
         
         // Hide the wallet selection modal
         hideModal('initialSetupModal');
         
         // Update profile with persistence
-        await updateProfileWithPersistence(wallet.getAddress());
+        await updateProfileWithPersistence(address);
+        
+        // Update button state and click handler
+        await handleConnectWalletButton();
         
         // Show the main wallet menu
         showMainWallet();
-        
-        // Update balance display immediately
-        await updateBalanceDisplay();
         
         // Set up periodic balance updates
         setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
     } catch (error) {
         console.error('Failed to connect UniSat wallet:', error);
+        // Reset wallet state
+        window.wallet = null;
+        // Reset button state
+        await handleConnectWalletButton();
         showWalletError(error.message);
     }
 }
@@ -84,32 +95,50 @@ export async function connectUnisatWallet() {
 // Connect OKX wallet
 export async function connectOKXWallet() {
     try {
+        console.log('Connecting OKX wallet...');
         const wallet = await initOKXWallet();
         if (!wallet) {
             throw new Error('Failed to initialize OKX wallet');
         }
         
+        // Get the address to verify connection
+        const address = await wallet.getAddress();
+        if (!address) {
+            throw new Error('Failed to get wallet address');
+        }
+        
+        console.log('OKX wallet connected successfully:', { address });
+        
+        // Only set the wallet and save session if we have a valid address
         window.wallet = wallet;
         
-        // Save wallet session
-        saveWalletSession('okx', wallet.getAddress());
-        
-        // Hide the wallet selection modal
+        // Hide the wallet selection modal first
         hideModal('initialSetupModal');
         
         // Update profile with persistence
-        await updateProfileWithPersistence(wallet.getAddress());
+        await updateProfileWithPersistence(address);
+        
+        // Save wallet session
+        saveWalletSession('okx', address);
+        
+        // Update button state and click handler
+        await handleConnectWalletButton();
         
         // Show the main wallet menu
         showMainWallet();
         
-        // Update balance display immediately
-        await updateBalanceDisplay();
-        
         // Set up periodic balance updates
         setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
+        
+        console.log('OKX wallet setup complete');
     } catch (error) {
         console.error('Failed to connect OKX wallet:', error);
+        // Reset wallet state
+        window.wallet = null;
+        // Reset button state
+        await handleConnectWalletButton();
+        // Clear any existing session
+        localStorage.removeItem('memepire_wallet_session');
         showWalletError(error.message);
     }
 }
@@ -118,6 +147,23 @@ export async function connectOKXWallet() {
 export async function initializeWallet() {
     console.log('Starting wallet initialization...');
     
+    // Remove any duplicate connect buttons
+    const connectButtons = document.querySelectorAll('[id$="connectWalletBtn"]');
+    if (connectButtons.length > 1) {
+        for (let i = 1; i < connectButtons.length; i++) {
+            connectButtons[i].remove();
+        }
+    }
+
+    // Initialize modal states
+    const walletModals = document.querySelectorAll('[id$="Modal"]');
+    walletModals.forEach(modal => {
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+    });
+
     // Check for existing session
     const lastSession = getLastWalletSession();
     if (lastSession && lastSession.isConnected) {
@@ -140,66 +186,24 @@ export async function initializeWallet() {
                 
                 window.wallet = wallet;
                 
-                // Update button state
-                const connectBtn = document.getElementById('connectWalletBtn');
-                if (connectBtn) {
-                    connectBtn.classList.add('connected');
-                    // Update balance display
-                    const balance = await wallet.getBalance();
-                    connectBtn.textContent = `${balance.toFixed(8)} BSV`;
-                }
-                
-                // Update balance display immediately
-                await updateBalanceDisplay();
-                
-                // Set up periodic balance updates
-                setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
-                
                 // Verify address matches
-                if (wallet.getAddress() === lastSession.address) {
+                const currentAddress = await wallet.getAddress();
+                if (currentAddress === lastSession.address) {
                     console.log('Successfully reconnected to previous wallet session');
-                    await updateProfileWithPersistence(wallet.getAddress());
-                    return;
+                    await updateProfileWithPersistence(currentAddress);
+                    
+                    // Set up periodic balance updates
+                    setInterval(updateBalanceDisplay, 30000); // Update every 30 seconds
                 }
             } catch (error) {
                 console.error('Failed to reconnect to previous session:', error);
                 // Clear invalid session
                 localStorage.removeItem('memepire_wallet_session');
+                window.wallet = null;
             }
         }
     }
 
-    // If no session or reconnection failed, proceed with normal initialization
-    const walletType = await detectWalletType();
-    
-    // Update UI elements
-    const connectBtn = document.getElementById('connectWalletBtn');
-    if (!connectBtn) {
-        console.error('Connect wallet button not found');
-        return;
-    }
-
-    // Remove any duplicate connect buttons
-    const connectButtons = document.querySelectorAll('[id$="connectWalletBtn"]');
-    if (connectButtons.length > 1) {
-        for (let i = 1; i < connectButtons.length; i++) {
-            connectButtons[i].remove();
-        }
-    }
-
-    // Initialize modal states
-    console.log('Initializing modal states...');
-    const walletModals = document.querySelectorAll('[id$="Modal"]');
-    walletModals.forEach(modal => {
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.style.display = 'none';
-        }
-    });
-
-    // Reset connect button state
-    if (connectBtn) {
-        connectBtn.textContent = 'Connect Wallet';
-        connectBtn.classList.remove('connected');
-    }
+    // Update button state and click handler
+    await handleConnectWalletButton();
 } 
