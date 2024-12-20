@@ -72,7 +72,7 @@ function updateSubmissions() {
 
 function createSubmissionBlock(submission) {
     const block = document.createElement('div');
-    block.className = 'submission-block relative group cursor-pointer transform transition-all duration-300 hover:scale-105';
+    block.className = 'submission-card relative group cursor-pointer transform transition-all duration-300 hover:scale-105';
     
     // Get current meme image
     const currentMeme = document.getElementById('currentMeme');

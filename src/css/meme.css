@@ -1,0 +1,137 @@
+/* Meme blocks */
+.blocks-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    position: relative;
+    height: 140px;
+    overflow: visible;
+    width: 100%;
+}
+
+/* Past blocks */
+.past-blocks {
+    display: flex;
+    justify-content: flex-start;
+    gap: 20px;
+}
+
+/* Upcoming blocks */
+.upcoming-blocks {
+    display: flex;
+    justify-content: flex-end;
+    gap: 20px;
+}
+
+.meme-block {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 255, 163, 0.3);
+    box-shadow: 0 0 15px rgba(0, 255, 163, 0.2);
+    transition: transform 0.3s ease;
+    animation: none;
+    border-radius: 12px;
+}
+
+.meme-block:hover {
+    transform: scale(1.05);
+    border-color: rgba(0, 255, 163, 0.8);
+    box-shadow: 0 0 20px rgba(0, 255, 163, 0.4),
+                0 0 40px rgba(0, 255, 163, 0.2);
+}
+
+/* Past and upcoming block sizes */
+.past-blocks .meme-block,
+.upcoming-blocks .meme-block {
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+}
+
+/* Current meme */
+.current-meme {
+    width: 400px;
+    height: 400px;
+    position: relative;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 0 30px rgba(0, 255, 163, 0.6),
+        0 0 60px rgba(0, 255, 163, 0.4),
+        0 0 90px rgba(0, 255, 163, 0.2);
+    border: 3px solid rgba(0, 255, 163, 0.8);
+    background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 163, 0.05));
+    border-radius: 16px;
+    transform-origin: center;
+}
+
+.current-meme::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, #00ffa3, #00ffff);
+    border-radius: inherit;
+    z-index: -1;
+    animation: borderGlow 2s ease-in-out infinite alternate;
+}
+
+/* Meme block animations */
+@keyframes borderGlow {
+    from {
+        opacity: 0.3;
+        filter: blur(5px);
+    }
+    to {
+        opacity: 0.6;
+        filter: blur(10px);
+    }
+}
+
+@keyframes slideLeft {
+    0% {
+        transform: translateX(-100px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideRight {
+    0% {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.past-blocks .meme-block {
+    animation: slideLeft 0.5s ease-out forwards;
+}
+
+.upcoming-blocks .meme-block {
+    animation: slideRight 0.5s ease-out forwards;
+}
+
+/* Block number display */
+.block-number {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    color: var(--color-primary);
+    font-size: 0.75rem;
+    text-align: center;
+    border-top: 1px solid rgba(0, 255, 163, 0.2);
+} 
