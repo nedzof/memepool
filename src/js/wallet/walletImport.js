@@ -124,7 +124,9 @@ export function initializeImportWallet() {
                 // Initialize password validation
                 setupPasswordValidation();
             } catch (error) {
-                showWalletError('Invalid seed phrase. Please check your words and try again.');
+                console.error('Error initializing import wallet:', error);
+                showWalletError(error.message);
+                showWalletSelection();  // Use the new wallet selection modal
             }
         });
     }

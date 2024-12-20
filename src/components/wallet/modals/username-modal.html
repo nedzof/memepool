@@ -1,0 +1,87 @@
+<!-- Username Change Modal -->
+<div id="usernameModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
+        <!-- Modal Header -->
+        <div class="modal-header absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-xl rounded-t-2xl border-b border-[#00ffa3]/20">
+            <div class="flex items-center gap-4">
+                <button class="back-to-menu text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Back</span>
+                </button>
+            </div>
+            <button class="modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body p-6 pt-16">
+            <h2 class="modal-title mb-6">Change Username</h2>
+            
+            <!-- Form -->
+            <form id="usernameForm" class="space-y-6">
+                <!-- Username Input -->
+                <div class="space-y-2">
+                    <label for="username" class="block text-sm font-medium text-white/60">New Username</label>
+                    <div class="relative">
+                        <input type="text" id="username" name="username"
+                               class="modal-input text-sm"
+                               placeholder="Enter new username"
+                               minlength="3"
+                               maxlength="20"
+                               pattern="^[a-zA-Z0-9_-]+$"
+                               required>
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 text-white/60">
+                            <span id="usernameLength" class="text-sm">0</span>/20
+                        </div>
+                    </div>
+                    <p class="text-white/60 text-xs">Only letters, numbers, underscores, and hyphens are allowed.</p>
+                </div>
+
+                <!-- Username Availability -->
+                <div id="usernameAvailability" class="hidden">
+                    <div class="flex items-center gap-2 text-[#00ffa3]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-sm">Username is available</span>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="usernameError" class="hidden">
+                    <div class="flex items-center gap-2 text-red-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span class="text-sm">Username is already taken</span>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <button type="submit" id="saveUsernameBtn"
+                        class="modal-button w-full py-3 px-4 font-bold">
+                    Save Changes
+                </button>
+            </form>
+
+            <!-- Info Message -->
+            <div class="mt-6 bg-black/30 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-white/60 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-sm text-white/60">Your username will be visible to other users and cannot be changed frequently.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

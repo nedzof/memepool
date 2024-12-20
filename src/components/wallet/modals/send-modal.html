@@ -1,0 +1,101 @@
+<!-- Send Modal -->
+<div id="sendModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
+        <!-- Modal Header -->
+        <div class="modal-header absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-xl rounded-t-2xl border-b border-[#00ffa3]/20">
+            <div class="flex items-center gap-4">
+                <button class="back-to-menu text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Back</span>
+                </button>
+            </div>
+            <button class="modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body p-6 pt-16">
+            <h2 class="modal-title mb-6">Send</h2>
+            
+            <!-- Form -->
+            <form id="sendForm" class="space-y-4">
+                <!-- Recipient Address -->
+                <div class="space-y-2">
+                    <label for="recipientAddress" class="block text-sm font-medium text-white/60">Recipient Address</label>
+                    <div class="relative">
+                        <input type="text" id="recipientAddress" name="recipientAddress"
+                               class="modal-input font-mono text-sm"
+                               placeholder="Enter Solana address">
+                        <button type="button" id="pasteAddressBtn" 
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Amount -->
+                <div class="space-y-2">
+                    <label for="amount" class="block text-sm font-medium text-white/60">Amount</label>
+                    <div class="relative">
+                        <input type="number" id="amount" name="amount" step="0.000000001"
+                               class="modal-input text-sm"
+                               placeholder="0.0">
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <span class="text-white/60 text-sm">SOL</span>
+                            <button type="button" id="maxAmountBtn"
+                                    class="text-[#00ffa3] text-sm font-medium hover:text-[#00ffa3]/80 transition-colors">
+                                MAX
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Info -->
+                <div class="bg-black/30 rounded-xl p-4">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-white/60">Available Balance</span>
+                        <span class="text-white font-medium">
+                            <span id="availableBalance">0.00</span> SOL
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Network Fee -->
+                <div class="bg-black/30 rounded-xl p-4">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-white/60">Network Fee</span>
+                        <span class="text-white font-medium">~0.000005 SOL</span>
+                    </div>
+                </div>
+
+                <!-- Send Button -->
+                <button type="submit" id="sendBtn"
+                        class="modal-button w-full py-3 px-4 font-bold">
+                    Send SOL
+                </button>
+            </form>
+
+            <!-- Warning Message -->
+            <div class="mt-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <p class="text-sm text-yellow-500">Double-check the recipient's address before sending. Transactions cannot be reversed.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

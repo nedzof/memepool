@@ -60,20 +60,22 @@ async function loadComponents() {
         // Wait for DOM update
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Verify critical components
-        const criticalElements = [
-            'initialSetupModal',
-            'mainWalletModal',
-            'seedPhraseModal',
-            'passwordSetupModal',
-            'sendModal',
-            'receiveModal'
-        ];
+        // Load included modal components
+        const includes = document.querySelectorAll('[data-include]');
+        const includePromises = Array.from(includes).map(async element => {
+            const filePath = element.getAttribute('data-include');
+            try {
+                const response = await fetch(filePath);
+                if (!response.ok) {
+                    throw new Error(`Failed to load included file ${filePath}: ${response.status}`);
+                }
+                element.innerHTML = await response.text();
+            } catch (error) {
+                console.error(`Error loading included file ${filePath}:`, error);
+            }
+        });
 
-        const missingElements = criticalElements.filter(id => !document.getElementById(id));
-        if (missingElements.length > 0) {
-            throw new Error(`Missing critical elements: ${missingElements.join(', ')}`);
-        }
+        await Promise.all(includePromises);
 
         return true;
     } catch (error) {
@@ -98,11 +100,26 @@ async function initializeApp() {
             }
         }
 
-        // Initialize all modals as hidden
-        const allModals = document.querySelectorAll('[id$="Modal"]');
+        // Initialize all modals
+        console.log('=== INITIALIZING MODALS ===');
+        const allModals = document.querySelectorAll('.modal');
+        console.log('Found modals:', allModals.length);
         allModals.forEach(modal => {
-            modal.classList.add('hidden');
+            console.log('Initializing modal:', modal.id);
+            console.log('Initial classes:', modal.className);
+            
+            // Ensure proper initial state
+            modal.classList.remove('open');
+            modal.style.opacity = '0';
             modal.style.display = 'none';
+            modal.style.visibility = 'hidden';
+            
+            console.log('After initialization:', {
+                classes: modal.className,
+                display: modal.style.display,
+                opacity: modal.style.opacity,
+                visibility: modal.style.visibility
+            });
         });
 
         console.log('Initializing blocks...');
@@ -215,8 +232,7 @@ function setupEventListeners() {
         signBroadcast.addEventListener('click', () => {
             if (!window.wallet?.isInitialized) {
                 videoModal.classList.add('hidden');
-                document.getElementById('initialSetupModal').classList.remove('hidden');
-                document.getElementById('initialSetupModal').style.display = 'flex';
+                showWalletSelection();
                 return;
             }
             // Handle signing and broadcasting

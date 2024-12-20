@@ -1,3 +1,11 @@
+:root {
+  --modal-width: 480px;
+  --border-radius: 16px;
+  --blur-strength: 8px;
+  --color-primary: #00ffa3;
+  --color-secondary: #00ffff;
+}
+
 /* Core modal structure and animations */
 .modal {
   position: fixed;
@@ -10,28 +18,35 @@
   justify-content: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
-  z-index: 9999;
+  transition: all 0.3s ease;
+  z-index: 99999;
+  background-color: rgba(0, 0, 0, 0.5);
+  visibility: hidden;
 }
 
 .modal.open {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
 }
 
 .modal-content {
+  position: relative;
   background-color: rgba(18, 12, 52, 0.95);
   max-width: var(--modal-width);
   width: 100%;
-  padding: 2rem;
+  margin: 1rem;
   border-radius: var(--border-radius);
   box-shadow: 0 0 30px rgba(0, 255, 163, 0.2);
   transform: translateY(20px);
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  z-index: 100001;
+  opacity: 0;
 }
 
 .modal.open .modal-content {
   transform: translateY(0);
+  opacity: 1;
 }
 
 /* Modal backdrop effects */
@@ -43,7 +58,7 @@
   height: 100%;
   background-color: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(var(--blur-strength));
-  z-index: 9998;
+  z-index: 100000;
 }
 
 /* Standard modal layouts */

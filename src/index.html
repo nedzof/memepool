@@ -7,6 +7,21 @@
     
     <!-- Third-party CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            important: false,
+            corePlugins: {
+                preflight: false,
+            },
+            theme: {
+                extend: {}
+            },
+            variants: {
+                extend: {}
+            },
+            prefix: 'tw-',  // Add a prefix to Tailwind classes
+        }
+    </script>
     
     <!-- Base styles -->
     <link rel="stylesheet" href="./css/base.css">

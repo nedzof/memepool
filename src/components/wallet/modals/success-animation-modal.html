@@ -1,0 +1,28 @@
+<!-- Success Animation Modal -->
+<div id="walletCreatedModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
+        <!-- Modal Body -->
+        <div class="modal-body p-6 pt-16 text-center">
+            <h2 class="modal-title mb-6">Wallet Created!</h2>
+            
+            <!-- Success Animation -->
+            <div class="w-24 h-24 mx-auto mb-6">
+                <svg class="w-full h-full text-[#00ffa3] animate-checkmark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+
+            <!-- Message -->
+            <p class="text-white/80 mb-6">Your wallet has been successfully created.</p>
+
+            <!-- Continue Button -->
+            <button id="continueToWalletBtn"
+                    class="modal-button w-full py-3 px-4 font-bold">
+                Continue to Wallet
+            </button>
+        </div>
+    </div>
+</div> 
