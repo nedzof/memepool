@@ -602,14 +602,28 @@ export function shiftBlocks() {
             const currentRect = currentMeme.getBoundingClientRect();
             const targetRect = firstPastBlock.getBoundingClientRect();
             
-            // Calculate scale factor from current size to target size
+            // Calculate the exact position including the size difference
             const scaleX = targetRect.width / currentRect.width;
-            
-            // Keep vertical position the same, only move horizontally
+            const scaleY = targetRect.height / currentRect.height;
+
+            // Calculate the center points to ensure proper alignment
+            const currentCenter = {
+                x: currentRect.left + (currentRect.width / 2),
+                y: currentRect.top + (currentRect.height / 2)
+            };
+            const targetCenter = {
+                x: targetRect.left + (targetRect.width / 2),
+                y: targetRect.top + (targetRect.height / 2)
+            };
+
+            // Calculate the exact translation needed
+            const translateX = targetCenter.x - currentCenter.x;
+            const translateY = targetCenter.y - currentCenter.y;
+
             animatedCurrent.style.setProperty('--start-scale', '1');
             animatedCurrent.style.setProperty('--end-scale', `${scaleX}`);
-            animatedCurrent.style.setProperty('--target-x', `${targetRect.left - currentRect.left}px`);
-            animatedCurrent.style.setProperty('--target-y', '0px'); // Keep vertical position fixed
+            animatedCurrent.style.setProperty('--target-x', `${translateX}px`);
+            animatedCurrent.style.setProperty('--target-y', `${translateY}px`);
         }
         animatedCurrent.classList.add('move-to-past');
         animationContainer.appendChild(animatedCurrent);
@@ -631,18 +645,28 @@ export function shiftBlocks() {
 
         // 2. Create and animate last upcoming to current
         const animatedUpcoming = createAnimatedElement(lastUpcoming);
-        const currentRect = currentMeme.getBoundingClientRect();
-        const lastRect = lastUpcoming.getBoundingClientRect();
-        
-        // Calculate scale factor for upcoming to current
-        const scaleX = currentRect.width / lastRect.width;
-        
-        // Keep vertical position the same, only move horizontally
+        const lastUpcomingRect = lastUpcoming.getBoundingClientRect();
+        const currentTargetRect = currentMeme.getBoundingClientRect();
+
+        const upcomingCenter = {
+            x: lastUpcomingRect.left + (lastUpcomingRect.width / 2),
+            y: lastUpcomingRect.top + (lastUpcomingRect.height / 2)
+        };
+        const currentTargetCenter = {
+            x: currentTargetRect.left + (currentTargetRect.width / 2),
+            y: currentTargetRect.top + (currentTargetRect.height / 2)
+        };
+
+        const upcomingTranslateX = currentTargetCenter.x - upcomingCenter.x;
+        const upcomingTranslateY = currentTargetCenter.y - upcomingCenter.y;
+        const upcomingScaleX = currentTargetRect.width / lastUpcomingRect.width;
+        const upcomingScaleY = currentTargetRect.height / lastUpcomingRect.height;
+
         animatedUpcoming.style.setProperty('--start-scale', '1');
-        animatedUpcoming.style.setProperty('--end-scale', `${scaleX}`);
-        animatedUpcoming.style.setProperty('--target-x', `${currentRect.left - lastRect.left}px`);
-        animatedUpcoming.style.setProperty('--target-y', '0px'); // Keep vertical position fixed
-        
+        animatedUpcoming.style.setProperty('--end-scale', `${upcomingScaleX}`);
+        animatedUpcoming.style.setProperty('--target-x', `${upcomingTranslateX}px`);
+        animatedUpcoming.style.setProperty('--target-y', `${upcomingTranslateY}px`);
+
         animatedUpcoming.classList.add('move-to-current');
         animationContainer.appendChild(animatedUpcoming);
         animatedElements.push(animatedUpcoming);
