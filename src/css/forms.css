@@ -1,0 +1,91 @@
+/* Input fields */
+.form-input {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 163, 0.3);
+  border-radius: 4px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: rgba(0, 255, 163, 0.8);
+  box-shadow: 0 0 10px rgba(0, 255, 163, 0.3);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+/* Form layouts */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -5px;
+  margin-left: -5px;
+}
+
+.form-row > .col {
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+/* Form validation */
+.form-input.is-valid {
+  border-color: #28a745;
+}
+
+.form-input.is-invalid {
+  border-color: #dc3545;
+}
+
+.valid-feedback,
+.invalid-feedback {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 80%;
+}
+
+.valid-feedback {
+  color: #28a745;
+}
+
+.invalid-feedback {
+  color: #dc3545;
+}
+
+/* Form animations */
+.form-input,
+.form-label {
+  transition: all 0.3s ease;
+}
+
+.form-input:focus + .form-label,
+.form-input:not(:placeholder-shown) + .form-label {
+  transform: translateY(-1.5rem) scale(0.75);
+  color: var(--color-primary);
+}
+
+.form-input:focus + .form-label {
+  color: var(--color-secondary);
+}
+
+.form-input::placeholder {
+  color: transparent;
+}
+
+.form-input:focus::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.3s ease;
+} 

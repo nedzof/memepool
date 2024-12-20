@@ -2,7 +2,8 @@ import { showModal, hideModal, showMainWallet, showWalletError } from './modalMa
 import { initUnisatWallet, initOKXWallet } from './walletInterfaces.js';
 import { updateProfileWithPersistence } from './cache.js';
 import { updateBalanceDisplay, handleConnectWalletButton } from './walletEvents.js';
-import { showWalletSelection, handleConnectWalletClick } from './walletSelection.js';
+import { showWalletSelection } from './modalManager.js';
+import { handleConnectWalletClick } from './walletSelection.js';
 
 // Wallet type detection
 export async function detectWalletType() {

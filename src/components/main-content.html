@@ -1,10 +1,5 @@
 <body class="p-8">
-    <!-- Logo -->
-    <div class="fixed top-4 left-4 z-50">
-        <img src="../js/Memepool_Logo.svg" alt="Memepool Logo" class="h-16 w-auto">
-    </div>
-
-    <div class="text-center mb-8">
+    <div class="text-center mb-8 mt-20">
         <button class="shift-blocks gradient-button px-6 py-2 rounded-lg font-bold">
             Shift Blocks
         </button>
@@ -34,12 +29,108 @@
                 <div class="current-meme rounded-xl overflow-hidden relative" id="currentMeme">
                     <div class="relative w-full h-full">
                         <img src="https://placehold.co/400x400" alt="Current Meme" class="w-full h-full object-cover">
-                        <div class="absolute bottom-4 left-0 right-0 flex justify-center">
-                            <button class="neon-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#00ffa3] to-[#00ffff] text-black hover:scale-110 transform transition-all duration-300 shadow-lg relative overflow-hidden group">
-                                <div class="relative z-10">COMPETE</div>
-                                <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                <div class="absolute inset-0 -z-10 animate-pulse-slow bg-gradient-to-r from-[#00ffa3] to-[#00ffff] blur-xl opacity-50"></div>
-                            </button>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+                            <div class="relative z-20">
+                                <style>
+                                    @keyframes beamRotate {
+                                        0% { transform: translate(-50%, -50%) rotate(0deg); }
+                                        100% { transform: translate(-50%, -50%) rotate(360deg); }
+                                    }
+                                    @keyframes superPulse {
+                                        0% { transform: scale(1); filter: brightness(1); }
+                                        50% { transform: scale(1.1); filter: brightness(1.3); }
+                                        100% { transform: scale(1); filter: brightness(1); }
+                                    }
+                                    @keyframes glowingBeams {
+                                        0% { opacity: 0.5; width: 150%; height: 150%; }
+                                        50% { opacity: 0.8; width: 200%; height: 200%; }
+                                        100% { opacity: 0.5; width: 150%; height: 150%; }
+                                    }
+                                    @keyframes textPop {
+                                        0% { transform: scale(1); }
+                                        25% { transform: scale(1.1); }
+                                        50% { transform: scale(1); }
+                                        75% { transform: scale(1.05); }
+                                        100% { transform: scale(1); }
+                                    }
+                                </style>
+                                <div style="
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    width: 150%;
+                                    height: 150%;
+                                    background: conic-gradient(
+                                        from 0deg,
+                                        transparent 0deg,
+                                        rgba(0, 255, 163, 0.3) 20deg,
+                                        transparent 40deg,
+                                        transparent 140deg,
+                                        rgba(0, 255, 163, 0.3) 160deg,
+                                        transparent 180deg,
+                                        transparent 280deg,
+                                        rgba(0, 255, 163, 0.3) 300deg,
+                                        transparent 320deg
+                                    );
+                                    animation: beamRotate 4s linear infinite;
+                                    z-index: -1;
+                                "></div>
+                                <div style="
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    width: 150%;
+                                    height: 150%;
+                                    background: radial-gradient(circle, 
+                                        rgba(0, 255, 163, 0.4) 0%,
+                                        rgba(0, 255, 163, 0.2) 30%,
+                                        transparent 70%
+                                    );
+                                    animation: glowingBeams 2s ease-in-out infinite;
+                                    z-index: -1;
+                                "></div>
+                                <button type="button" data-compete-button style="
+                                    position: relative;
+                                    display: inline-flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    min-width: 200px;
+                                    min-height: 3.5rem;
+                                    padding: 1rem 2.5rem;
+                                    background: linear-gradient(45deg, #00ffa3, #00ffcc);
+                                    color: black;
+                                    font-size: 1.25rem;
+                                    font-weight: 800;
+                                    text-transform: uppercase;
+                                    letter-spacing: 3px;
+                                    border: none;
+                                    border-radius: 0.5rem;
+                                    cursor: pointer;
+                                    overflow: visible;
+                                    transform: translateZ(0);
+                                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                    box-shadow: 
+                                        0 0 25px rgba(0, 255, 163, 0.5),
+                                        0 0 50px rgba(0, 255, 163, 0.3),
+                                        inset 0 0 20px rgba(255, 255, 255, 0.5);
+                                    animation: superPulse 2s infinite;
+                                ">
+                                    <span style="
+                                        position: relative;
+                                        z-index: 10;
+                                        background: linear-gradient(to right, #000, #111);
+                                        -webkit-background-clip: text;
+                                        background-clip: text;
+                                        font-weight: 900;
+                                        animation: textPop 3s infinite;
+                                        text-shadow: 
+                                            0 0 10px rgba(0, 255, 163, 0.5),
+                                            0 0 20px rgba(0, 255, 163, 0.3);
+                                    ">COMPETE</span>
+                                </button>
+                            </div>
                         </div>
                         <!-- Block number display will be added by JavaScript -->
                     </div>

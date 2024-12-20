@@ -1,0 +1,111 @@
+/* Glow effects */
+.glow {
+  position: relative;
+}
+
+.glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 255, 163, 0.4);
+  filter: blur(20px);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glow:hover::before {
+  opacity: 1;
+}
+
+/* Neon effects */
+.neon-text {
+  color: #fff;
+  text-shadow:
+    0 0 5px var(--color-primary),
+    0 0 10px var(--color-primary),
+    0 0 20px var(--color-primary),
+    0 0 40px var(--color-secondary),
+    0 0 80px var(--color-secondary),
+    0 0 90px var(--color-secondary),
+    0 0 100px var(--color-secondary),
+    0 0 150px var(--color-secondary);
+}
+
+.neon-border {
+  position: relative;
+  border: 2px solid transparent;
+}
+
+.neon-border::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid transparent;
+  border-radius: inherit;
+  background: linear-gradient(
+    45deg,
+    var(--color-primary),
+    var(--color-secondary),
+    var(--color-primary)
+  );
+  background-size: 400% 400%;
+  animation: neonBorder 5s linear infinite;
+  z-index: -1;
+}
+
+@keyframes neonBorder {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Gradient effects */
+.gradient-text {
+  background: linear-gradient(
+    45deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-border {
+  border: 4px solid;
+  border-image: linear-gradient(
+    45deg,
+    var(--color-primary),
+    var(--color-secondary)
+  ) 1;
+}
+
+/* Shadow effects */
+.shadow-primary {
+  box-shadow: 0 4px 6px rgba(0, 255, 163, 0.4);
+}
+
+.shadow-secondary {
+  box-shadow: 0 4px 6px rgba(0, 255, 255, 0.4);
+}
+
+.shadow-lg-primary {
+  box-shadow: 0 10px 15px rgba(0, 255, 163, 0.4);
+}
+
+.shadow-lg-secondary {
+  box-shadow: 0 10px 15px rgba(0, 255, 255, 0.4);
+} 

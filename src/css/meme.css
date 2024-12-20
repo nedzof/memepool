@@ -123,15 +123,31 @@
 }
 
 /* Block number display */
-.block-number {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 4px;
-    background: rgba(0, 0, 0, 0.7);
-    color: var(--color-primary);
-    font-size: 0.75rem;
-    text-align: center;
-    border-top: 1px solid rgba(0, 255, 163, 0.2);
+.meme-block .block-number-display,
+.current-meme .block-number-display {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.25rem !important;
+    height: 20% !important;
+    max-height: 24px !important;
+    background: linear-gradient(180deg, 
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.3) 25%,
+        rgba(0, 0, 0, 0.6) 100%
+    ) !important;
+    backdrop-filter: blur(4px);
+}
+
+.block-number-display span {
+    font-size: 0.75rem !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+    letter-spacing: 0.05em !important;
+    color: #00ffa3 !important;
+    text-shadow: 0 0 10px rgba(0, 255, 163, 0.4);
+    line-height: 1 !important;
 } 

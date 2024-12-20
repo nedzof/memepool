@@ -5,7 +5,7 @@ let isAnimating = false;
 let animationQueue = [];
 const ANIMATION_DURATION = 800; // Base duration for animations in ms
 let currentBlockNumber = 803525; // This will be updated from WhatsOnChain
-let upcomingStartNumber = currentBlockNumber + 5;
+let upcomingStartNumber = currentBlockNumber + 1;
 let pastStartNumber = currentBlockNumber - 1;
 
 // Track images for each block
@@ -349,7 +349,7 @@ async function fetchCurrentBlockNumber() {
         const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/chain/info');
         const data = await response.json();
         currentBlockNumber = data.blocks;
-        upcomingStartNumber = currentBlockNumber + 5;
+        upcomingStartNumber = currentBlockNumber + 1;
         pastStartNumber = currentBlockNumber - 1;
         return currentBlockNumber;
     } catch (error) {
@@ -375,6 +375,8 @@ function createBlockNumberDisplay(number) {
 export async function initializeBlocks() {
     // Fetch current block number first
     currentBlockNumber = await fetchCurrentBlockNumber();
+    upcomingStartNumber = currentBlockNumber + 1;
+    pastStartNumber = currentBlockNumber - 1;
     
     const upcomingBlocks = document.getElementById('upcomingBlocks');
     const pastBlocks = document.getElementById('pastBlocks');
@@ -389,9 +391,10 @@ export async function initializeBlocks() {
     upcomingBlocks.innerHTML = '';
     pastBlocks.innerHTML = '';
 
-    // Initialize upcoming blocks
+    // Initialize upcoming blocks with sequential numbers
     for (let i = 0; i < optimalCount; i++) {
-        const blockNumber = upcomingStartNumber - i;
+        // Calculate block number so the rightmost block (i=0) is current+1
+        const blockNumber = currentBlockNumber + optimalCount - i;
         const block = document.createElement('div');
         block.className = 'meme-block rounded cursor-pointer relative group';
         block.innerHTML = `
@@ -404,9 +407,9 @@ export async function initializeBlocks() {
         upcomingBlocks.appendChild(block);
     }
 
-    // Initialize past blocks
+    // Initialize past blocks with sequential numbers
     for (let i = 0; i < optimalCount; i++) {
-        const blockNumber = pastStartNumber - i;
+        const blockNumber = currentBlockNumber - (i + 1);
         const block = document.createElement('div');
         block.className = 'meme-block rounded cursor-pointer relative group';
         block.innerHTML = `
@@ -537,6 +540,40 @@ export function shiftBlocks() {
         return;
     }
 
+    // Validate block numbers before movement
+    const lastUpcomingNumber = parseInt(lastUpcoming.querySelector('.block-number-display span').textContent.replace('#', ''));
+    const currentBlockDisplay = currentMeme.querySelector('.block-number-display span');
+    const currentNumber = parseInt(currentBlockDisplay.textContent.replace('#', ''));
+    
+    // Validate that the last upcoming block is one more than the current block
+    if (lastUpcomingNumber !== currentNumber + 1) {
+        console.error('Block number mismatch: lastUpcoming:', lastUpcomingNumber, 'current:', currentNumber);
+        isAnimating = false;
+        return;
+    }
+
+    // Validate past blocks are in sequence
+    for (let i = 0; i < pastBlocksArray.length - 1; i++) {
+        const currentPastNumber = parseInt(pastBlocksArray[i].querySelector('.block-number-display span').textContent.replace('#', ''));
+        const nextPastNumber = parseInt(pastBlocksArray[i + 1].querySelector('.block-number-display span').textContent.replace('#', ''));
+        if (currentPastNumber !== nextPastNumber + 1) {
+            console.error('Past blocks sequence mismatch at index', i);
+            isAnimating = false;
+            return;
+        }
+    }
+
+    // Validate upcoming blocks are in sequence
+    for (let i = 0; i < upcomingBlocksArray.length - 1; i++) {
+        const currentUpcomingNumber = parseInt(upcomingBlocksArray[i].querySelector('.block-number-display span').textContent.replace('#', ''));
+        const nextUpcomingNumber = parseInt(upcomingBlocksArray[i + 1].querySelector('.block-number-display span').textContent.replace('#', ''));
+        if (currentUpcomingNumber !== nextUpcomingNumber + 1) {
+            console.error('Upcoming blocks sequence mismatch at index', i, 'current:', currentUpcomingNumber, 'next:', nextUpcomingNumber);
+            isAnimating = false;
+            return;
+        }
+    }
+
     // Get the new image source early
     const newImageSrc = lastUpcoming.querySelector('img').src;
 
@@ -567,13 +604,12 @@ export function shiftBlocks() {
             
             // Calculate scale factor from current size to target size
             const scaleX = targetRect.width / currentRect.width;
-            const scaleY = targetRect.height / currentRect.height;
             
-            // Set transform properties for the animation
+            // Keep vertical position the same, only move horizontally
             animatedCurrent.style.setProperty('--start-scale', '1');
             animatedCurrent.style.setProperty('--end-scale', `${scaleX}`);
             animatedCurrent.style.setProperty('--target-x', `${targetRect.left - currentRect.left}px`);
-            animatedCurrent.style.setProperty('--target-y', `${targetRect.top - currentRect.top}px`);
+            animatedCurrent.style.setProperty('--target-y', '0px'); // Keep vertical position fixed
         }
         animatedCurrent.classList.add('move-to-past');
         animationContainer.appendChild(animatedCurrent);
@@ -581,29 +617,15 @@ export function shiftBlocks() {
 
         // Hide original blocks after clones are created
         requestAnimationFrame(() => {
-            // Hide side blocks
-            upcomingBlocksArray.forEach(block => {
-                if (block !== lastUpcoming) {
-                    block.style.opacity = '0';
-                }
-            });
+            // Hide all blocks during animation
+            upcomingBlocksArray.forEach(block => block.style.opacity = '0');
             pastBlocksArray.forEach(block => block.style.opacity = '0');
 
-            // Update current meme image and thumbnails during animation
+            // Update current meme image during animation
             const currentMemeImage = currentMeme.querySelector('img');
             if (currentMemeImage) {
                 currentMemeImage.src = newImageSrc;
                 currentMemeImage.setAttribute('data-initialized', 'true');
-                // Update thumbnails again during animation
-                updateSubmissionThumbnails(newImageSrc);
-            }
-
-            // Hide last upcoming when its clone starts moving
-            const upcomingClone = animatedElements.find(el => el.classList.contains('move-to-current'));
-            if (upcomingClone) {
-                upcomingClone.addEventListener('animationstart', () => {
-                    lastUpcoming.style.opacity = '0';
-                });
             }
         });
 
@@ -614,12 +636,12 @@ export function shiftBlocks() {
         
         // Calculate scale factor for upcoming to current
         const scaleX = currentRect.width / lastRect.width;
-        const scaleY = currentRect.height / lastRect.height;
         
+        // Keep vertical position the same, only move horizontally
         animatedUpcoming.style.setProperty('--start-scale', '1');
         animatedUpcoming.style.setProperty('--end-scale', `${scaleX}`);
         animatedUpcoming.style.setProperty('--target-x', `${currentRect.left - lastRect.left}px`);
-        animatedUpcoming.style.setProperty('--target-y', `${currentRect.top - lastRect.top}px`);
+        animatedUpcoming.style.setProperty('--target-y', '0px'); // Keep vertical position fixed
         
         animatedUpcoming.classList.add('move-to-current');
         animationContainer.appendChild(animatedUpcoming);
@@ -632,6 +654,7 @@ export function shiftBlocks() {
             const nextRect = nextBlock.getBoundingClientRect();
             const currentRect = block.getBoundingClientRect();
             animated.style.setProperty('--shift-x', `${nextRect.left - currentRect.left}px`);
+            animated.style.setProperty('--shift-y', '0px'); // Keep vertical position fixed
             animated.classList.add('shift-block');
             animationContainer.appendChild(animated);
             animatedElements.push(animated);
@@ -645,6 +668,7 @@ export function shiftBlocks() {
                 const nextRect = nextBlock.getBoundingClientRect();
                 const currentRect = block.getBoundingClientRect();
                 animated.style.setProperty('--shift-x', `${nextRect.left - currentRect.left}px`);
+                animated.style.setProperty('--shift-y', '0px'); // Keep vertical position fixed
                 animated.classList.add('shift-block');
                 animationContainer.appendChild(animated);
                 animatedElements.push(animated);
@@ -653,43 +677,72 @@ export function shiftBlocks() {
 
         // Wait for all animations to complete
         setTimeout(() => {
-            // Update numbers
+            // Update numbers and content first
             upcomingStartNumber++;
             pastStartNumber++;
             currentBlockNumber++;
 
-            // Update displays
-            const currentMemeNumber = currentMeme.querySelector('.text-xs');
+            // Update block numbers and content in place while animated elements are still visible
+            const optimalCount = getOptimalBlockCount();
+
+            // Update upcoming blocks
+            upcomingBlocksArray.forEach((block, index) => {
+                const blockNumber = currentBlockNumber + (optimalCount - index);
+                const blockDisplay = block.querySelector('.block-number-display span');
+                if (blockDisplay) {
+                    blockDisplay.textContent = `#${blockNumber}`;
+                }
+                const img = block.querySelector('img');
+                if (img) {
+                    img.src = getImageForBlock(blockNumber);
+                }
+            });
+
+            // Update past blocks
+            pastBlocksArray.forEach((block, index) => {
+                const blockNumber = currentBlockNumber - (index + 1);
+                const blockDisplay = block.querySelector('.block-number-display span');
+                if (blockDisplay) {
+                    blockDisplay.textContent = `#${blockNumber}`;
+                }
+                const img = block.querySelector('img');
+                if (img) {
+                    img.src = getImageForBlock(blockNumber);
+                }
+            });
+
+            // Update current meme display
+            const currentMemeNumber = currentMeme.querySelector('.block-number-display span');
             if (currentMemeNumber) {
                 currentMemeNumber.textContent = `#${currentBlockNumber}`;
             }
 
+            // Update submissions block number
             const submissionsBlockNumber = document.getElementById('currentBlockNumber');
             if (submissionsBlockNumber) {
-                submissionsBlockNumber.textContent = `#${currentBlockNumber}`;
+                submissionsBlockNumber.textContent = `${currentBlockNumber}`;
             }
 
-            // Remove animated elements
-            animatedElements.forEach(el => el.remove());
+            // Add a small delay before showing the real blocks to ensure smooth transition
+            setTimeout(() => {
+                // Remove animated elements
+                animatedElements.forEach(el => el.remove());
 
-            // Show current meme in its new state
-            currentMeme.style.opacity = '1';
+                // Show all blocks in their new positions
+                upcomingBlocksArray.forEach(block => block.style.opacity = '1');
+                pastBlocksArray.forEach(block => block.style.opacity = '1');
+                currentMeme.style.opacity = '1';
 
-            // Update thumbnails one final time after animation
-            updateSubmissionThumbnails(newImageSrc);
+                // Show the BEAT THIS button
+                if (beatButton) {
+                    beatButton.style.opacity = '1';
+                    beatButton.style.pointerEvents = 'auto';
+                }
 
-            // Reinitialize blocks with new positions
-            initializeBlocks();
-
-            // Show the BEAT THIS button
-            if (beatButton) {
-                beatButton.style.opacity = '1';
-                beatButton.style.pointerEvents = 'auto';
-            }
-
-            // Reset animation state
-            isAnimating = false;
-        }, 800); // Match animation duration
+                // Reset animation state
+                isAnimating = false;
+            }, 50); // Small delay to ensure smooth transition
+        }, ANIMATION_DURATION - 50); // Subtract the transition delay
     });
 }
 
@@ -733,47 +786,40 @@ style.textContent = `
         will-change: transform;
         transition: box-shadow 0.3s ease;
         opacity: 1 !important;
+        transform-origin: center;
     }
 
     .move-to-past {
-        animation: move-to-past 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: move-to-past 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
     }
 
     .move-to-current {
-        animation: move-to-current 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: move-to-current 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
     }
 
     .shift-block {
-        animation: shift-block 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: shift-block 0.8s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
     }
 
     @keyframes move-to-past {
         0% {
-            transform: translate(0, 0) scale(var(--start-scale));
+            transform: translate(0, 0) scale(1);
             box-shadow: 0 0 30px rgba(0, 255, 163, 0.6);
-            opacity: 1;
-        }
-        50% {
-            transform: translate(calc(var(--target-x) * 0.6), calc(var(--target-y) * 0.6)) scale(calc((var(--start-scale) + var(--end-scale)) * 0.5));
-            box-shadow: 0 0 40px rgba(0, 255, 163, 0.8);
-            opacity: 1;
         }
         100% {
             transform: translate(var(--target-x), var(--target-y)) scale(var(--end-scale));
             box-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
-            opacity: 1;
         }
     }
 
     @keyframes move-to-current {
         0% {
-            transform: translate(0, 0) scale(var(--start-scale));
-        }
-        50% {
-            transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) * 0.5)) scale(calc(var(--end-scale) * 1.1));
+            transform: translate(0, 0) scale(1);
+            box-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
         }
         100% {
             transform: translate(var(--target-x), var(--target-y)) scale(var(--end-scale));
+            box-shadow: 0 0 30px rgba(0, 255, 163, 0.6);
         }
     }
 
@@ -782,7 +828,7 @@ style.textContent = `
             transform: translate(0, 0);
         }
         100% {
-            transform: translate(var(--shift-x), 0);
+            transform: translate(var(--shift-x), var(--shift-y));
         }
     }
 `;

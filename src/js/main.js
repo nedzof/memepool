@@ -3,7 +3,8 @@ import { initializeSubmissions } from './submissions.js';
 import BSVWallet from './BSVWallet.js';
 import { initializeWallet, getLastWalletSession } from './wallet/walletInit.js';
 import { showMainWallet, showWalletError } from './wallet/modalManager.js';
-import { showWalletSelection, handleConnectWalletClick } from './wallet/walletSelection.js';
+import { showWalletSelection } from './wallet/modalManager.js';
+import { handleConnectWalletClick } from './wallet/walletSelection.js';
 import bsv from './bsv.js';
 import { Wallet } from './bsv.js';
 

@@ -37,9 +37,12 @@ function displaySeedPhrase(mnemonic) {
     seedPhraseContainer.classList.add('opacity-0');
     
     seedPhraseContainer.innerHTML = words.map((word, index) => `
-        <div class="relative p-2 rounded-lg bg-gradient-to-r from-[#00ffa3]/10 to-[#00ffff]/10 hover:from-[#00ffa3]/20 hover:to-[#00ffff]/20 transition-all duration-300 group">
-            <span class="absolute top-1 left-2 text-xs text-[#00ffa3]/50">${index + 1}</span>
-            <span class="block text-center text-[#00ffa3] text-sm mt-1 seed-word">${word}</span>
+        <div class="seed-word-container neon-card glow">
+            <div class="seed-word-background"></div>
+            <div class="seed-word-hover-effect"></div>
+            <span class="seed-word-number neon-text">${index + 1}</span>
+            <span class="seed-word-text neon-text">${word}</span>
+            <div class="seed-word-border"></div>
         </div>
     `).join('');
 }
@@ -55,11 +58,10 @@ function setupSeedPhraseEvents() {
     
     if (revealBtn && blurOverlay && seedPhraseContainer) {
         revealBtn.addEventListener('click', () => {
-            blurOverlay.style.opacity = '0';
-            // Show the seed phrase with transition
+            blurOverlay.classList.add('fade-out');
             seedPhraseContainer.classList.remove('opacity-0');
             setTimeout(() => {
-                blurOverlay.style.display = 'none';
+                blurOverlay.classList.add('hidden');
             }, 300);
         });
     }
@@ -67,7 +69,13 @@ function setupSeedPhraseEvents() {
     // Enable/disable continue button based on checkbox
     if (seedConfirmCheckbox && continueBtn) {
         seedConfirmCheckbox.addEventListener('change', () => {
-            continueBtn.disabled = !seedConfirmCheckbox.checked;
+            if (seedConfirmCheckbox.checked) {
+                continueBtn.classList.remove('disabled');
+                continueBtn.disabled = false;
+            } else {
+                continueBtn.classList.add('disabled');
+                continueBtn.disabled = true;
+            }
         });
     }
 
@@ -90,72 +98,12 @@ function setupSeedPhraseEvents() {
             if (mnemonic) {
                 try {
                     await navigator.clipboard.writeText(mnemonic);
-                    copyBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        Copied!
-                    `;
-                    setTimeout(() => {
-                        copyBtn.innerHTML = `
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                            </svg>
-                            Copy Seed Phrase
-                        `;
-                    }, 2000);
-                } catch (error) {
-                    console.error('Failed to copy seed phrase:', error);
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => copyBtn.classList.remove('copied'), 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
                 }
             }
-        });
-    }
-
-    // Setup seed phrase input boxes
-    const seedPhraseInputs = document.getElementById('seedPhraseInputs');
-    if (seedPhraseInputs) {
-        // Create 12 input boxes
-        seedPhraseInputs.innerHTML = Array.from({ length: 12 }, (_, i) => `
-            <div class="relative">
-                <span class="absolute top-1 left-2 text-xs text-[#00ffa3]/50">${i + 1}</span>
-                <input type="password" 
-                       class="w-full bg-black/30 rounded-lg p-4 pt-6 text-white text-center font-medium relative z-10 seed-input"
-                       data-index="${i}"
-                       placeholder="●●●●">
-                <div class="absolute inset-0 rounded-lg bg-gradient-to-r from-[#00ffa3]/10 to-[#00ffff]/10 opacity-10"></div>
-            </div>
-        `).join('');
-
-        // Add event listeners to handle input navigation
-        const inputs = seedPhraseInputs.querySelectorAll('input');
-        inputs.forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                if (e.target.value.includes(' ')) {
-                    // If pasting multiple words
-                    const words = e.target.value.trim().split(/\s+/);
-                    words.forEach((word, wordIndex) => {
-                        if (inputs[index + wordIndex]) {
-                            inputs[index + wordIndex].value = word;
-                        }
-                    });
-                    // Focus next empty input or last input
-                    const nextEmpty = Array.from(inputs).find((input, i) => i > index && !input.value);
-                    if (nextEmpty) nextEmpty.focus();
-                    else inputs[inputs.length - 1].focus();
-                } else if (e.target.value) {
-                    // Move to next input after typing a word
-                    if (index < inputs.length - 1) {
-                        inputs[index + 1].focus();
-                    }
-                }
-            });
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                    // Move to previous input when backspacing an empty input
-                    inputs[index - 1].focus();
-                }
-            });
         });
     }
 }
@@ -180,13 +128,20 @@ export function setupPasswordValidation() {
     const strengthLabel = document.getElementById('strengthLabel');
     const continueBtn = document.getElementById('continueToProfile');
     
-    // Password requirement checks
-    const lengthCheck = document.getElementById('lengthCheck');
-    const upperCheck = document.getElementById('upperCheck');
-    const numberCheck = document.getElementById('numberCheck');
-    const specialCheck = document.getElementById('specialCheck');
-    
     const updateStrength = (password) => {
+        const lengthCheck = document.getElementById('lengthCheck');
+        const upperCheck = document.getElementById('upperCheck');
+        const numberCheck = document.getElementById('numberCheck');
+        const specialCheck = document.getElementById('specialCheck');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthLabel = document.getElementById('strengthLabel');
+        
+        // Reset all checks
+        [lengthCheck, upperCheck, numberCheck, specialCheck].forEach(check => {
+            check.innerHTML = '';
+            check.classList.remove('valid');
+        });
+        
         let strength = 0;
         const checks = {
             length: password.length >= 8,
@@ -196,32 +151,46 @@ export function setupPasswordValidation() {
         };
         
         // Update check marks
-        lengthCheck.innerHTML = checks.length ? '✓' : '';
-        upperCheck.innerHTML = checks.upper ? '✓' : '';
-        numberCheck.innerHTML = checks.number ? '✓' : '';
-        specialCheck.innerHTML = checks.special ? '✓' : '';
+        if (checks.length) {
+            lengthCheck.innerHTML = '<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            lengthCheck.classList.add('valid');
+            strength++;
+        }
+        if (checks.upper) {
+            upperCheck.innerHTML = '<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            upperCheck.classList.add('valid');
+            strength++;
+        }
+        if (checks.number) {
+            numberCheck.innerHTML = '<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            numberCheck.classList.add('valid');
+            strength++;
+        }
+        if (checks.special) {
+            specialCheck.innerHTML = '<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            specialCheck.classList.add('valid');
+            strength++;
+        }
         
-        // Calculate strength
-        strength += checks.length ? 25 : 0;
-        strength += checks.upper ? 25 : 0;
-        strength += checks.number ? 25 : 0;
-        strength += checks.special ? 25 : 0;
+        // Update strength bar and label
+        strengthBar.style.width = `${(strength / 4) * 100}%`;
         
-        // Update UI
-        strengthBar.style.width = `${strength}%`;
-        strengthBar.style.background = 
-            strength <= 25 ? '#ff0000' :
-            strength <= 50 ? '#ff9900' :
-            strength <= 75 ? '#ffff00' :
-            '#00ff00';
-            
-        strengthLabel.textContent = 
-            strength <= 25 ? 'Too weak' :
-            strength <= 50 ? 'Weak' :
-            strength <= 75 ? 'Good' :
-            'Strong';
-            
-        return strength === 100;
+        strengthLabel.classList.remove('weak', 'fair', 'good', 'strong');
+        if (strength === 4) {
+            strengthLabel.textContent = 'Strong';
+            strengthLabel.classList.add('strong');
+        } else if (strength === 3) {
+            strengthLabel.textContent = 'Good';
+            strengthLabel.classList.add('good');
+        } else if (strength === 2) {
+            strengthLabel.textContent = 'Fair';
+            strengthLabel.classList.add('fair');
+        } else {
+            strengthLabel.textContent = 'Too weak';
+            strengthLabel.classList.add('weak');
+        }
+        
+        return strength === 4;
     };
     
     const updatePasswordMatch = () => {
@@ -230,13 +199,14 @@ export function setupPasswordValidation() {
         const matchDiv = document.getElementById('passwordMatch');
         
         if (confirm) {
+            matchDiv.classList.remove('valid', 'invalid');
             if (password === confirm) {
                 matchDiv.textContent = 'Passwords match';
-                matchDiv.className = 'text-sm mt-2 text-[#00ffa3]';
+                matchDiv.classList.add('valid');
                 return true;
             } else {
                 matchDiv.textContent = 'Passwords do not match';
-                matchDiv.className = 'text-sm mt-2 text-red-500';
+                matchDiv.classList.add('invalid');
                 return false;
             }
         }
@@ -250,16 +220,10 @@ export function setupPasswordValidation() {
             const type = input.type === 'password' ? 'text' : 'password';
             input.type = type;
             
-            btn.innerHTML = type === 'password' ? `
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-            ` : `
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                </svg>
-            `;
+            // Update icon based on password visibility
+            btn.innerHTML = type === 'password' ? 
+                '<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>' :
+                '<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>';
         });
     });
     
@@ -364,44 +328,28 @@ async function showSuccessAnimation() {
     const passwordModal = document.getElementById('passwordSetupModal');
     if (passwordModal) {
         passwordModal.classList.add('modal-exit');
-        passwordModal.classList.remove('show');
         
         setTimeout(async () => {
             passwordModal.classList.add('hidden');
-            passwordModal.style.display = 'none';
             
             // Show success animation
             const successModal = document.getElementById('walletCreatedModal');
             if (successModal) {
                 successModal.classList.remove('hidden');
-                successModal.style.display = 'flex';
+                successModal.classList.add('modal', 'open');
                 
-                // Create Solana-style success animation
                 const animationContainer = successModal.querySelector('.success-checkmark') || document.createElement('div');
-                animationContainer.className = 'success-checkmark relative w-32 h-32';
+                animationContainer.className = 'success-checkmark';
                 
-                // Set the animation HTML
                 animationContainer.innerHTML = `
-                    <div class="relative w-full h-full">
-                        <!-- Animation content -->
-                        <!-- ... existing animation HTML ... -->
-                    </div>
+                    <svg class="success-circle" viewBox="0 0 52 52">
+                        <circle class="success-circle" cx="26" cy="26" r="25" />
+                        <path class="success-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                    </svg>
                 `;
                 
-                // Ensure the animation container is in the modal
                 if (!successModal.querySelector('.success-checkmark')) {
                     successModal.appendChild(animationContainer);
-                }
-                
-                // Add required styles
-                const styleId = 'success-animation-styles';
-                if (!document.getElementById(styleId)) {
-                    const style = document.createElement('style');
-                    style.id = styleId;
-                    style.textContent = `
-                        /* ... existing styles ... */
-                    `;
-                    document.head.appendChild(style);
                 }
 
                 // Wait for a short delay to ensure animation starts

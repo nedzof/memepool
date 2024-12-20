@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<header class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black to-transparent">
+<header class="fixed top-0 left-0 right-0 z-50">
     <div class="container mx-auto px-4 py-4">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-8">
                 <!-- Logo -->
-                <img src="/src/assets/Memepool_Logo.svg" alt="Memepire" class="h-8">
+                <div class="ml-[calc(25vw-50px)]">
+                    <img src="../assets/images/Memepool_Logo.svg" alt="Memepool Logo" class="h-16 w-auto">
+                </div>
             </div>
 
             <!-- Connect Wallet Button -->
             <button id="connectWalletBtn" 
-                    class="px-6 py-2 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
-                    style="background: linear-gradient(45deg, #ff00ff, #00ffff);
-                           box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                    class="px-6 py-2 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-black relative overflow-hidden group"
+                    style="background: #00ffa3;
+                           box-shadow: 0 0 15px rgba(0, 255, 163, 0.5)">
                 <div class="relative z-10">Connect Wallet</div>
                 <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>

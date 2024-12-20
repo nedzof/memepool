@@ -9,62 +9,40 @@ export function showModal(modalId) {
         return;
     }
 
-    // Add overlay and backdrop with enhanced animations
+    // Add modal classes from modals.css
     modal.classList.remove('hidden');
-    modal.classList.add('modal-overlay', 'neon-border');
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.position = 'fixed';
-    modal.style.inset = '0';
-    modal.style.zIndex = '50';
-    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-    modal.style.backdropFilter = 'blur(8px)';
-    console.log('Modal base styles applied');
-
+    modal.classList.add('modal', 'modal-backdrop', 'neon-border');
+    
     // Get the modal content
     const content = modal.querySelector('.modal-content') || modal.firstElementChild;
     if (content) {
-        // Prevent event propagation on modal content
-        content.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
+        // Prevent event propagation
+        content.addEventListener('click', (e) => e.stopPropagation());
+        
+        // Add animation classes
         content.classList.add('modal-enter');
-        console.log('Modal content found and enter animation added');
         
-        // Add Solana-style effects
+        // Add existing effect classes to elements
         content.querySelectorAll('.wallet-action-btn').forEach(btn => {
-            btn.classList.add('neon-button', 'ripple');
-        });
-        
-        content.querySelectorAll('input').forEach(input => {
-            input.classList.add('neon-input');
+            btn.classList.add('neon-button', 'glow');
         });
         
         content.querySelectorAll('.balance-value').forEach(balance => {
             balance.classList.add('neon-text');
         });
         
-        // Add glowing effects to cards
+        // Add card effects
         content.querySelectorAll('[class*="rounded-xl"]').forEach(card => {
             if (!card.classList.contains('neon-button')) {
                 card.classList.add('balance-card');
             }
         });
         
-        // Add backdrop blur with animation
-        modal.classList.add('modal-backdrop');
-        console.log('Solana effects applied');
-        
         // Trigger animations
         requestAnimationFrame(() => {
-            modal.classList.add('show');
+            modal.classList.add('open');
             content.classList.add('show');
-            console.log('Show animations triggered');
         });
-    } else {
-        console.error('No modal content found');
     }
 
     // Add click outside to close
@@ -76,9 +54,7 @@ export function showModal(modalId) {
         }
     };
     
-    // Remove any existing click listeners
     modal.removeEventListener('click', handleOutsideClick);
-    // Add the click listener
     modal.addEventListener('click', handleOutsideClick);
 }
 
@@ -261,129 +237,58 @@ export function showWalletSelection() {
     console.log('Showing wallet selection modal');
     let walletSelectionModal = document.getElementById('walletSelectionModal');
     
-    // Create modal if it doesn't exist
     if (!walletSelectionModal) {
         console.log('Creating wallet selection modal');
         walletSelectionModal = document.createElement('div');
         walletSelectionModal.id = 'walletSelectionModal';
-        walletSelectionModal.className = 'modal';
+        walletSelectionModal.className = 'modal wallet-modal';
         
-        // Create modal content
         walletSelectionModal.innerHTML = `
-            <div class="modal-content bg-black/90 rounded-xl p-6 max-w-md w-full mx-4 relative">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-white">Connect Wallet</h2>
-                    <button class="close-modal text-gray-400 hover:text-white">
+            <div class="modal-content">
+                <div class="wallet-header">
+                    <h2 class="wallet-title">Connect Wallet</h2>
+                    <button class="close-modal wallet-close">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
-                <div class="space-y-4">
-                    <button class="wallet-option w-full p-4 rounded-xl bg-black/50 border border-[#00ffa3]/20 hover:border-[#00ffa3] flex items-center justify-between group transition-all duration-300" onclick="window.connectOKXWallet()">
-                        <span class="text-white font-medium">OKX Wallet</span>
-                        <img src="/assets/okx-logo.png" alt="OKX" class="w-8 h-8">
-                    </button>
-                    <button class="wallet-option w-full p-4 rounded-xl bg-black/50 border border-[#00ffa3]/20 hover:border-[#00ffa3] flex items-center justify-between group transition-all duration-300" onclick="window.connectUnisatWallet()">
-                        <span class="text-white font-medium">Unisat Wallet</span>
-                        <img src="/assets/unisat-logo.png" alt="Unisat" class="w-8 h-8">
-                    </button>
-                    <button class="wallet-option w-full p-4 rounded-xl bg-black/50 border border-[#00ffa3]/20 hover:border-[#00ffa3] flex items-center justify-between group transition-all duration-300" onclick="window.connectYoursWallet()">
-                        <span class="text-white font-medium">Yours Wallet</span>
-                        <img src="/assets/yours-logo.png" alt="Yours" class="w-8 h-8">
-                    </button>
-                    <div class="relative">
-                        <div class="absolute inset-0 flex items-center">
-                            <div class="w-full border-t border-gray-800"></div>
+                <div class="wallet-body">
+                    <div class="wallet-options">
+                        <button class="wallet-option neon-button glow" onclick="window.connectOKXWallet()">
+                            <span>OKX Wallet</span>
+                            <img src="/assets/okx-logo.png" alt="OKX" class="wallet-logo">
+                        </button>
+                        <button class="wallet-option neon-button glow" onclick="window.connectUnisatWallet()">
+                            <span>Unisat Wallet</span>
+                            <img src="/assets/unisat-logo.png" alt="Unisat" class="wallet-logo">
+                        </button>
+                        <button class="wallet-option neon-button glow" onclick="window.connectYoursWallet()">
+                            <span>Yours Wallet</span>
+                            <img src="/assets/yours-logo.png" alt="Yours" class="wallet-logo">
+                        </button>
+                        <div class="wallet-divider">
+                            <span>or</span>
                         </div>
-                        <div class="relative flex justify-center text-sm">
-                            <span class="px-2 text-gray-500 bg-black">or</span>
-                        </div>
+                        <button class="wallet-option neon-button glow" onclick="window.showCreateWalletModal()">
+                            <span>Create New Wallet</span>
+                            <svg class="wallet-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </button>
+                        <button class="wallet-option neon-button glow" onclick="window.showImportWalletModal()">
+                            <span>Import Existing Wallet</span>
+                            <svg class="wallet-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                        </button>
                     </div>
-                    <button class="wallet-option w-full p-4 rounded-xl bg-black/50 border border-[#00ffa3]/20 hover:border-[#00ffa3] flex items-center justify-between group transition-all duration-300" onclick="window.showCreateWalletModal()">
-                        <span class="text-white font-medium">Create New Wallet</span>
-                        <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                    </button>
-                    <button class="wallet-option w-full p-4 rounded-xl bg-black/50 border border-[#00ffa3]/20 hover:border-[#00ffa3] flex items-center justify-between group transition-all duration-300" onclick="window.showImportWalletModal()">
-                        <span class="text-white font-medium">Import Existing Wallet</span>
-                        <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                        </svg>
-                    </button>
                 </div>
             </div>
         `;
         
         document.body.appendChild(walletSelectionModal);
-        console.log('Wallet selection modal created and added to DOM');
     }
 
-    // Add overlay and backdrop with enhanced animations
-    walletSelectionModal.classList.remove('hidden');
-    walletSelectionModal.classList.add('modal-overlay', 'neon-border');
-    walletSelectionModal.style.display = 'flex';
-    walletSelectionModal.style.alignItems = 'center';
-    walletSelectionModal.style.justifyContent = 'center';
-    walletSelectionModal.style.position = 'fixed';
-    walletSelectionModal.style.inset = '0';
-    walletSelectionModal.style.zIndex = '50';
-    walletSelectionModal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-    walletSelectionModal.style.backdropFilter = 'blur(8px)';
-    console.log('Modal base styles applied');
-
-    // Get the modal content
-    const content = walletSelectionModal.querySelector('.modal-content');
-    if (content) {
-        // Prevent event propagation on modal content
-        content.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
-        content.classList.add('modal-enter');
-        console.log('Modal content found and enter animation added');
-        
-        // Add Solana-style effects
-        content.querySelectorAll('.wallet-option').forEach(option => {
-            option.classList.add('neon-button', 'ripple');
-        });
-        
-        // Add backdrop blur with animation
-        walletSelectionModal.classList.add('modal-backdrop');
-        console.log('Solana effects applied');
-        
-        // Trigger animations
-        requestAnimationFrame(() => {
-            walletSelectionModal.classList.add('show');
-            content.classList.add('show');
-            console.log('Show animations triggered');
-        });
-
-        // Setup close button
-        const closeBtn = content.querySelector('.close-modal');
-        if (closeBtn) {
-            closeBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                hideModal('walletSelectionModal');
-            };
-        }
-    } else {
-        console.error('No modal content found');
-    }
-
-    // Add click outside to close
-    const handleOutsideClick = (e) => {
-        if (e.target === walletSelectionModal) {
-            e.preventDefault();
-            e.stopPropagation();
-            hideModal('walletSelectionModal');
-        }
-    };
-    
-    // Remove any existing click listeners
-    walletSelectionModal.removeEventListener('click', handleOutsideClick);
-    // Add the click listener
-    walletSelectionModal.addEventListener('click', handleOutsideClick);
+    showModal('walletSelectionModal');
 } 
