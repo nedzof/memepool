@@ -37,9 +37,30 @@
   <body class="bg-black text-white min-h-screen">
     <div id="app">
         <!-- Header with wallet -->
-        <header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4 bg-black/80 backdrop-blur-lg border-b border-[#00ffa3]/10">
-            <img src="/src/Memepool_Logo.png" alt="Memepool Logo" class="h-12">
-            <button id="connectWalletBtn" class="connect-wallet-btn neon-button ripple">Connect Wallet</button>
+        <header class="fixed top-0 left-0 right-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-8">
+                        <!-- Logo -->
+                        <div class="ml-[calc(25vw-50px)]">
+                            <img src="/src/Memepool_Logo.png" alt="Memepool Logo" class="h-12">
+                        </div>
+                    </div>
+
+                    <!-- Connect Wallet Button -->
+                    <button id="connectWalletBtn" 
+                            class="connect-wallet-btn px-6 py-2 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-black relative overflow-hidden group cursor-pointer"
+                            onclick="window.showWalletSelection()"
+                            style="background: #00ffa3;
+                                   box-shadow: 0 0 15px rgba(0, 255, 163, 0.5);
+                                   z-index: 1000;
+                                   position: relative;
+                                   pointer-events: auto;">
+                        <div class="relative z-10">Connect Wallet</div>
+                        <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </button>
+                </div>
+            </div>
         </header>
 
         <!-- Main content -->

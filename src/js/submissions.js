@@ -7,9 +7,13 @@ export function initializeSubmissions() {
     const submissionsGrid = document.getElementById('submissionsGrid');
     if (!submissionsGrid) return;
 
-    // Generate mock submissions
-    submissions = generateMockSubmissions();
-    updateSubmissions();
+    // Get current meme image first
+    const currentMeme = document.getElementById('currentMeme');
+    const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
+
+    // Generate mock submissions with current meme image
+    submissions = generateMockSubmissions(currentMemeImage);
+    updateSubmissions(currentMemeImage);
 
     // Add modal navigation handlers
     document.getElementById('prevSubmission')?.addEventListener('click', showPreviousSubmission);
@@ -17,11 +21,7 @@ export function initializeSubmissions() {
     document.getElementById('closeSubmissionModal')?.addEventListener('click', closeSubmissionModal);
 }
 
-function generateMockSubmissions() {
-    // Get current meme image
-    const currentMeme = document.getElementById('currentMeme');
-    const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
-
+function generateMockSubmissions(currentMemeImage) {
     return Array.from({ length: 9 }, (_, i) => ({
         id: i + 1,
         blockNumber: 803525,
@@ -42,7 +42,7 @@ function generateMockSubmissions() {
     }));
 }
 
-function updateSubmissions() {
+function updateSubmissions(currentMemeImage) {
     const submissionsGrid = document.getElementById('submissionsGrid');
     if (!submissionsGrid) return;
 
@@ -65,18 +65,17 @@ function updateSubmissions() {
     // Add fixed premium badges for top 3 positions
     sortedSubmissions.forEach((submission, index) => {
         submission.rank = index + 1; // Assign fixed rank based on position
-        const block = createSubmissionBlock(submission);
+        const block = createSubmissionBlock(submission, currentMemeImage);
         submissionsGrid.appendChild(block);
     });
 }
 
-function createSubmissionBlock(submission) {
+function createSubmissionBlock(submission, currentMemeImage) {
     const block = document.createElement('div');
     block.className = 'submission-card relative group cursor-pointer transform transition-all duration-300 hover:scale-105';
     
-    // Get current meme image
-    const currentMeme = document.getElementById('currentMeme');
-    const currentMemeImage = currentMeme ? currentMeme.querySelector('img').src : 'https://placehold.co/400x400';
+    // Use the provided current meme image
+    const thumbnailImage = currentMemeImage || submission.thumbnail;
 
     // Define badge styles based on rank
     const badgeStyles = {
@@ -87,7 +86,7 @@ function createSubmissionBlock(submission) {
 
     block.innerHTML = `
         <div class="relative w-full h-full">
-            <img src="${currentMemeImage}" alt="Submission Thumbnail" class="thumbnail w-full h-full object-cover">
+            <img src="${thumbnailImage}" alt="Submission Thumbnail" class="thumbnail w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             
             <!-- Premium Badge for top 3 -->
@@ -444,17 +443,8 @@ function startLiveViewerUpdates(baseCount) {
 }
 
 export function updateSubmissionThumbnails(newImageSrc) {
-    const submissionBlocks = document.querySelectorAll('.submission-block .thumbnail');
-    submissionBlocks.forEach(thumbnail => {
-        // Add animation class
-        thumbnail.classList.add('thumbnail-updating');
-        
-        // Update the image
+    const submissionThumbnails = document.querySelectorAll('.submission-card img.thumbnail');
+    submissionThumbnails.forEach(thumbnail => {
         thumbnail.src = newImageSrc;
-        
-        // Remove animation class after animation completes
-        thumbnail.addEventListener('animationend', () => {
-            thumbnail.classList.remove('thumbnail-updating');
-        }, { once: true }); // Use once: true to automatically remove the event listener after it fires
     });
 } 

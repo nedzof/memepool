@@ -31,7 +31,15 @@ async function setupWalletButton(buttonId, handler, options = {}) {
 // Handle connect wallet click - tries to connect to first available wallet or shows selection
 export async function handleConnectWalletClick() {
     try {
+        console.log('Handling connect wallet click');
         setWalletLoading(true);
+        
+        // Always show wallet selection for now
+        showWalletSelection();
+        return;
+
+        // This code is temporarily disabled to ensure wallet selection always shows
+        /*
         const availableWallets = detectAvailableWallets();
         const hasAvailableWallet = Object.values(availableWallets).some(available => available);
         
@@ -49,6 +57,7 @@ export async function handleConnectWalletClick() {
         } else {
             showWalletSelection();
         }
+        */
     } catch (error) {
         console.error('Error connecting wallet:', error);
         showError(error.message || 'Failed to connect wallet');

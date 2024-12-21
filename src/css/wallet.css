@@ -257,4 +257,30 @@
   .seed-phrase-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Wallet button */
+.connect-wallet-btn {
+    position: relative !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    background: #00ffa3 !important;
+    box-shadow: 0 0 15px rgba(0, 255, 163, 0.5) !important;
+}
+
+.connect-wallet-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(0, 255, 163, 0.7) !important;
+}
+
+.connect-wallet-btn:active {
+    transform: scale(0.98);
+}
+
+/* Ensure wallet button is always clickable */
+#connectWalletBtn {
+    position: relative !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
 } 
