@@ -58,11 +58,13 @@ async function loadIncludedContent(element) {
             }
             const html = await response.text();
             include.innerHTML = html;
+            return true;
         } catch (error) {
             console.error(`Error loading included content from ${path}:`, error);
+            return false;
         }
     });
-    await Promise.all(includePromises);
+    return Promise.all(includePromises);
 }
 
 async function loadWalletModals() {
@@ -99,7 +101,15 @@ async function initializeApp() {
     try {
         console.log('Initializing app...');
         
-        // Load main content first
+        // Load header and other included content first
+        console.log('Loading included content...');
+        const appElement = document.getElementById('app');
+        const includedContentLoaded = await loadIncludedContent(appElement);
+        if (!includedContentLoaded.every(Boolean)) {
+            throw new Error('Failed to load included content');
+        }
+        
+        // Load main content
         console.log('Loading main content...');
         const mainContentLoaded = await loadMainContent();
         if (!mainContentLoaded) {

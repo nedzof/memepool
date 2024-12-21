@@ -5,63 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Memepire</title>
     
+    <!-- Base styles -->
+    <link rel="stylesheet" href="src/css/variables.css">
+    <link rel="stylesheet" href="src/css/base.css">
+    
     <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     
-    <!-- Base styles -->
-    <link rel="stylesheet" href="/src/css/variables.css">
-    <link rel="stylesheet" href="/src/css/base.css">
-    <link rel="stylesheet" href="/src/css/styles.css">
+    <!-- Additional styles -->
+    <link rel="stylesheet" href="src/css/styles.css">
     
     <!-- Component styles -->
-    <link rel="stylesheet" href="/src/css/buttons.css">
-    <link rel="stylesheet" href="/src/css/cards.css">
-    <link rel="stylesheet" href="/src/css/forms.css">
-    <link rel="stylesheet" href="/src/css/modals.css">
+    <link rel="stylesheet" href="src/css/buttons.css">
+    <link rel="stylesheet" href="src/css/cards.css">
+    <link rel="stylesheet" href="src/css/forms.css">
+    <link rel="stylesheet" href="src/css/modals.css">
     
     <!-- Feature styles -->
-    <link rel="stylesheet" href="/src/css/meme.css">
-    <link rel="stylesheet" href="/src/css/submissions.css">
-    <link rel="stylesheet" href="/src/css/wallet.css">
+    <link rel="stylesheet" href="src/css/meme.css">
+    <link rel="stylesheet" href="src/css/submissions.css">
+    <link rel="stylesheet" href="src/css/wallet.css">
     
     <!-- Effects and animations -->
-    <link rel="stylesheet" href="/src/css/effects.css">
-    <link rel="stylesheet" href="/src/css/animations.css">
-    <link rel="stylesheet" href="/src/css/helpers.css">
+    <link rel="stylesheet" href="src/css/effects.css">
+    <link rel="stylesheet" href="src/css/animations.css">
+    <link rel="stylesheet" href="src/css/helpers.css">
     
     <script type="module">
         import { Buffer } from 'buffer';
         window.Buffer = Buffer;
     </script>
   </head>
-  <body class="bg-black text-white min-h-screen">
+  <body>
     <div id="app">
-        <!-- Header with wallet -->
-        <header class="fixed top-0 left-0 right-0 z-50">
-            <div class="container mx-auto px-4 py-4">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-8">
-                        <!-- Logo -->
-                        <div class="ml-[calc(25vw-50px)]">
-                            <img src="/src/Memepool_Logo.png" alt="Memepool Logo" class="h-12">
-                        </div>
-                    </div>
-
-                    <!-- Connect Wallet Button -->
-                    <button id="connectWalletBtn" 
-                            class="connect-wallet-btn px-6 py-2 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-black relative overflow-hidden group cursor-pointer"
-                            onclick="window.showWalletSelection()"
-                            style="background: #00ffa3;
-                                   box-shadow: 0 0 15px rgba(0, 255, 163, 0.5);
-                                   z-index: 1000;
-                                   position: relative;
-                                   pointer-events: auto;">
-                        <div class="relative z-10">Connect Wallet</div>
-                        <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    </button>
-                </div>
-            </div>
-        </header>
+        <!-- Header will be loaded from header.html -->
+        <div data-include="src/components/header.html"></div>
 
         <!-- Main content -->
         <main class="pt-20">
@@ -75,6 +53,6 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="src/js/main.js"></script>
   </body>
 </html>

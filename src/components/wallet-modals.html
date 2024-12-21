@@ -40,7 +40,59 @@
     </div>
 
     <!-- Wallet Selection Modal -->
-    <div data-include="src/components/wallet/modals/wallet-selection-modal.html"></div>
+    <div id="walletSelectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title neon-text">Connect Wallet</h2>
+                <button class="modal-close">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body space-y-4">
+                <!-- Wallet Options -->
+                <button class="wallet-option neon-button float w-full p-4 rounded-xl flex items-center justify-between group ripple" onclick="window.connectOKXWallet()">
+                    <span class="text-white font-medium">OKX Wallet</span>
+                    <img src="/src/assets/okx-logo.png" alt="OKX" class="w-8 h-8">
+                </button>
+                
+                <button class="wallet-option neon-button float w-full p-4 rounded-xl flex items-center justify-between group ripple" onclick="window.connectUnisatWallet()">
+                    <span class="text-white font-medium">Unisat Wallet</span>
+                    <img src="/src/assets/unisat-logo.png" alt="Unisat" class="w-8 h-8">
+                </button>
+                
+                <button class="wallet-option neon-button float w-full p-4 rounded-xl flex items-center justify-between group ripple" onclick="window.connectYoursWallet()">
+                    <span class="text-white font-medium">Yours Wallet</span>
+                    <img src="/src/assets/yours-logo.png" alt="Yours" class="w-8 h-8">
+                </button>
+
+                <!-- Divider -->
+                <div class="relative py-4">
+                    <div class="ethereal-divider"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="px-4 text-sm text-gray-500 bg-transparent">or</span>
+                    </div>
+                </div>
+
+                <!-- Additional Options -->
+                <button class="wallet-option neon-button float w-full p-4 rounded-xl flex items-center justify-between group ripple" onclick="window.showCreateWalletModal()">
+                    <span class="text-white font-medium">Create New Wallet</span>
+                    <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                </button>
+                
+                <button class="wallet-option neon-button float w-full p-4 rounded-xl flex items-center justify-between group ripple" onclick="window.showImportWalletModal()">
+                    <span class="text-white font-medium">Import Existing Wallet</span>
+                    <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Keep existing style and script sections -->
