@@ -1,11 +1,7 @@
 <!-- Import Wallet Modal -->
-<div id="importWalletModal" class="modal">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl"
-         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
-        <!-- Modal Header -->
-        <div class="modal-header absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-xl rounded-t-2xl border-b border-[#00ffa3]/20">
+<div id="importWalletModal" class="modal neon-theme">
+    <div class="modal-content">
+        <div class="modal-header">
             <div class="flex items-center gap-4">
                 <button class="back-to-menu text-white/70 hover:text-white transition-colors flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,39 +11,28 @@
                 </button>
             </div>
             <button class="modal-close">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
         </div>
+        
+        <div class="modal-body space-y-6">
+            <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
+                <p class="text-white/80 text-sm">Enter your 12-word seed phrase to import your existing wallet.</p>
+                <p class="text-[#00ffa3] text-sm mt-2 font-medium">Make sure you're in a private place!</p>
+            </div>
 
-        <!-- Modal Body -->
-        <div class="modal-body p-6 pt-16">
-            <h2 class="modal-title mb-6">Import Wallet</h2>
-            
-            <!-- Form -->
             <form id="importWalletForm" class="space-y-6">
-                <!-- Seed Phrase Input -->
                 <div class="space-y-2">
-                    <label for="seedPhrase" class="block text-sm font-medium text-white/60">Seed Phrase</label>
-                    <textarea id="seedPhrase" name="seedPhrase" rows="4"
-                              class="modal-input text-sm"
-                              placeholder="Enter your seed phrase"
-                              required></textarea>
-                </div>
-
-                <!-- Password Input -->
-                <div class="space-y-2">
-                    <label for="importPassword" class="block text-sm font-medium text-white/60">Password</label>
+                    <label class="block text-sm font-medium text-white/60">Seed Phrase</label>
                     <div class="relative">
-                        <input type="password" id="importPassword" name="password"
-                               class="modal-input text-sm"
-                               placeholder="Enter password"
-                               minlength="8"
-                               autocomplete="new-password"
-                               required>
-                        <button type="button" id="toggleImportPasswordVisibility"
-                                class="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors">
+                        <textarea id="seedPhraseInput" 
+                                class="neon-button w-full p-4 rounded-xl text-white bg-black/40 min-h-[120px] resize-none"
+                                placeholder="Enter your 12-word seed phrase, separated by spaces"
+                                required></textarea>
+                        <button type="button" id="toggleSeedVisibility"
+                                class="absolute right-4 top-4 text-white/70 hover:text-white transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -58,9 +43,58 @@
                     </div>
                 </div>
 
-                <!-- Import Button -->
+                <div class="space-y-2">
+                    <label for="importPassword" class="block text-sm font-medium text-white/60">New Password</label>
+                    <div class="relative">
+                        <input type="password" id="importPassword" name="password"
+                               class="neon-button w-full p-4 rounded-xl text-white bg-black/40"
+                               placeholder="Enter password"
+                               minlength="8"
+                               autocomplete="new-password"
+                               required>
+                        <button type="button" id="toggleImportPasswordVisibility"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="confirmImportPassword" class="block text-sm font-medium text-white/60">Confirm Password</label>
+                    <div class="relative">
+                        <input type="password" id="confirmImportPassword" name="confirmPassword"
+                               class="neon-button w-full p-4 rounded-xl text-white bg-black/40"
+                               placeholder="Confirm password"
+                               minlength="8"
+                               autocomplete="new-password"
+                               required>
+                        <button type="button" id="toggleConfirmImportPasswordVisibility"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Password Strength Meter -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-white/60">Password Strength</label>
+                    <div id="importPasswordStrengthMeter" class="h-2 bg-black/30 rounded-full overflow-hidden">
+                        <div class="h-full bg-[#00ffa3] transition-all duration-500" style="width: 0;"></div>
+                    </div>
+                </div>
+
                 <button type="submit" id="importWalletBtn"
-                        class="modal-button w-full py-3 px-4 font-bold">
+                        class="neon-button w-full p-4 rounded-xl text-white font-medium bg-[#00ffa3]/10">
                     Import Wallet
                 </button>
             </form>

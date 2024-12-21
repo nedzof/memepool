@@ -1,32 +1,50 @@
 <!-- Seed Phrase Modal -->
-<div id="seedPhraseModal" class="modal-backdrop">
-    <div class="modal">
+<div id="seedPhraseModal" class="modal neon-theme">
+    <div class="modal-content">
         <div class="modal-header">
             <h2 class="modal-title">Your Seed Phrase</h2>
-            <button class="modal-close" onclick="closeSeedPhraseModal()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
+            <button class="modal-close">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
         </div>
         
-        <div class="modal-body">
-            <div class="modal-info-box">
-                <p>This is your seed phrase. Write it down and store it in a safe place. You'll need it to recover your wallet.</p>
-                <p>Never share your seed phrase with anyone!</p>
+        <div class="modal-body space-y-6">
+            <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
+                <p class="text-white/80 text-sm">This is your seed phrase. Write it down and store it in a safe place. You'll need it to recover your wallet.</p>
+                <p class="text-[#00ffa3] text-sm mt-2 font-medium">Never share your seed phrase with anyone!</p>
             </div>
 
-            <div class="seed-phrase-grid">
-                <!-- Seed words will be dynamically inserted here -->
-            </div>
-
-            <div class="modal-footer">
-                <button class="modal-button" onclick="copySeedPhrase()">
-                    <span>Copy to Clipboard</span>
+            <div class="relative">
+                <div id="seedPhraseGrid" class="grid grid-cols-3 gap-3 filter blur-lg transition-all duration-300">
+                    <!-- Seed words will be dynamically inserted here -->
+                </div>
+                
+                <button id="revealSeedPhraseBtn" class="absolute inset-0 w-full h-full flex items-center justify-center neon-button rounded-xl bg-black/40 backdrop-blur-sm transition-all duration-300">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <span class="text-white font-medium">Click to Reveal Seed Phrase</span>
+                    </div>
                 </button>
-                <button class="modal-button primary" onclick="confirmSeedPhrase()">
-                    <span>I've Written It Down</span>
+            </div>
+
+            <div class="flex flex-col space-y-3">
+                <button id="copySeedPhraseBtn" class="neon-button w-full p-4 rounded-xl flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    </svg>
+                    <span class="text-white font-medium">Copy to Clipboard</span>
+                </button>
+                
+                <button id="confirmSeedPhraseBtn" class="neon-button w-full p-4 rounded-xl flex items-center justify-center gap-2 bg-[#00ffa3]/10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span class="text-white font-medium">I've Written It Down</span>
                 </button>
             </div>
         </div>
@@ -36,7 +54,7 @@
 <script>
 function showSeedPhraseModal(seedPhrase) {
     const modal = document.getElementById('seedPhraseModal');
-    const grid = modal.querySelector('.seed-phrase-grid');
+    const grid = modal.querySelector('#seedPhraseGrid');
     
     // Clear existing content
     grid.innerHTML = '';
@@ -78,7 +96,7 @@ function closeSeedPhraseModal() {
 }
 
 function copySeedPhrase() {
-    const grid = document.querySelector('.seed-phrase-grid');
+    const grid = document.querySelector('#seedPhraseGrid');
     const words = Array.from(grid.querySelectorAll('.seed-word-text'))
         .map(span => span.textContent)
         .join(' ');

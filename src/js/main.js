@@ -6,6 +6,7 @@ import { showMainWallet, showWalletError } from './wallet/modalManager.js';
 import { showWalletSelection } from './wallet/modalManager.js';
 import { handleConnectWalletClick } from './wallet/walletSelection.js';
 import { showModal, initializeModal } from './modal.js';
+import { initializeWalletUI } from './wallet.js';
 
 // Expose wallet functions globally
 window.showWalletSelection = function() {
@@ -58,6 +59,8 @@ async function loadIncludedContent(element) {
             }
             const html = await response.text();
             include.innerHTML = html;
+            // Recursively load any nested includes
+            await loadIncludedContent(include);
             return true;
         } catch (error) {
             console.error(`Error loading included content from ${path}:`, error);
@@ -136,6 +139,7 @@ async function initializeApp() {
         
         console.log('Initializing wallet UI...');
         await initializeWallet();
+        await initializeWalletUI();
 
         // Add global click handler for debugging
         document.addEventListener('click', (e) => {
