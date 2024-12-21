@@ -1,7 +1,7 @@
 import { initializeBlocks, centerBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
 import BSVWallet from './BSVWallet.js';
-import { initializeWallet, getLastWalletSession } from './wallet/walletInit.js';
+import { initialize as initializeWallet, getLastWalletSession } from './wallet/walletInit.js';
 import { showMainWallet, showWalletError } from './wallet/modalManager.js';
 import { showWalletSelection } from './wallet/modalManager.js';
 import { handleConnectWalletClick } from './wallet/walletSelection.js';

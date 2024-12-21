@@ -49,84 +49,17 @@ function publicKeyToLegacyAddress(publicKey) {
 }
 
 // Fetch balance from WhatsOnChain API
-export async function fetchBalanceFromWhatsOnChain(address, isRecursive = false) {
+export async function fetchBalanceFromWhatsOnChain(address) {
     try {
-        // Check if address is a public key and convert if needed
-        let queryAddress = address;
-        if (address.startsWith('0x')) {
-            queryAddress = publicKeyToLegacyAddress(address);
-            if (!queryAddress) {
-                throw new Error('Failed to convert public key to legacy address');
-            }
-            console.log('Converted public key to legacy address:', queryAddress);
-        }
-
-        // Check cache first
-        const cachedData = balanceCache.get(queryAddress);
-        if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
-            console.log('Using cached balance for address:', queryAddress);
-            return cachedData.balance;
-        }
-
-        console.log('Fetching balance for address:', queryAddress);
+        if (!address) return 0;
         
-        // Only try wallet instance if not called recursively
-        if (!isRecursive && window.wallet?.getBalanceFromProvider) {
-            try {
-                const balance = await window.wallet.getBalanceFromProvider();
-                if (typeof balance === 'number' && !isNaN(balance)) {
-                    // Cache the result
-                    balanceCache.set(queryAddress, {
-                        balance,
-                        timestamp: Date.now()
-                    });
-                    return balance;
-                }
-            } catch (error) {
-                console.warn('Failed to get balance from wallet instance:', error);
-            }
-        }
-
-        // Fallback to WhatsOnChain API
-        const response = await rateLimitedFetch(
-            `https://api.whatsonchain.com/v1/bsv/main/address/${queryAddress}/balance`,
-            {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        
-        if (!response.ok) {
-            throw new Error(`WhatsOnChain API error: ${response.status}`);
-        }
+        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`);
+        if (!response.ok) throw new Error('Failed to fetch balance');
         
         const data = await response.json();
-        console.log('Balance data:', data);
-        
-        // Convert satoshis to BSV
-        const balanceBSV = data.confirmed / 100000000;
-        
-        // Cache the result
-        balanceCache.set(queryAddress, {
-            balance: balanceBSV,
-            timestamp: Date.now()
-        });
-        
-        return balanceBSV;
+        return data.confirmed / 100000000; // Convert satoshis to BSV
     } catch (error) {
-        console.error('Error fetching balance from WhatsOnChain:', error);
-        
-        // Try to get cached balance if available
-        const cachedData = balanceCache.get(address);
-        if (cachedData) {
-            console.log('Using stale cached balance due to error');
-            return cachedData.balance;
-        }
-        
-        // Return 0 as last resort fallback
+        console.error('Error fetching balance:', error);
         return 0;
     }
 }

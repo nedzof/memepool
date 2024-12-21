@@ -2,7 +2,6 @@ import { showModal, hideModal, showWalletError, showMainWallet } from './modalMa
 import { generateMnemonic } from '../bsv.js';
 import BSVWallet from '../BSVWallet.js';
 import { createSession } from './auth/session.js';
-import { handleConnectWalletButton } from './walletEvents.js';
 import { setupMainWalletEvents } from './walletEvents.js';
 
 // Generate new wallet
@@ -37,7 +36,7 @@ function displaySeedPhrase(mnemonic) {
     seedPhraseContainer.classList.add('opacity-0');
     
     seedPhraseContainer.innerHTML = words.map((word, index) => `
-        <div class="seed-word-container neon-card glow">
+        <div class="seed-word-container neon-card">
             <div class="seed-word-background"></div>
             <div class="seed-word-hover-effect"></div>
             <span class="seed-word-number neon-text">${index + 1}</span>
@@ -122,7 +121,7 @@ export function validateSeedPhrase(seedPhrase) {
 
 // Setup password validation
 export function setupPasswordValidation() {
-    const passwordInput = document.getElementById('password');
+    const passwordInput = document.getElementById('setupPassword');
     const confirmInput = document.getElementById('confirmPassword');
     const strengthBar = document.getElementById('strengthBar');
     const strengthLabel = document.getElementById('strengthLabel');

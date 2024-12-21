@@ -3,52 +3,57 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Memepire Test</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
-    <link href="src/css/styles.css" rel="stylesheet" />
-    <link href="src/css/meme.css" rel="stylesheet" />
-    <link href="src/css/submissions.css" rel="stylesheet" />
-
+    <title>Memepire</title>
+    
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    
     <!-- Base styles -->
-    <link rel="stylesheet" href="./css/base.css" />
-    <link rel="stylesheet" href="./css/styles.css" />
-
+    <link rel="stylesheet" href="/src/css/variables.css">
+    <link rel="stylesheet" href="/src/css/base.css">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    
     <!-- Component styles -->
-    <link rel="stylesheet" href="./src/css/buttons.css" />
-    <link rel="stylesheet" href="./src/css/cards.css" />
-    <link rel="stylesheet" href="./src/css/forms.css" />
-    <link rel="stylesheet" href="./src/css/modals.css" />
-
+    <link rel="stylesheet" href="/src/css/buttons.css">
+    <link rel="stylesheet" href="/src/css/cards.css">
+    <link rel="stylesheet" href="/src/css/forms.css">
+    <link rel="stylesheet" href="/src/css/modals.css">
+    
     <!-- Feature styles -->
-    <link rel="stylesheet" href="./src/css/meme.css" />
-    <link rel="stylesheet" href="./src/css/submissions.css" />
-    <link rel="stylesheet" href="./src/css/wallet.css" />
-
+    <link rel="stylesheet" href="/src/css/meme.css">
+    <link rel="stylesheet" href="/src/css/submissions.css">
+    <link rel="stylesheet" href="/src/css/wallet.css">
+    
     <!-- Effects and animations -->
-    <link rel="stylesheet" href="./src/css/effects.css" />
-    <link rel="stylesheet" href="./src/css/animations.css" />
-    <link rel="stylesheet" href="./src/css/helpers.css" />
-
+    <link rel="stylesheet" href="/src/css/effects.css">
+    <link rel="stylesheet" href="/src/css/animations.css">
+    <link rel="stylesheet" href="/src/css/helpers.css">
+    
     <script type="module">
-      import { Buffer } from "https://cdn.jsdelivr.net/npm/buffer@6.0.3/+esm";
-      window.Buffer = Buffer;
+        import { Buffer } from 'buffer';
+        window.Buffer = Buffer;
     </script>
-    <script type="module">
-      import * as bitcoin from "https://cdn.jsdelivr.net/npm/bitcoinjs-lib@6.1.7/+esm";
-      import * as nobleHashes from "https://cdn.jsdelivr.net/npm/@noble/hashes@1.0.0/+esm";
-
-      console.log("Loading bitcoinjs-lib...");
-      window.bitcoin = bitcoin;
-      window.sha256 = nobleHashes.sha256;
-      console.log("Loaded bitcoinjs-lib:", window.bitcoin);
-      console.log("Bitcoin networks available:", window.bitcoin.networks);
-    </script>
-    <script type="module" src="src/js/main.js"></script>
   </head>
   <body class="bg-black text-white min-h-screen">
-    <main></main>
+    <div id="app">
+        <!-- Header with wallet -->
+        <header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4 bg-black/80 backdrop-blur-lg border-b border-[#00ffa3]/10">
+            <img src="/src/Memepool_Logo.png" alt="Memepool Logo" class="h-12">
+            <button id="connectWalletBtn" class="connect-wallet-btn neon-button ripple">Connect Wallet</button>
+        </header>
+
+        <!-- Main content -->
+        <main class="pt-20">
+            <!-- Main content will be loaded here -->
+        </main>
+    </div>
+
+    <!-- Load wallet components -->
+    <div id="walletModals">
+        <!-- Wallet modals will be loaded here -->
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/src/js/main.js"></script>
   </body>
 </html>

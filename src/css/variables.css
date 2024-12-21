@@ -1,0 +1,64 @@
+/* Color variables */
+:root {
+  /* Primary colors */
+  --color-primary: #00ffa3;
+  --color-secondary: #00ffff;
+  --color-error: #ff4747;
+  --color-warning: #ffc107;
+  --color-success: #00ff95;
+
+  /* Background colors */
+  --bg-dark: rgba(0, 0, 0, 0.95);
+  --bg-darker: rgba(0, 0, 0, 0.98);
+  --bg-gradient: linear-gradient(135deg, rgba(0, 255, 163, 0.05), rgba(0, 255, 255, 0.05));
+  
+  /* Border colors */
+  --border-primary: rgba(0, 255, 163, 0.2);
+  --border-secondary: rgba(0, 255, 255, 0.2);
+  --border-dark: rgba(0, 0, 0, 0.2);
+  
+  /* Shadow colors */
+  --shadow-primary: rgba(0, 255, 163, 0.1);
+  --shadow-secondary: rgba(0, 255, 255, 0.1);
+  --shadow-dark: rgba(0, 0, 0, 0.2);
+  
+  /* Text colors */
+  --text-primary: white;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  
+  /* Layout variables */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* Effects */
+  --blur-strength: 8px;
+  --opacity-hover: 0.8;
+  --scale-hover: 0.98;
+  
+  /* Z-index layers */
+  --z-modal-backdrop: 100000;
+  --z-modal: 100001;
+  --z-tooltip: 100002;
+  --z-dropdown: 100003;
+  
+  /* Component specific */
+  --modal-width: 480px;
+  --input-height: 2.5rem;
+  --button-height: 2.5rem;
+  --header-height: 4rem;
+} 

@@ -38,14 +38,15 @@
 
                 <!-- Password Input -->
                 <div class="space-y-2">
-                    <label for="password" class="block text-sm font-medium text-white/60">Password</label>
+                    <label for="importPassword" class="block text-sm font-medium text-white/60">Password</label>
                     <div class="relative">
-                        <input type="password" id="password" name="password"
+                        <input type="password" id="importPassword" name="password"
                                class="modal-input text-sm"
                                placeholder="Enter password"
                                minlength="8"
+                               autocomplete="new-password"
                                required>
-                        <button type="button" id="togglePasswordVisibility"
+                        <button type="button" id="toggleImportPasswordVisibility"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

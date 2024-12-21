@@ -1,52 +1,108 @@
-@import 'modals.css';
+@import 'variables.css';
 
-/* Wallet-specific components */
+/* Wallet container */
+.wallet-container {
+  width: 100%;
+  max-width: var(--modal-width);
+  margin: 0 auto;
+}
+
+/* Wallet header */
 .wallet-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
-  border-bottom: 1px solid rgba(0, 255, 163, 0.2);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-darker);
+  backdrop-filter: blur(var(--blur-strength));
 }
 
 .wallet-title {
   font-size: 1.5rem;
   font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
 }
 
 .wallet-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  padding: var(--spacing-sm);
   cursor: pointer;
   color: var(--color-primary);
-  transition: color 0.3s ease;
+  transition: all var(--transition-normal);
+  border-radius: var(--radius-sm);
 }
 
 .wallet-close:hover {
   color: var(--color-secondary);
+  background: rgba(255, 255, 255, 0.1);
 }
 
+/* Wallet body */
 .wallet-body {
-  padding: 1.5rem;
+  padding: var(--spacing-lg);
 }
 
 .wallet-balance {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+  text-align: center;
 }
 
 .wallet-address {
   font-size: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-lg);
   word-break: break-all;
+  padding: var(--spacing-md);
+  background: var(--bg-darker);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
 }
 
+/* Wallet actions */
 .wallet-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.wallet-action-button {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background: var(--bg-gradient);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  text-align: center;
+}
+
+.wallet-action-button:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px var(--shadow-primary);
+}
+
+.wallet-action-button svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-primary);
+}
+
+.wallet-action-button span {
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 /* Transaction history */
@@ -54,295 +110,151 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .transaction-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid rgba(0, 255, 163, 0.1);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-gradient);
+  transition: background-color var(--transition-normal);
+}
+
+.transaction-item:last-child {
+  border-bottom: none;
+}
+
+.transaction-item:hover {
+  background: rgba(0, 255, 163, 0.1);
+}
+
+.transaction-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .transaction-amount {
   font-size: 1.25rem;
   font-weight: 700;
+  color: var(--text-primary);
+}
+
+.transaction-amount.positive {
+  color: var(--color-success);
+}
+
+.transaction-amount.negative {
+  color: var(--color-error);
 }
 
 .transaction-date {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
-/* Balance displays */
-.balance-card {
-  background-color: rgba(0, 255, 163, 0.1);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.balance-label {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.balance-value {
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-/* Wallet modal customizations */
-.wallet-modal .modal-content {
-  max-width: 400px;
-}
-
-.wallet-modal .modal-header {
-  background-color: rgba(0, 255, 163, 0.1);
-}
-
-.wallet-modal .modal-title {
-  color: var(--color-primary);
-}
-
-.wallet-modal .modal-body {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.wallet-modal .neon-border {
-  border-color: rgba(0, 255, 163, 0.4);
-}
-
-.wallet-modal .neon-border::before {
-  filter: blur(10px);
-}
-
-/* Seed phrase container styles */
+/* Seed phrase display */
 .seed-word-container {
-    position: relative;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    background: linear-gradient(135deg, rgba(0, 255, 163, 0.05), rgba(0, 255, 255, 0.05));
-    box-shadow: 0 0 20px rgba(0, 255, 163, 0.1),
-                inset 0 0 10px rgba(0, 255, 163, 0.05);
+  position: relative;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  overflow: hidden;
+  background: var(--bg-gradient);
+  box-shadow: 0 0 20px var(--shadow-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  border: 1px solid var(--border-primary);
 }
 
-.seed-word-background {
-    position: absolute;
-    inset: 0;
-    border-radius: 0.5rem;
-    background: linear-gradient(to right, rgba(0, 255, 163, 0.1), rgba(0, 255, 255, 0.1));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.seed-word-container:hover .seed-word-background {
-    opacity: 0.2;
-}
-
-.seed-word-hover-effect {
-    position: absolute;
-    inset: 0;
-    border-radius: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 255, 0.1));
-    box-shadow: inset 0 0 20px rgba(0, 255, 163, 0.2);
-}
-
-.seed-word-container:hover .seed-word-hover-effect {
-    opacity: 1;
+.seed-word-container:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px var(--shadow-primary);
 }
 
 .seed-word-number {
-    position: absolute;
-    top: 0.25rem;
-    left: 0.5rem;
-    font-size: 0.75rem;
-    opacity: 0.5;
-    color: var(--color-primary);
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.3);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-xs);
 }
 
 .seed-word-text {
-    display: block;
-    text-align: center;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-    position: relative;
-    z-index: 10;
-    font-weight: 500;
-    color: var(--color-primary);
-    transition: color 0.3s ease;
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5),
-                 0 0 20px rgba(0, 255, 163, 0.3);
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: center;
 }
 
-.seed-word-container:hover .seed-word-text {
-    color: var(--color-secondary);
+/* Seed phrase grid */
+.seed-phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
 }
 
-.seed-word-border {
-    position: absolute;
-    inset: 0;
-    border-radius: 0.5rem;
-    border: 1px solid rgba(0, 255, 163, 0.2);
-    transition: border-color 0.3s ease;
+/* Loading states */
+.wallet-loading {
+  position: relative;
 }
 
-.seed-word-container:hover .seed-word-border {
-    border-color: rgba(0, 255, 163, 0.4);
+.wallet-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg-dark);
+  backdrop-filter: blur(var(--blur-strength));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
 }
 
-/* Animation classes */
-.fade-out {
-    opacity: 0;
-    transition: opacity 0.3s ease;
+.wallet-loading::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 1;
 }
 
-/* Button states */
-.copied {
-    background-color: var(--color-success) !important;
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .wallet-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .seed-phrase-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .wallet-balance {
+    font-size: 1.5rem;
+  }
 }
 
-.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+@media (max-width: 480px) {
+  .wallet-actions {
+    grid-template-columns: 1fr;
+  }
 
-/* Password validation styles */
-.password-requirements {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin: 1rem 0;
-}
-
-.requirement-check {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem;
-    border-radius: 0.25rem;
-    border: 1px solid rgba(0, 255, 163, 0.3);
-    transition: all 0.3s ease;
-}
-
-.requirement-check.valid {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-}
-
-.requirement-check svg {
-    width: 0.75rem;
-    height: 0.75rem;
-    color: black;
-}
-
-.strength-meter {
-    width: 100%;
-    height: 4px;
-    background: rgba(0, 255, 163, 0.1);
-    border-radius: 2px;
-    margin: 0.5rem 0;
-    overflow: hidden;
-}
-
-.strength-bar {
-    height: 100%;
-    width: 0;
-    background: var(--color-primary);
-    transition: width 0.3s ease, background-color 0.3s ease;
-}
-
-.strength-label {
-    font-size: 0.75rem;
-    min-width: 60px;
-}
-
-.strength-label.weak { color: var(--color-error); }
-.strength-label.fair { color: var(--color-warning); }
-.strength-label.good { color: var(--color-info); }
-.strength-label.strong { 
-    color: var(--color-primary);
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
-}
-
-.password-match {
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-    transition: color 0.3s ease;
-}
-
-.password-match.valid {
-    color: var(--color-primary);
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
-}
-
-.password-match.invalid {
-    color: var(--color-error);
-}
-
-.password-input-group {
-    position: relative;
-    margin-bottom: 1rem;
-}
-
-.toggle-password {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--color-primary);
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
-    cursor: pointer;
-}
-
-.toggle-password:hover {
-    opacity: 1;
-}
-
-.toggle-password svg {
-    width: 1.25rem;
-    height: 1.25rem;
-}
-
-/* Success animation styles */
-.success-checkmark {
-    width: 8rem;
-    height: 8rem;
-    position: relative;
-    animation: checkmarkAppear 0.5s ease forwards;
-}
-
-.success-circle {
-    stroke-dasharray: 166;
-    stroke-dashoffset: 166;
-    stroke-width: 2;
-    stroke-miterlimit: 10;
-    stroke: var(--color-primary);
-    fill: none;
-    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-}
-
-.success-check {
-    transform-origin: 50% 50%;
-    stroke-dasharray: 48;
-    stroke-dashoffset: 48;
-    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
-}
-
-@keyframes stroke {
-    100% { stroke-dashoffset: 0; }
-}
-
-@keyframes checkmarkAppear {
-    0% { transform: scale(0); }
-    100% { transform: scale(1); }
+  .seed-phrase-grid {
+    grid-template-columns: 1fr;
+  }
 } 

@@ -1,93 +1,41 @@
-import { setupMainWalletEvents, updateBalanceDisplay } from './walletEvents.js';
-import { setupWalletSelectionEvents } from './walletSelection.js';
-import { showModal, hideModal, showError as showErrorMessage } from '../modal.js';
+import { showError } from '../modal.js';
 
-// Show wallet selection modal
-export function showWalletSelection() {
-    console.log('Showing wallet selection modal...');
-    
-    // Detect available wallets
-    const hasUnisat = window.unisat !== undefined;
-    const hasOKX = window.okxwallet !== undefined;
-    const hasYours = window.yours !== undefined;
-    
-    // Show the modal
-    showModal('walletSelectionModal');
-    
-    // Setup event handlers
-    setupWalletSelectionEvents(hasUnisat, hasOKX, hasYours);
+// Modal management functions
+export function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+        setTimeout(() => {
+            modal.querySelector('.modal').classList.add('show');
+        }, 10);
+    }
 }
 
-// Re-export modal functions
-export { showModal, hideModal };
+export function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.querySelector('.modal').classList.remove('show');
+        setTimeout(() => {
+            modal.classList.remove('show');
+        }, 300);
+    }
+}
 
-// Show main wallet modal with enhanced animations
+// Wallet-specific modal functions
 export function showMainWallet() {
+    hideModal('walletSelectionModal');
+    hideModal('importWalletModal');
+    hideModal('passwordSetupModal');
     showModal('mainWalletModal');
 }
 
-export function hideMainWallet() {
+export function showWalletSelection() {
     hideModal('mainWalletModal');
-}
-
-// Setup modal navigation
-export function setupModalNavigation() {
-    // Setup back buttons
-    document.querySelectorAll('.back-to-menu').forEach(button => {
-        button.addEventListener('click', () => {
-            const modal = button.closest('.modal');
-            if (modal) {
-                hideModal(modal.id);
-                showModal('mainWalletModal');
-            }
-        });
-    });
-
-    // Setup close buttons
-    document.querySelectorAll('.close-modal').forEach(button => {
-        button.addEventListener('click', () => {
-            const modal = button.closest('.modal');
-            if (modal) {
-                hideModal(modal.id);
-            }
-        });
-    });
-}
-
-// Show error message
-export function showWalletError(message) {
-    showErrorMessage(message);
-}
-
-// Modal-specific show/hide functions
-export function showSeedPhraseModal() {
-    showModal('seedPhraseModal');
-}
-
-export function hideSeedPhraseModal() {
-    hideModal('seedPhraseModal');
-}
-
-export function showPasswordSetupModal() {
-    showModal('passwordSetupModal');
-}
-
-export function hidePasswordSetupModal() {
+    hideModal('importWalletModal');
     hideModal('passwordSetupModal');
+    showModal('walletSelectionModal');
 }
 
-export function showSendModal() {
-    showModal('sendModal');
-}
-
-export function hideSendModal() {
-    hideModal('sendModal');
-}
-
-export function showReceiveModal() {
-    showModal('receiveModal');
-}
-
-export function hideReceiveModal() {
-    hideModal('receiveModal');
+export function showWalletError(message) {
+    showError(message);
 } 

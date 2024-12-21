@@ -5,21 +5,20 @@ export class Modal {
         this.modal = document.getElementById(modalId);
         if (this.modal) {
             this.setupBaseClasses();
+            this.setupEventListeners();
         }
-        this.setupEventListeners();
     }
 
     setupBaseClasses() {
-        // Add base modal classes only if they don't exist
-        if (!this.modal.classList.contains('fixed')) {
-            this.modal.classList.add('fixed', 'inset-0', 'flex', 'items-center', 'justify-center', 'z-50');
+        if (!this.modal.classList.contains('modal')) {
+            this.modal.classList.add('modal');
         }
 
         // Setup backdrop if it doesn't exist
         let backdrop = this.modal.querySelector('.modal-backdrop');
         if (!backdrop) {
             backdrop = document.createElement('div');
-            backdrop.className = 'modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-49';
+            backdrop.className = 'modal-backdrop';
             this.modal.insertBefore(backdrop, this.modal.firstChild);
         }
 
@@ -27,7 +26,7 @@ export class Modal {
         let content = this.modal.querySelector('.modal-content');
         if (!content) {
             content = document.createElement('div');
-            content.className = 'modal-content relative max-w-md w-full mx-auto z-51';
+            content.className = 'modal-content';
             
             // Move all other elements into content
             while (this.modal.children.length > 1) {
@@ -35,254 +34,120 @@ export class Modal {
             }
             this.modal.appendChild(content);
         }
-
-        // Setup header if it exists and doesn't have required classes
-        const header = content.querySelector('.modal-header');
-        if (header && !header.classList.contains('flex')) {
-            header.classList.add(
-                'absolute', 'top-0', 'left-0', 'right-0',
-                'flex', 'items-center', 'justify-between',
-                'px-4', 'py-3'
-            );
-        }
-
-        // Setup close button if it exists and doesn't have required classes
-        const closeButton = content.querySelector('.modal-close');
-        if (closeButton && !closeButton.classList.contains('p-2')) {
-            closeButton.classList.add(
-                'p-2', 'rounded-lg',
-                'transition-all', 'duration-300'
-            );
-        }
-
-        // Setup body if it exists and doesn't have required classes
-        const body = content.querySelector('.modal-body');
-        if (body && !body.classList.contains('p-6')) {
-            body.classList.add('p-6', 'pt-16');
-        }
     }
 
     setupEventListeners() {
-        if (!this.modal) return;
+        // Close button
+        const closeBtn = this.modal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.hide());
+        }
 
-        // Setup close button
-        const closeButton = this.modal.querySelector('.modal-close');
-        if (closeButton) {
-            closeButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+        // Back button
+        const backBtn = this.modal.querySelector('.back-to-menu');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
                 this.hide();
+                showModal('mainWalletModal');
             });
         }
 
-        // Setup backdrop click
-        this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.hide();
-            }
+        // Password visibility toggle
+        const toggleBtns = this.modal.querySelectorAll('[id$="PasswordVisibility"]');
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.togglePasswordVisibility(btn));
         });
 
-        // Setup escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isVisible()) {
+        // Handle click outside modal to close
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) {
                 this.hide();
             }
         });
+    }
+
+    togglePasswordVisibility(btn) {
+        const input = btn.parentElement.querySelector('input[type="password"]');
+        if (input) {
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            
+            // Update icon
+            btn.innerHTML = type === 'password' ? 
+                '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>' :
+                '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>';
+        }
     }
 
     show() {
-        if (!this.modal) return;
-
-        console.log(`=== SHOW MODAL ${this.modalId} START ===`);
-        
-        // Set initial display state
+        this.modal.classList.remove('hidden');
         this.modal.style.display = 'flex';
-        this.modal.style.visibility = 'visible';
-        this.modal.style.opacity = '0';
-        
-        // Force a reflow
-        this.modal.offsetHeight;
-        
-        // Add open class and animate
+        // Use requestAnimationFrame to ensure display change is applied before adding classes
         requestAnimationFrame(() => {
             this.modal.classList.add('open');
-            this.modal.style.opacity = '1';
-
-            // Animate content
-            const content = this.modal.querySelector('.modal-content');
-            if (content) {
-                content.style.transform = 'scale(0.95)';
-                content.style.opacity = '0';
-                
-                requestAnimationFrame(() => {
-                    content.style.transform = 'scale(1)';
-                    content.style.opacity = '1';
-                });
-            }
+            this.modal.classList.remove('modal-exit');
         });
-
-        console.log(`=== SHOW MODAL ${this.modalId} END ===`);
     }
 
     hide() {
-        if (!this.modal) return;
-
-        console.log(`=== HIDE MODAL ${this.modalId} START ===`);
-        
-        // Start animation
         this.modal.classList.remove('open');
-        this.modal.style.opacity = '0';
-
-        // Animate content
-        const content = this.modal.querySelector('.modal-content');
-        if (content) {
-            content.style.transform = 'scale(0.95)';
-            content.style.opacity = '0';
-        }
-
-        // Wait for animation to complete before hiding
+        this.modal.classList.add('modal-exit');
         setTimeout(() => {
+            this.modal.classList.add('hidden');
             this.modal.style.display = 'none';
-            this.modal.style.visibility = 'hidden';
-            
-            // Reset content transform
-            if (content) {
-                content.style.transform = 'scale(1)';
-            }
-        }, 300);
-
-        console.log(`=== HIDE MODAL ${this.modalId} END ===`);
-    }
-
-    isVisible() {
-        return this.modal && 
-               this.modal.style.display !== 'none' && 
-               this.modal.style.visibility !== 'hidden';
+        }, 300); // Match the CSS transition duration
     }
 }
 
-// Modal registry to keep track of all modals
-const modalRegistry = new Map();
+// Modal management
+const modals = new Map();
 
-// Helper functions
-export function showModal(modalId) {
-    if (!modalRegistry.has(modalId)) {
-        modalRegistry.set(modalId, new Modal(modalId));
+export function initializeModal(modalId) {
+    if (!modals.has(modalId)) {
+        modals.set(modalId, new Modal(modalId));
     }
-    modalRegistry.get(modalId).show();
+    return modals.get(modalId);
+}
+
+export function showModal(modalId) {
+    const modal = initializeModal(modalId);
+    modal.show();
 }
 
 export function hideModal(modalId) {
-    if (modalRegistry.has(modalId)) {
-        modalRegistry.get(modalId).hide();
+    const modal = modals.get(modalId);
+    if (modal) {
+        modal.hide();
     }
-}
-
-export function initializeModal(modalId, options = {}) {
-    if (!modalRegistry.has(modalId)) {
-        modalRegistry.set(modalId, new Modal(modalId));
-    }
-    return modalRegistry.get(modalId);
 }
 
 // Error message display
 export function showError(message, duration = 3000) {
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg z-50';
+    errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100002]';
     errorDiv.textContent = message;
     document.body.appendChild(errorDiv);
-    setTimeout(() => errorDiv.remove(), duration);
+    
+    // Animate in
+    errorDiv.style.opacity = '0';
+    errorDiv.style.transform = 'translateY(-20px)';
+    requestAnimationFrame(() => {
+        errorDiv.style.transition = 'all 0.3s ease';
+        errorDiv.style.opacity = '1';
+        errorDiv.style.transform = 'translateY(0)';
+    });
+
+    // Remove after duration
+    setTimeout(() => {
+        errorDiv.style.opacity = '0';
+        errorDiv.style.transform = 'translateY(-20px)';
+        setTimeout(() => errorDiv.remove(), 300);
+    }, duration);
 }
 
-// Legacy support for video modal
-export function initializeVideoModal() {
-    const modal = document.getElementById('videoModal');
-    const closeBtn = document.getElementById('closeModal');
-    const generateBtn = document.getElementById('generateBtn');
-    const startOverBtn = document.getElementById('startOverBtn');
-    const signBroadcastBtn = document.getElementById('signBroadcastBtn');
-    const promptStep = document.getElementById('promptStep');
-    const generatingStep = document.getElementById('generatingStep');
-    const previewStep = document.getElementById('previewStep');
-    const beatButton = document.querySelector('.beat-button');
-
-    function showStep(step) {
-        promptStep?.classList.add('hidden');
-        generatingStep?.classList.add('hidden');
-        previewStep?.classList.add('hidden');
-
-        switch(step) {
-            case 'prompt':
-                promptStep?.classList.remove('hidden');
-                break;
-            case 'generating':
-                generatingStep?.classList.remove('hidden');
-                break;
-            case 'preview':
-                previewStep?.classList.remove('hidden');
-                break;
-        }
-    }
-
-    if (generateBtn) {
-        generateBtn.addEventListener('click', () => {
-            showStep('generating');
-            setTimeout(() => {
-                showStep('preview');
-            }, 2000);
-        });
-    }
-
-    if (startOverBtn) {
-        startOverBtn.addEventListener('click', () => {
-            showStep('prompt');
-            const promptText = document.getElementById('promptText');
-            if (promptText) {
-                promptText.value = '';
-            }
-        });
-    }
-
-    if (signBroadcastBtn) {
-        signBroadcastBtn.addEventListener('click', () => {
-            hideModal('videoModal');
-        });
-    }
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            hideModal('videoModal');
-        });
-    }
-
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                hideModal('videoModal');
-            }
-        });
-    }
-
-    if (beatButton) {
-        beatButton.addEventListener('click', () => {
-            const currentImage = document.querySelector('.current-meme img');
-            if (currentImage) {
-                showVideoModal(currentImage.src);
-            }
-        });
-    }
-}
-
-export function showVideoModal(imageUrl) {
-    const modalImage = document.getElementById('modalImage');
-    if (imageUrl && modalImage) {
-        modalImage.src = imageUrl;
-    }
-    showModal('videoModal');
-    const promptStep = document.getElementById('promptStep');
-    if (promptStep) {
-        promptStep.classList.remove('hidden');
-    }
-} 
+// Initialize all modals on page load
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.modal').forEach(modal => {
+        initializeModal(modal.id);
+    });
+}); 

@@ -1,189 +1,123 @@
-import { showModal, hideModal, showWalletError, showMainWallet, showWalletSelection } from './modalManager.js';
-import { connectUnisatWallet, connectOKXWallet, connectYoursWallet } from './walletInit.js';
+import { showModal, hideModal, showError } from '../modal.js';
 import { generateNewWallet } from './walletGeneration.js';
-import { authenticateWithX } from './auth/xAuth.js';
 import { initializeImportWallet } from './walletImport.js';
+import { setWalletLoading } from './walletUIUpdates.js';
+import { SUPPORTED_WALLETS, detectAvailableWallets, initializeWallet } from './config.js';
 
-// Export showWalletSelection from modalManager
-export { showWalletSelection } from './modalManager.js';
+// Helper function to handle button setup with loading state and error handling
+async function setupWalletButton(buttonId, handler, options = {}) {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
 
-// Show create wallet modal
+    button.addEventListener('click', async () => {
+        try {
+            setWalletLoading(true);
+            
+            await options.preAction?.();
+            await handler();
+
+            if (options.hideModal) hideModal('walletSelectionModal');
+            if (options.showModal) showModal(options.showModal);
+        } catch (error) {
+            console.error(`Error in ${buttonId}:`, error);
+            showError(error.message || options.errorMessage || 'An error occurred');
+            options.onError?.(error);
+        } finally {
+            setWalletLoading(false);
+        }
+    });
+}
+
+// Handle connect wallet click - tries to connect to first available wallet or shows selection
+export async function handleConnectWalletClick() {
+    try {
+        setWalletLoading(true);
+        const availableWallets = detectAvailableWallets();
+        const hasAvailableWallet = Object.values(availableWallets).some(available => available);
+        
+        if (!hasAvailableWallet) {
+            showWalletSelection();
+            return;
+        }
+        
+        const firstAvailableWallet = Object.entries(availableWallets)
+            .find(([_, available]) => available)?.[0];
+            
+        if (firstAvailableWallet) {
+            await initializeWallet(firstAvailableWallet);
+            showModal('mainWalletModal');
+        } else {
+            showWalletSelection();
+        }
+    } catch (error) {
+        console.error('Error connecting wallet:', error);
+        showError(error.message || 'Failed to connect wallet');
+        showWalletSelection();
+    } finally {
+        setWalletLoading(false);
+    }
+}
+
+// Modal navigation functions
 export function showCreateWalletModal() {
-    console.log('Showing create wallet modal...');
     hideModal('walletSelectionModal');
     showModal('seedPhraseModal');
     generateNewWallet();
 }
 
-// Show import wallet modal
 export function showImportWalletModal() {
-    console.log('Showing import wallet modal...');
     hideModal('walletSelectionModal');
     showModal('importWalletModal');
     initializeImportWallet();
 }
 
-// Handle connect wallet button click
-export function handleConnectWalletClick() {
-    console.log('Connect wallet button clicked');
-    showWalletSelection();
+export function showWalletSelection() {
+    const availableWallets = detectAvailableWallets();
+    showModal('walletSelectionModal');
+    setupWalletSelectionEvents(availableWallets);
 }
 
-// Make functions available globally
-window.showCreateWalletModal = showCreateWalletModal;
-window.showImportWalletModal = showImportWalletModal;
-window.showWalletSelection = showWalletSelection;
-window.handleConnectWalletClick = handleConnectWalletClick;
-window.connectOKXWallet = connectOKXWallet;
-window.connectUnisatWallet = connectUnisatWallet;
-window.connectYoursWallet = connectYoursWallet;
-
-// Check if wallet is already initialized
-async function isWalletInitialized() {
-    console.log('Checking wallet initialization...');
-    
-    // First check session
-    const session = localStorage.getItem('memepire_wallet_session');
-    if (session) {
-        const sessionData = JSON.parse(session);
-        console.log('Found wallet session:', sessionData);
-        if (sessionData.isConnected) {
-            return true;
-        }
-    }
-
-    // Then check window.wallet
-    if (!window.wallet) {
-        console.log('No wallet instance found');
-        return false;
-    }
-
-    try {
-        // Check all required properties
-        const publicKey = window.wallet.getPublicKey();
-        const legacyAddress = await window.wallet.getLegacyAddress();
-        const balance = await window.wallet.getBalance();
-        const connectionType = window.wallet.getConnectionType();
-
-        const isInitialized = !!(publicKey && legacyAddress && balance !== undefined && connectionType);
-        console.log('Wallet initialization check:', { isInitialized, publicKey, legacyAddress, balance, connectionType });
-        return isInitialized;
-    } catch (error) {
-        console.error('Error checking wallet initialization:', error);
-        return false;
-    }
-}
-
-// Setup wallet selection events with enhanced feedback
-export function setupWalletSelectionEvents(hasUnisat, hasOKX, hasYours) {
+// Setup wallet selection events
+export function setupWalletSelectionEvents(availableWallets) {
     const modal = document.getElementById('walletSelectionModal');
-    if (!modal) {
-        console.error('Modal not found');
-        return;
-    }
+    if (!modal) return;
 
-    // Add Yours Wallet button handler
-    const yoursWalletBtn = modal.querySelector('#yoursWalletBtn');
-    if (yoursWalletBtn) {
-        yoursWalletBtn.addEventListener('click', async () => {
-            try {
-                // Check if Yours wallet is ready
-                if (!window.yours?.isReady) {
-                    window.open('https://yours.org', '_blank');
-                    return;
-                }
-                
-                await connectYoursWallet();
-            } catch (error) {
-                console.error('Error connecting to Yours Wallet:', error);
-                showWalletError('Failed to connect to Yours Wallet. Please make sure it is installed and try again.');
-            }
-        });
-    }
+    // Setup wallet buttons
+    Object.entries(SUPPORTED_WALLETS).forEach(([key, wallet]) => {
+        const button = document.getElementById(wallet.id);
+        if (!button) return;
 
-    // Unisat wallet connection
-    if (hasUnisat) {
-        const unisatBtn = document.getElementById('unisatWalletBtn');
-        if (unisatBtn) {
-            console.log('Setting up Unisat button');
-            unisatBtn.addEventListener('click', async () => {
-                try {
-                    unisatBtn.classList.add('loading');
-                    await connectUnisatWallet();
-                    hideModal('walletSelectionModal');
-                    showMainWallet();
-                } catch (error) {
-                    console.error('Unisat connection error:', error);
-                    showWalletError(error.message);
-                } finally {
-                    unisatBtn.classList.remove('loading');
+        if (availableWallets[key]) {
+            setupWalletButton(wallet.id, async () => {
+                if (wallet.checkReady?.() === false) {
+                    window.open(wallet.installUrl, '_blank');
+                    throw new Error(`${wallet.name} wallet not ready`);
                 }
+                await initializeWallet(key);
+            }, {
+                hideModal: true,
+                showModal: 'mainWalletModal',
+                errorMessage: wallet.errorMessage
+            });
+        } else {
+            button.addEventListener('click', () => {
+                window.open(wallet.installUrl, '_blank');
             });
         }
-    }
+    });
 
-    // OKX wallet connection
-    if (hasOKX) {
-        const okxBtn = document.getElementById('okxWalletBtn');
-        if (okxBtn) {
-            console.log('Setting up OKX button');
-            okxBtn.addEventListener('click', async () => {
-                try {
-                    okxBtn.classList.add('loading');
-                    await connectOKXWallet();
-                    hideModal('walletSelectionModal');
-                    showMainWallet();
-                } catch (error) {
-                    console.error('OKX connection error:', error);
-                    showWalletError(error.message);
-                } finally {
-                    okxBtn.classList.remove('loading');
-                }
-            });
-        }
-    }
+    // Setup create and import wallet buttons
+    setupWalletButton('createWalletBtn', generateNewWallet, {
+        hideModal: true,
+        showModal: 'seedPhraseModal',
+        onError: () => showModal('walletSelectionModal'),
+        errorMessage: 'Failed to create new wallet'
+    });
 
-    // Create new wallet
-    const createWalletBtn = document.getElementById('createWalletBtn');
-    if (createWalletBtn) {
-        console.log('Setting up create wallet button');
-        createWalletBtn.addEventListener('click', async () => {
-            try {
-                console.log('Create wallet button clicked');
-                createWalletBtn.classList.add('loading');
-                hideModal('walletSelectionModal');
-                showModal('seedPhraseModal');
-                await generateNewWallet();
-            } catch (error) {
-                console.error('Error creating new wallet:', error);
-                showWalletError(error.message);
-                showModal('walletSelectionModal');
-            } finally {
-                createWalletBtn.classList.remove('loading');
-            }
-        });
-    }
-
-    // Import existing wallet
-    const importWalletBtn = document.getElementById('importWalletBtn');
-    if (importWalletBtn) {
-        console.log('Setting up import wallet button');
-        importWalletBtn.addEventListener('click', () => {
-            try {
-                console.log('Import wallet button clicked');
-                importWalletBtn.classList.add('loading');
-                hideModal('walletSelectionModal');
-                showModal('importWalletModal');
-                initializeImportWallet();
-            } catch (error) {
-                console.error('Error initializing import wallet:', error);
-                showWalletError(error.message);
-                showModal('walletSelectionModal');
-            } finally {
-                importWalletBtn.classList.remove('loading');
-            }
-        });
-    }
-
-    console.log('All wallet selection events set up');
+    setupWalletButton('importWalletBtn', initializeImportWallet, {
+        hideModal: true,
+        showModal: 'importWalletModal',
+        onError: () => showModal('walletSelectionModal'),
+        errorMessage: 'Failed to initialize import wallet'
+    });
 } 
