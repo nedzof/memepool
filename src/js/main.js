@@ -92,6 +92,13 @@ async function initializeApp() {
             throw new Error('Failed to load components');
         }
 
+        // Debug check for wallet selection modal
+        const walletSelectionModal = document.getElementById('walletSelectionModal');
+        console.log('Wallet selection modal found:', walletSelectionModal);
+
+        // Initialize wallet functionality
+        await initializeWallet();
+        
         // Remove any duplicate connect buttons
         const connectButtons = document.querySelectorAll('[id="connectWalletBtn"]');
         if (connectButtons.length > 1) {
@@ -152,12 +159,7 @@ async function initializeApp() {
         console.log('Setting up event listeners...');
         setupEventListeners();
     } catch (error) {
-        console.error('Initialization error:', error);
-        // Show error to user
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg z-50';
-        errorDiv.textContent = error.message;
-        document.body.appendChild(errorDiv);
+        console.error('Error initializing app:', error);
     }
 }
 

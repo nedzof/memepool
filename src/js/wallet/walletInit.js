@@ -4,6 +4,8 @@ import { updateProfileWithPersistence } from './cache.js';
 import { updateBalanceDisplay, handleConnectWalletButton } from './walletEvents.js';
 import { showWalletSelection } from './modalManager.js';
 import { handleConnectWalletClick } from './walletSelection.js';
+import { initYoursWallet } from './interfaces/yoursWallet.js';
+import { updateWalletUI, resetWalletUI } from './walletUIUpdates.js';
 
 // Wallet type detection
 export async function detectWalletType() {
@@ -141,6 +143,54 @@ export async function connectOKXWallet() {
         // Clear any existing session
         localStorage.removeItem('memepire_wallet_session');
         showWalletError(error.message);
+    }
+}
+
+// Connect Yours wallet
+export async function connectYoursWallet() {
+    try {
+        const wallet = await initYoursWallet();
+        if (!wallet) {
+            throw new Error('Failed to initialize Yours Wallet');
+        }
+
+        // Setup event listeners - only if the wallet supports them
+        if (typeof wallet.on === 'function') {
+            try {
+                wallet.on('switchAccount', () => {
+                    console.log('Yours Wallet: Account switched');
+                    updateWalletUI();
+                });
+
+                wallet.on('signedOut', () => {
+                    console.log('Yours Wallet: Signed out');
+                    if (wallet.disconnect) {
+                        wallet.disconnect();
+                    }
+                    resetWalletUI();
+                });
+            } catch (error) {
+                console.warn('Warning: Some wallet events not supported:', error);
+            }
+        }
+
+        window.wallet = wallet;
+        
+        // Update UI to show connected state
+        const balance = await wallet.getBalance();
+        await updateWalletUI(balance);
+        
+        // Hide wallet selection modal
+        hideModal('walletSelectionModal');
+        
+        // Show main wallet interface
+        showMainWallet();
+        
+        return wallet;
+    } catch (error) {
+        console.error('Failed to connect Yours Wallet:', error);
+        showWalletError('Failed to connect Yours Wallet. Please make sure it is installed and try again.');
+        throw error;
     }
 }
 

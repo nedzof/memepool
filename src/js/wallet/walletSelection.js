@@ -1,5 +1,5 @@
 import { showModal, hideModal, showWalletError, showMainWallet, showWalletSelection } from './modalManager.js';
-import { connectUnisatWallet, connectOKXWallet } from './walletInit.js';
+import { connectUnisatWallet, connectOKXWallet, connectYoursWallet } from './walletInit.js';
 import { generateNewWallet } from './walletGeneration.js';
 import { authenticateWithX } from './auth/xAuth.js';
 import { initializeImportWallet } from './walletImport.js';
@@ -36,6 +36,7 @@ window.showWalletSelection = showWalletSelection;
 window.handleConnectWalletClick = handleConnectWalletClick;
 window.connectOKXWallet = connectOKXWallet;
 window.connectUnisatWallet = connectUnisatWallet;
+window.connectYoursWallet = connectYoursWallet;
 
 // Check if wallet is already initialized
 async function isWalletInitialized() {
@@ -74,28 +75,31 @@ async function isWalletInitialized() {
 }
 
 // Setup wallet selection events with enhanced feedback
-function setupWalletSelectionEvents(hasUnisat, hasOKX) {
-    console.log('Setting up wallet selection events...');
-    const modal = document.getElementById('initialSetupModal');
+export function setupWalletSelectionEvents(hasUnisat, hasOKX, hasYours) {
+    const modal = document.getElementById('walletSelectionModal');
     if (!modal) {
         console.error('Modal not found');
         return;
     }
 
-    // Add close functionality with proper event handling
-    const closeModal = (e) => {
-        // Only close if clicking the backdrop (modal itself)
-        if (e.target === modal) {
-            e.preventDefault();
-            e.stopPropagation();
-            hideModal('initialSetupModal');
-        }
-    };
-    
-    // Remove any existing click listeners
-    modal.removeEventListener('click', closeModal);
-    // Add the click listener
-    modal.addEventListener('click', closeModal);
+    // Add Yours Wallet button handler
+    const yoursWalletBtn = modal.querySelector('#yoursWalletBtn');
+    if (yoursWalletBtn) {
+        yoursWalletBtn.addEventListener('click', async () => {
+            try {
+                // Check if Yours wallet is ready
+                if (!window.yours?.isReady) {
+                    window.open('https://yours.org', '_blank');
+                    return;
+                }
+                
+                await connectYoursWallet();
+            } catch (error) {
+                console.error('Error connecting to Yours Wallet:', error);
+                showWalletError('Failed to connect to Yours Wallet. Please make sure it is installed and try again.');
+            }
+        });
+    }
 
     // Unisat wallet connection
     if (hasUnisat) {
@@ -106,7 +110,7 @@ function setupWalletSelectionEvents(hasUnisat, hasOKX) {
                 try {
                     unisatBtn.classList.add('loading');
                     await connectUnisatWallet();
-                    hideModal('initialSetupModal');
+                    hideModal('walletSelectionModal');
                     showMainWallet();
                 } catch (error) {
                     console.error('Unisat connection error:', error);
@@ -127,7 +131,7 @@ function setupWalletSelectionEvents(hasUnisat, hasOKX) {
                 try {
                     okxBtn.classList.add('loading');
                     await connectOKXWallet();
-                    hideModal('initialSetupModal');
+                    hideModal('walletSelectionModal');
                     showMainWallet();
                 } catch (error) {
                     console.error('OKX connection error:', error);
@@ -147,13 +151,13 @@ function setupWalletSelectionEvents(hasUnisat, hasOKX) {
             try {
                 console.log('Create wallet button clicked');
                 createWalletBtn.classList.add('loading');
-                hideModal('initialSetupModal');
+                hideModal('walletSelectionModal');
                 showModal('seedPhraseModal');
                 await generateNewWallet();
             } catch (error) {
                 console.error('Error creating new wallet:', error);
                 showWalletError(error.message);
-                showModal('initialSetupModal');
+                showModal('walletSelectionModal');
             } finally {
                 createWalletBtn.classList.remove('loading');
             }
@@ -168,13 +172,13 @@ function setupWalletSelectionEvents(hasUnisat, hasOKX) {
             try {
                 console.log('Import wallet button clicked');
                 importWalletBtn.classList.add('loading');
-                hideModal('initialSetupModal');
+                hideModal('walletSelectionModal');
                 showModal('importWalletModal');
                 initializeImportWallet();
             } catch (error) {
                 console.error('Error initializing import wallet:', error);
                 showWalletError(error.message);
-                showModal('initialSetupModal');
+                showModal('walletSelectionModal');
             } finally {
                 importWalletBtn.classList.remove('loading');
             }

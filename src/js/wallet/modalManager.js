@@ -6,15 +6,16 @@ import { showModal, hideModal, showError as showErrorMessage } from '../modal.js
 export function showWalletSelection() {
     console.log('Showing wallet selection modal...');
     
-    // First detect available wallets
+    // Detect available wallets
     const hasUnisat = window.unisat !== undefined;
     const hasOKX = window.okxwallet !== undefined;
+    const hasYours = window.yours !== undefined;
     
     // Show the modal
     showModal('walletSelectionModal');
     
     // Setup event handlers
-    setupWalletSelectionEvents(hasUnisat, hasOKX);
+    setupWalletSelectionEvents(hasUnisat, hasOKX, hasYours);
 }
 
 // Re-export modal functions
