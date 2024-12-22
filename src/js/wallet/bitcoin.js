@@ -133,19 +133,24 @@ export async function createWalletFromMnemonic(mnemonic) {
         const child = root.derivePath(path);
         console.log('Derived child key at path:', path);
 
-        const keyPair = ECPair.fromPrivateKey(child.privateKey);
+        const keyPair = ECPair.fromPrivateKey(child.privateKey, { compressed: true });
         console.log('Created key pair');
 
-        const { address } = bitcoin.payments.p2pkh({ 
+        // Create payment object with the public key point
+        const payment = bitcoin.payments.p2pkh({ 
             pubkey: keyPair.publicKey,
             network: bitcoin.networks.bitcoin 
         });
 
-        console.log('Generated address:', address);
+        if (!payment.address) {
+            throw new Error('Failed to generate address from public key');
+        }
+
+        console.log('Generated address:', payment.address);
 
         return {
-            address: address,
-            legacyAddress: address,
+            address: payment.address,
+            legacyAddress: payment.address,
             publicKey: keyPair.publicKey.toString('hex'),
             privateKey: keyPair.privateKey.toString('hex'),
             sign: (tx) => keyPair.sign(tx)
