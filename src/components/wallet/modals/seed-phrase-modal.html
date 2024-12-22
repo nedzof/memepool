@@ -17,11 +17,59 @@
             </div>
 
             <div class="relative">
-                <div id="seedPhraseGrid" class="grid grid-cols-3 gap-3 filter blur-lg transition-all duration-300">
-                    <!-- Seed words will be dynamically inserted here -->
+                <div id="seedPhraseGrid" class="grid grid-cols-3 gap-3">
+                    <!-- Pre-made boxes for seed words -->
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">1</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">2</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">3</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">4</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">5</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">6</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">7</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">8</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">9</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">10</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">11</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
+                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
+                        <span class="text-[#00ffa3] text-sm font-medium">12</span>
+                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
+                    </div>
                 </div>
                 
-                <button id="revealSeedPhraseBtn" class="absolute inset-0 w-full h-full flex items-center justify-center neon-button rounded-xl bg-black/40 backdrop-blur-sm transition-all duration-300">
+                <button id="revealSeedPhraseBtn" class="absolute inset-0 w-full h-full flex items-center justify-center neon-button rounded-xl bg-black/80 backdrop-blur-sm transition-all duration-300 z-20 hover:bg-black/90">
                     <div class="flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -49,71 +97,4 @@
             </div>
         </div>
     </div>
-</div>
-
-<script>
-function showSeedPhraseModal(seedPhrase) {
-    const modal = document.getElementById('seedPhraseModal');
-    const grid = modal.querySelector('#seedPhraseGrid');
-    
-    // Clear existing content
-    grid.innerHTML = '';
-    
-    // Split seed phrase into words
-    const words = seedPhrase.split(' ');
-    
-    // Create elements for each word
-    words.forEach((word, index) => {
-        const container = document.createElement('div');
-        container.className = 'seed-word-container';
-        
-        const number = document.createElement('span');
-        number.className = 'seed-word-number';
-        number.textContent = `${index + 1}`;
-        
-        const text = document.createElement('span');
-        text.className = 'seed-word-text';
-        text.textContent = word;
-        
-        container.appendChild(number);
-        container.appendChild(text);
-        grid.appendChild(container);
-    });
-    
-    // Show modal with animation
-    modal.classList.add('show');
-    setTimeout(() => {
-        modal.querySelector('.modal').classList.add('show');
-    }, 10);
-}
-
-function closeSeedPhraseModal() {
-    const modal = document.getElementById('seedPhraseModal');
-    modal.querySelector('.modal').classList.remove('show');
-    setTimeout(() => {
-        modal.classList.remove('show');
-    }, 300);
-}
-
-function copySeedPhrase() {
-    const grid = document.querySelector('#seedPhraseGrid');
-    const words = Array.from(grid.querySelectorAll('.seed-word-text'))
-        .map(span => span.textContent)
-        .join(' ');
-    
-    navigator.clipboard.writeText(words).then(() => {
-        showSuccess('Seed phrase copied to clipboard');
-    }).catch(err => {
-        showError('Failed to copy seed phrase');
-    });
-}
-
-function confirmSeedPhrase() {
-    // Hide seed phrase modal
-    closeSeedPhraseModal();
-    
-    // Show confirmation modal or next step
-    // This will be implemented based on the flow requirements
-    showSuccess('Seed phrase confirmed');
-}
-</script> 
+</div> 

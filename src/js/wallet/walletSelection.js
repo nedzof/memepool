@@ -70,7 +70,7 @@ export async function handleConnectWalletClick() {
 // Modal navigation functions
 export function showCreateWalletModal() {
     hideModal('walletSelectionModal');
-    showModal('seedPhraseModal');
+    showModal('passwordSetupModal');
     generateNewWallet();
 }
 
@@ -118,7 +118,7 @@ export function setupWalletSelectionEvents(availableWallets) {
     // Setup create and import wallet buttons
     setupWalletButton('createWalletBtn', generateNewWallet, {
         hideModal: true,
-        showModal: 'seedPhraseModal',
+        showModal: 'passwordSetupModal',
         onError: () => showModal('walletSelectionModal'),
         errorMessage: 'Failed to create new wallet'
     });

@@ -50,4 +50,37 @@ export async function initOKXWallet() {
         console.error('Error initializing OKX wallet:', error);
         throw error;
     }
+}
+
+// Initialize Phantom wallet interface
+export async function initPhantomWallet() {
+    if (!window.phantom) throw new Error('Phantom wallet not found');
+
+    try {
+        const provider = window.phantom?.solana;
+        if (!provider?.isPhantom) {
+            throw new Error('Phantom wallet is not installed');
+        }
+
+        await provider.connect();
+        const address = provider.publicKey.toString();
+        if (!address) throw new Error('No address found');
+        
+        return {
+            type: 'phantom',
+            getAddress: () => address,
+            getPublicKey: () => address,
+            getBalance: () => getBalance(address),
+            disconnect: async () => {
+                try {
+                    await provider.disconnect();
+                } catch (error) {
+                    console.error('Error disconnecting Phantom wallet:', error);
+                }
+            }
+        };
+    } catch (error) {
+        console.error('Error initializing Phantom wallet:', error);
+        throw error;
+    }
 } 

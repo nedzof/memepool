@@ -2,22 +2,23 @@ import { showError } from '../modal.js';
 
 // Modal management functions
 export function showModal(modalId) {
+    // First, hide all modals
+    const allModals = document.querySelectorAll('.modal');
+    allModals.forEach(modal => {
+        modal.classList.remove('show');
+    });
+
+    // Then show the requested modal
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('show');
-        setTimeout(() => {
-            modal.querySelector('.modal').classList.add('show');
-        }, 10);
     }
 }
 
 export function hideModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.querySelector('.modal').classList.remove('show');
-        setTimeout(() => {
-            modal.classList.remove('show');
-        }, 300);
+        modal.classList.remove('show');
     }
 }
 

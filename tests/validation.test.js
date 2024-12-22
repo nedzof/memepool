@@ -1,6 +1,8 @@
 import { validateSession } from '../src/js/wallet/validation';
 import { createSession, getSession, updateSession, terminateSession } from '../src/js/wallet/auth/session';
 import { ValidationError, AuthenticationError } from '../src/js/errors';
+import { validateMnemonicRandomness } from '../src/js/wallet/validation.js';
+import { bsv } from '../src/js/bsv.js';
 
 describe('Session validation', () => {
   beforeEach(() => {
@@ -197,4 +199,59 @@ describe('Session management', () => {
     terminateSession();
     // No error should be thrown
   });
+}); 
+
+describe('Mnemonic Validation Tests', () => {
+    test('should reject sequential BIP39 words', () => {
+        const sequentialMnemonic = 'abandon ability able about above absent absorb abstract absurd abuse access accident';
+        expect(() => validateMnemonicRandomness(sequentialMnemonic)).toThrow('Mnemonic appears to be sequential or non-random');
+    });
+
+    test('should reject alphabetically sorted BIP39 words', () => {
+        const sortedMnemonic = 'abandon ability able about above absent absorb abstract absurd abuse access accident';
+        expect(() => validateMnemonicRandomness(sortedMnemonic)).toThrow('Mnemonic appears to be sequential or non-random');
+    });
+
+    test('should reject mnemonic with low entropy', () => {
+        const lowEntropyMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+        expect(() => validateMnemonicRandomness(lowEntropyMnemonic)).toThrow('Mnemonic has insufficient entropy');
+    });
+
+    test('should accept valid random mnemonic', () => {
+        // Generate a truly random mnemonic using the Bitcoin library
+        const entropy = bsv.crypto.Random.getRandomBuffer(16); // 128 bits of entropy
+        const mnemonic = bsv.Mnemonic.fromEntropy(entropy).toString();
+        expect(() => validateMnemonicRandomness(mnemonic)).not.toThrow();
+    });
+
+    test('should reject mnemonics with patterns', () => {
+        const patternMnemonic = 'cat dog cat dog cat dog cat dog cat dog cat dog';
+        expect(() => validateMnemonicRandomness(patternMnemonic)).toThrow('Mnemonic contains patterns');
+    });
+
+    test('should validate entropy distribution', () => {
+        // Generate 100 random mnemonics and check their entropy distribution
+        const mnemonics = Array.from({ length: 100 }, () => {
+            const entropy = bsv.crypto.Random.getRandomBuffer(16);
+            return bsv.Mnemonic.fromEntropy(entropy).toString();
+        });
+
+        // Check that words are well-distributed
+        const wordCounts = new Map();
+        mnemonics.forEach(mnemonic => {
+            const words = mnemonic.split(' ');
+            words.forEach(word => {
+                wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
+            });
+        });
+
+        // Calculate standard deviation of word frequencies
+        const frequencies = Array.from(wordCounts.values());
+        const mean = frequencies.reduce((a, b) => a + b) / frequencies.length;
+        const variance = frequencies.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / frequencies.length;
+        const stdDev = Math.sqrt(variance);
+
+        // Standard deviation should not be too high (indicating clustering)
+        expect(stdDev / mean).toBeLessThan(0.5);
+    });
 }); 

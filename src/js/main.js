@@ -1,6 +1,6 @@
+import { bsv, BSVWallet } from './bsv.js';
 import { initializeBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
-import BSVWallet from './BSVWallet.js';
 import { initialize as initializeWallet } from './wallet/walletInit.js';
 import { showMainWallet, showWalletError } from './wallet/modalManager.js';
 import { showWalletSelection } from './wallet/modalManager.js';

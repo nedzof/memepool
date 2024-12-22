@@ -1,5 +1,5 @@
 import { showModal, hideModal, showWalletError } from './modalManager.js';
-import { validateMnemonic } from '../bsv.js';
+import { validateMnemonic, encryptMnemonic } from './mnemonic.js';
 import { setupPasswordValidation } from './walletGeneration.js';
 
 // Initialize import wallet functionality
@@ -138,56 +138,4 @@ export function initializeImportWallet() {
             confirmImportBtn.disabled = !allWordsEntered;
         }
     }
-}
-
-// Utility function to encrypt seed phrase
-async function encryptSeedPhrase(seedPhrase, password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(seedPhrase);
-    
-    // Generate a key from the password
-    const keyMaterial = await window.crypto.subtle.importKey(
-        "raw",
-        encoder.encode(password),
-        { name: "PBKDF2" },
-        false,
-        ["deriveBits", "deriveKey"]
-    );
-    
-    // Generate a random salt
-    const salt = window.crypto.getRandomValues(new Uint8Array(16));
-    
-    // Derive the key
-    const key = await window.crypto.subtle.deriveKey(
-        {
-            name: "PBKDF2",
-            salt,
-            iterations: 100000,
-            hash: "SHA-256"
-        },
-        keyMaterial,
-        { name: "AES-GCM", length: 256 },
-        true,
-        ["encrypt"]
-    );
-    
-    // Generate a random IV
-    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    
-    // Encrypt the data
-    const encryptedData = await window.crypto.subtle.encrypt(
-        {
-            name: "AES-GCM",
-            iv
-        },
-        key,
-        data
-    );
-    
-    // Return the encrypted data, salt, and IV
-    return {
-        data: Array.from(new Uint8Array(encryptedData)),
-        salt: Array.from(salt),
-        iv: Array.from(iv)
-    };
 } 

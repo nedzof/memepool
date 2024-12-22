@@ -1,4 +1,4 @@
-import { initUnisatWallet, initOKXWallet } from './walletInterfaces.js';
+import { initUnisatWallet, initOKXWallet, initPhantomWallet } from './walletInterfaces.js';
 import { initYoursWallet } from './interfaces/yoursWallet.js';
 
 // Required wallet interface methods
@@ -36,6 +36,16 @@ export const SUPPORTED_WALLETS = {
         errorMessage: 'Failed to connect to Yours Wallet. Please make sure it is installed and try again.',
         retryAttempts: 2,
         retryDelay: 1500
+    },
+    phantom: {
+        id: 'phantomWalletBtn',
+        name: 'Phantom',
+        checkAvailability: () => window.phantom !== undefined,
+        initialize: initPhantomWallet,
+        installUrl: 'https://phantom.app',
+        errorMessage: 'Failed to connect to Phantom Wallet',
+        retryAttempts: 3,
+        retryDelay: 1000
     }
 };
 
