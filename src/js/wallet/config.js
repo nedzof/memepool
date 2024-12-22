@@ -1,5 +1,57 @@
-import { initUnisatWallet, initOKXWallet, initPhantomWallet } from './walletInterfaces.js';
-import { initYoursWallet } from './interfaces/yoursWallet.js';
+import { fetchBalanceFromWhatsOnChain } from './bitcoin.js';
+import { resetWalletUI } from './walletUIManager.js';
+
+// Get balance with WhatsOnChain
+async function getBalance(address) {
+    try {
+        return await fetchBalanceFromWhatsOnChain(address);
+    } catch (error) {
+        console.error('Error getting balance:', error);
+        return 0;
+    }
+}
+
+// Initialize Unisat wallet interface
+async function initUnisatWallet() {
+    if (!window.unisat) throw new Error('Unisat wallet not found');
+
+    try {
+        await window.unisat.requestAccounts();
+        const address = await window.unisat.getAccounts().then(accounts => accounts[0]);
+        if (!address) throw new Error('No address found');
+        
+        return {
+            type: 'unisat',
+            getAddress: () => address,
+            getPublicKey: () => address,
+            getBalance: () => getBalance(address)
+        };
+    } catch (error) {
+        console.error('Error initializing Unisat wallet:', error);
+        throw error;
+    }
+}
+
+// Initialize OKX wallet interface
+async function initOKXWallet() {
+    if (!window.okxwallet) throw new Error('OKX wallet not found');
+
+    try {
+        await window.okxwallet.request({ method: 'eth_requestAccounts' });
+        const address = await window.okxwallet.request({ method: 'eth_accounts' }).then(accounts => accounts[0]);
+        if (!address) throw new Error('No address found');
+        
+        return {
+            type: 'okx',
+            getAddress: () => address,
+            getPublicKey: () => address,
+            getBalance: () => getBalance(address)
+        };
+    } catch (error) {
+        console.error('Error initializing OKX wallet:', error);
+        throw error;
+    }
+}
 
 // Required wallet interface methods
 const REQUIRED_METHODS = ['getAddress', 'getBalance', 'getPublicKey'];
@@ -23,27 +75,6 @@ export const SUPPORTED_WALLETS = {
         initialize: initOKXWallet,
         installUrl: 'https://www.okx.com/web3',
         errorMessage: 'Failed to connect to OKX Wallet',
-        retryAttempts: 3,
-        retryDelay: 1000
-    },
-    yours: {
-        id: 'yoursWalletBtn',
-        name: 'Yours',
-        checkAvailability: () => window.yours !== undefined,
-        checkReady: () => window.yours?.isReady,
-        initialize: initYoursWallet,
-        installUrl: 'https://yours.org',
-        errorMessage: 'Failed to connect to Yours Wallet. Please make sure it is installed and try again.',
-        retryAttempts: 2,
-        retryDelay: 1500
-    },
-    phantom: {
-        id: 'phantomWalletBtn',
-        name: 'Phantom',
-        checkAvailability: () => window.phantom !== undefined,
-        initialize: initPhantomWallet,
-        installUrl: 'https://phantom.app',
-        errorMessage: 'Failed to connect to Phantom Wallet',
         retryAttempts: 3,
         retryDelay: 1000
     }
@@ -103,4 +134,24 @@ export async function initializeWallet(walletType) {
         validateWalletInterface(wallet, walletType);
         return wallet;
     }, walletType);
+}
+
+// Disconnect wallet and clean up
+export function disconnectWallet() {
+    // Clear session storage
+    sessionStorage.removeItem('temp_mnemonic');
+    localStorage.removeItem('memepire_wallet_session');
+
+    // Clear global wallet instance
+    if (window.wallet?.disconnect) {
+        try {
+            window.wallet.disconnect();
+        } catch (error) {
+            console.warn('Error disconnecting wallet:', error);
+        }
+    }
+    window.wallet = null;
+
+    // Reset UI
+    resetWalletUI();
 } 

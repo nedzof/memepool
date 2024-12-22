@@ -1,12 +1,17 @@
-import { bsv, BSVWallet } from './bsv.js';
+import { BitcoinWallet } from './wallet/bitcoin.js';
 import { initializeBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
-import { initialize as initializeWallet } from './wallet/walletInit.js';
-import { showMainWallet, showWalletError } from './wallet/modalManager.js';
-import { showWalletSelection } from './wallet/modalManager.js';
+import { 
+    showModal, 
+    hideModal, 
+    showError,
+    initializeModal,
+    initializeWalletUI,
+    showWalletSelection,
+    showMainWallet 
+} from './walletUI.js';
 import { handleConnectWalletClick } from './wallet/walletSelection.js';
-import { showModal, initializeModal } from './modal.js';
-import { initializeWalletUI } from './wallet.js';
+import { initializeWallet } from './wallet/config.js';
 
 // Expose wallet functions globally
 window.showWalletSelection = function() {
@@ -133,13 +138,9 @@ async function initializeApp() {
         console.log('Initializing submissions...');
         initializeSubmissions();
 
-        // Initialize wallet
-        console.log('Creating wallet instance...');
-        window.wallet = new BSVWallet();
-        
-        console.log('Initializing wallet UI...');
-        await initializeWallet();
-        await initializeWalletUI();
+        // Initialize wallet selection
+        console.log('Initializing wallet selection...');
+        await handleConnectWalletClick();
 
         // Add global click handler for debugging
         document.addEventListener('click', (e) => {

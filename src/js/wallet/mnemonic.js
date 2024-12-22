@@ -1,19 +1,24 @@
-import { bsv } from '../bsv.js';
+import * as bip39 from 'bip39';
 
 // Generate secure random mnemonic
 export function generateSecureMnemonic() {
-    // Get 16 bytes (128 bits) of cryptographically secure random data
-    const entropy = bsv.crypto.Random.getRandomBuffer(16);
-    
-    // Convert to mnemonic using BIP39
-    const mnemonic = bsv.Mnemonic.fromEntropy(entropy);
-    
-    // Validate the generated mnemonic
-    if (!mnemonic.isValid()) {
-        throw new Error('Generated mnemonic failed validation');
+    try {
+        console.log('Generating secure random mnemonic...');
+        
+        // Generate a random mnemonic using BIP39
+        const mnemonic = bip39.generateMnemonic();
+        console.log('Generated mnemonic:', mnemonic);
+        
+        // Validate the generated mnemonic
+        if (!bip39.validateMnemonic(mnemonic)) {
+            throw new Error('Generated mnemonic failed validation');
+        }
+        
+        return mnemonic;
+    } catch (error) {
+        console.error('Error in generateSecureMnemonic:', error);
+        throw new Error('Failed to generate secure mnemonic: ' + error.message);
     }
-    
-    return mnemonic.toString();
 }
 
 // Validate mnemonic format and BIP39 compliance
@@ -23,8 +28,7 @@ export function validateMnemonic(mnemonic) {
     }
 
     try {
-        const mnemonicObj = bsv.Mnemonic.fromString(mnemonic);
-        return mnemonicObj.isValid();
+        return bip39.validateMnemonic(mnemonic);
     } catch (error) {
         console.error('Mnemonic validation failed:', error);
         return false;
@@ -52,7 +56,7 @@ export function validateMnemonicRandomness(mnemonic) {
 
     // Check for sequential patterns
     let sequentialCount = 0;
-    const wordList = bsv.Mnemonic.Words.ENGLISH;
+    const wordList = bip39.wordlists.english;
     for (let i = 1; i < words.length; i++) {
         const currentIndex = wordList.indexOf(words[i]);
         const prevIndex = wordList.indexOf(words[i - 1]);
@@ -71,24 +75,23 @@ export function validateMnemonicRandomness(mnemonic) {
         throw new Error('Mnemonic contains patterns');
     }
 
-    // Check entropy using the Bitcoin library
+    // Check entropy using BIP39
     try {
-        const mnemonicObj = bsv.Mnemonic.fromString(mnemonic);
-        const entropy = mnemonicObj.toEntropy();
-        
-        // Count bit patterns in entropy
-        const bits = Array.from(entropy).map(byte => 
-            byte.toString(2).padStart(8, '0')
-        ).join('');
+        const entropy = bip39.mnemonicToEntropy(mnemonic);
+        const entropyBits = Buffer.from(entropy, 'hex')
+            .toString('binary')
+            .split('')
+            .map(char => char.charCodeAt(0).toString(2).padStart(8, '0'))
+            .join('');
         
         // Calculate Shannon entropy
         const bitCounts = new Map();
-        for (let i = 0; i < bits.length - 3; i++) {
-            const pattern = bits.slice(i, i + 4);
+        for (let i = 0; i < entropyBits.length - 3; i++) {
+            const pattern = entropyBits.slice(i, i + 4);
             bitCounts.set(pattern, (bitCounts.get(pattern) || 0) + 1);
         }
         
-        const totalPatterns = bits.length - 3;
+        const totalPatterns = entropyBits.length - 3;
         const shannonEntropy = Array.from(bitCounts.values()).reduce((entropy, count) => {
             const probability = count / totalPatterns;
             return entropy - probability * Math.log2(probability);
@@ -163,7 +166,7 @@ export async function decryptMnemonic(encryptedData, password) {
     const passwordData = encoder.encode(password);
 
     // Generate key from password
-    const key = await crypto.subtle.importKey(
+    const key = await window.crypto.subtle.importKey(
         'raw',
         passwordData,
         { name: 'PBKDF2' },
@@ -172,7 +175,7 @@ export async function decryptMnemonic(encryptedData, password) {
     );
 
     // Generate decryption key
-    const decryptionKey = await crypto.subtle.deriveKey(
+    const decryptionKey = await window.crypto.subtle.deriveKey(
         {
             name: 'PBKDF2',
             salt: new Uint8Array(encryptedData.salt),
@@ -186,7 +189,7 @@ export async function decryptMnemonic(encryptedData, password) {
     );
 
     // Decrypt mnemonic
-    const decryptedData = await crypto.subtle.decrypt(
+    const decryptedData = await window.crypto.subtle.decrypt(
         {
             name: 'AES-GCM',
             iv: new Uint8Array(encryptedData.iv)

@@ -1,58 +1,58 @@
-import { showModal, hideModal, showWalletError, showMainWallet } from './modalManager.js';
-import { bsv, BSVWallet } from '../bsv.js';
-import { createSession } from './auth/session.js';
-import { setupMainWalletEvents } from './walletEvents.js';
-import { validateMnemonicRandomness } from './validation.js';
+import { showModal, hideModal, initializeModal, showError } from '../modal.js';
+import { generateSecureMnemonic, encryptMnemonic } from './mnemonic.js';
+import { BitcoinWallet } from './bitcoin.js';
+import { updateWalletUI } from './walletUIManager.js';
 
 // Generate new wallet
 export async function generateNewWallet() {
+    console.log('Generating new wallet...');
+    
     try {
-        // Create new BSV wallet instance
-        const wallet = new BSVWallet();
+        // Generate secure mnemonic
+        const mnemonic = await generateSecureMnemonic();
+        console.log('Generated secure mnemonic');
         
-        // Generate new wallet with password
-        const result = await wallet.generateNewWallet('temporary_password'); // We'll update this with user's password later
+        // Store mnemonic temporarily
+        sessionStorage.setItem('temp_mnemonic', mnemonic);
         
-        if (!result.success) {
-            throw new Error('Failed to generate wallet');
-        }
-        
-        // Store wallet instance temporarily
-        sessionStorage.setItem('temp_wallet', JSON.stringify({
-            address: result.address,
-            publicKey: result.publicKey,
-            balance: result.balance
-        }));
-        
-        // Show password setup modal
-        showModal('passwordSetupModal');
-        setupPasswordValidation();
+        // Display seed phrase
+        displaySeedPhrase(mnemonic);
         
         return true;
     } catch (error) {
         console.error('Error generating wallet:', error);
-        showWalletError('Failed to generate wallet. Please try again.');
+        showError(error.message);
         return false;
     }
 }
 
 // Display seed phrase
 function displaySeedPhrase(mnemonic) {
-    const seedPhraseContainer = document.getElementById('seedPhraseGrid');
-    if (!seedPhraseContainer) {
+    console.log('Displaying seed phrase...');
+    console.log('Generated mnemonic:', mnemonic);
+    console.log('Words:', mnemonic.split(' '));
+    
+    const seedPhraseGrid = document.getElementById('seedPhraseGrid');
+    if (!seedPhraseGrid) {
         console.error('Seed phrase container not found');
         return;
     }
 
-    console.log('Displaying mnemonic:', mnemonic); // For debugging
+    // Generate grid HTML
+    seedPhraseGrid.innerHTML = Array.from({ length: 12 }, (_, i) => `
+        <div class="seed-word group">
+            <span class="seed-word-number">${i + 1}</span>
+            <div class="seed-word-text"></div>
+        </div>
+    `).join('');
+
+    // Fill in the words (they'll be blurred initially)
     const words = mnemonic.split(' ');
-    const wordElements = seedPhraseContainer.querySelectorAll('.seed-word-text');
-    
-    // Fill in the words
-    wordElements.forEach((element, index) => {
+    seedPhraseGrid.querySelectorAll('.seed-word-text').forEach((element, index) => {
         if (words[index]) {
-            element.textContent = '•••••••'; // Start with bullets
-            element.dataset.word = words[index]; // Store actual word
+            element.textContent = words[index];
+            element.dataset.word = words[index];
+            console.log(`Word ${index + 1}:`, words[index]);
         }
     });
 
@@ -63,113 +63,154 @@ function displaySeedPhrase(mnemonic) {
 
 // Setup seed phrase events
 function setupSeedPhraseEvents() {
-    // Reveal seed phrase
-    const revealBtn = document.getElementById('revealSeedPhraseBtn');
-    const seedPhraseGrid = document.getElementById('seedPhraseGrid');
+    console.log('Setting up seed phrase events...');
     
-    if (revealBtn && seedPhraseGrid) {
-        revealBtn.addEventListener('click', () => {
-            // Get the stored mnemonic
-            const mnemonic = sessionStorage.getItem('temp_mnemonic');
-            if (!mnemonic) {
-                console.error('No mnemonic found in session storage');
-                return;
-            }
-            
-            // Remove blur effect
-            seedPhraseGrid.classList.remove('filter', 'blur-lg');
-            revealBtn.classList.add('opacity-0', 'pointer-events-none');
-            
-            // Reveal the actual words
-            const words = mnemonic.split(' ');
-            seedPhraseGrid.querySelectorAll('.seed-word-text').forEach((element, index) => {
-                if (words[index]) {
-                    element.textContent = words[index];
+    initializeModal('seedPhraseModal', {
+        listeners: {
+            '#revealSeedPhraseBtn': () => {
+                console.log('Reveal button clicked');
+                const seedPhraseGrid = document.getElementById('seedPhraseGrid');
+                const revealBtn = document.getElementById('revealSeedPhraseBtn');
+                
+                if (!seedPhraseGrid || !revealBtn) {
+                    console.error('Required elements not found');
+                    return;
                 }
-            });
-        });
-    }
-
-    // Copy seed phrase
-    const copyBtn = document.getElementById('copySeedPhraseBtn');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-            const mnemonic = sessionStorage.getItem('temp_mnemonic');
-            if (mnemonic) {
-                try {
-                    await navigator.clipboard.writeText(mnemonic);
-                    // Show success feedback
-                    copyBtn.classList.add('copied');
-                    setTimeout(() => copyBtn.classList.remove('copied'), 2000);
-                } catch (err) {
-                    console.error('Failed to copy:', err);
-                    showWalletError('Failed to copy seed phrase');
+                
+                // Remove blur effect
+                seedPhraseGrid.classList.remove('filter', 'blur-lg');
+                revealBtn.classList.add('opacity-0', 'pointer-events-none');
+                console.log('Seed phrase revealed');
+            },
+            '#copySeedPhraseBtn': async () => {
+                const mnemonic = sessionStorage.getItem('temp_mnemonic');
+                if (mnemonic) {
+                    try {
+                        await navigator.clipboard.writeText(mnemonic);
+                        console.log('Seed phrase copied to clipboard');
+                        // Show success feedback
+                        const copyBtn = document.getElementById('copySeedPhraseBtn');
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => copyBtn.classList.remove('copied'), 2000);
+                    } catch (err) {
+                        console.error('Failed to copy:', err);
+                        showError('Failed to copy seed phrase');
+                    }
                 }
+            },
+            '#confirmSeedPhraseBtn': () => {
+                console.log('Seed phrase confirmed, proceeding to main wallet');
+                hideModal('seedPhraseModal');
+                showMainWallet();
             }
-        });
-    }
-
-    // Continue to main wallet
-    const confirmBtn = document.getElementById('confirmSeedPhraseBtn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
-            hideModal('seedPhraseModal');
-            showMainWallet();
-        });
-    }
-}
-
-// Setup password validation
-export function setupPasswordValidation() {
-    const form = document.getElementById('passwordSetupForm');
-    if (!form) return;
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        
-        if (password !== confirmPassword) {
-            showWalletError('Passwords do not match');
-            return;
-        }
-        
-        try {
-            // Get stored mnemonic
-            const mnemonic = sessionStorage.getItem('temp_mnemonic');
-            if (!mnemonic) {
-                throw new Error('No mnemonic found');
-            }
-            
-            // Create wallet instance
-            const wallet = new BSVWallet(mnemonic, password);
-            
-            // Create session
-            await createSession(wallet);
-            
-            // Hide password modal and show seed phrase
-            hideModal('passwordSetupModal');
-            displaySeedPhrase(mnemonic);
-            
-            // Setup main wallet events
-            setupMainWalletEvents();
-            
-        } catch (error) {
-            console.error('Error in password setup:', error);
-            showWalletError('Failed to setup wallet');
         }
     });
 }
 
-// Get seed phrase from input boxes
-export function getSeedPhrase() {
-    const inputs = document.querySelectorAll('.seed-input');
-    return Array.from(inputs).map(input => input.value.trim()).join(' ');
+// Setup password validation
+export function setupPasswordValidation() {
+    console.log('Setting up password validation');
+    
+    initializeModal('passwordSetupModal', {
+        listeners: {
+            '#setupPassword': (e) => updatePasswordStrength(e.target.value),
+            '#confirmPassword': (e) => validatePasswords(),
+            '#passwordSetupForm': async (e) => {
+                e.preventDefault();
+                console.log('Password setup form submitted');
+                
+                const password = document.getElementById('setupPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    showError('Passwords do not match');
+                    return;
+                }
+                
+                try {
+                    // Generate secure mnemonic
+                    const mnemonic = await generateSecureMnemonic();
+                    console.log('Generated secure mnemonic');
+                    
+                    // Store mnemonic and password temporarily
+                    sessionStorage.setItem('temp_mnemonic', mnemonic);
+                    sessionStorage.setItem('temp_password', password);
+                    
+                    // Hide password modal and show seed phrase
+                    hideModal('passwordSetupModal');
+                    displaySeedPhrase(mnemonic);
+                    showModal('seedPhraseModal');
+                } catch (error) {
+                    console.error('Error in password setup:', error);
+                    showError(error.message);
+                }
+            }
+        }
+    });
 }
 
-// Validate seed phrase
-export function validateSeedPhrase(seedPhrase) {
-    const words = seedPhrase.trim().split(/\s+/);
-    return words.length === 12 && words.every(word => word.length > 0);
+// Update password strength meter
+function updatePasswordStrength(password) {
+    const meter = document.querySelector('#passwordStrengthMeter div');
+    if (!meter) return;
+        
+        let strength = 0;
+    if (password.length >= 8) strength += 25;
+    if (password.match(/[a-z]/)) strength += 25;
+    if (password.match(/[A-Z]/)) strength += 25;
+    if (password.match(/[0-9]/)) strength += 25;
+    
+    meter.style.width = `${strength}%`;
+    meter.style.backgroundColor = 
+        strength <= 25 ? '#ef4444' :
+        strength <= 50 ? '#f59e0b' :
+        strength <= 75 ? '#10b981' :
+        '#00ffa3';
+}
+
+// Validate password match
+function validatePasswords() {
+    const password = document.getElementById('setupPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const submitBtn = document.getElementById('confirmPasswordBtn');
+    
+    if (submitBtn) {
+        submitBtn.disabled = password !== confirmPassword;
+    }
+}
+
+// Show main wallet after setup
+async function showMainWallet() {
+    try {
+        const mnemonic = sessionStorage.getItem('temp_mnemonic');
+        const password = document.getElementById('setupPassword').value;
+        
+        if (!mnemonic || !password) {
+            throw new Error('Missing mnemonic or password');
+        }
+        
+        // Create new wallet instance
+        const wallet = new BitcoinWallet();
+        const result = await wallet.generateNewWallet(password, mnemonic);
+        
+        if (!result.success) {
+            throw new Error('Failed to generate wallet');
+        }
+        
+        // Store wallet instance globally
+                        window.wallet = wallet;
+
+        // Update UI with wallet info
+        await updateWalletUI(result.balance);
+                        
+                        // Show main wallet modal
+        showModal('mainWalletModal');
+        
+        // Clean up temporary storage
+        sessionStorage.removeItem('temp_mnemonic');
+        
+                    } catch (error) {
+        console.error('Error showing main wallet:', error);
+        showError(error.message);
+    }
 } 

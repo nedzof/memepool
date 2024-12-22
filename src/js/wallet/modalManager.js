@@ -1,26 +1,5 @@
-import { showError } from '../modal.js';
-
-// Modal management functions
-export function showModal(modalId) {
-    // First, hide all modals
-    const allModals = document.querySelectorAll('.modal');
-    allModals.forEach(modal => {
-        modal.classList.remove('show');
-    });
-
-    // Then show the requested modal
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('show');
-    }
-}
-
-export function hideModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('show');
-    }
-}
+import { showModal, hideModal, showError } from '../modal.js';
+import { showWalletSelection } from './walletSelection.js';
 
 // Wallet-specific modal functions
 export function showMainWallet() {
@@ -30,13 +9,7 @@ export function showMainWallet() {
     showModal('mainWalletModal');
 }
 
-export function showWalletSelection() {
-    hideModal('mainWalletModal');
-    hideModal('importWalletModal');
-    hideModal('passwordSetupModal');
-    showModal('walletSelectionModal');
-}
-
-export function showWalletError(message) {
-    showError(message);
-} 
+// Re-export base modal functions for backward compatibility
+export { showModal, hideModal, showError } from '../modal.js';
+// Re-export wallet selection function
+export { showWalletSelection }; 

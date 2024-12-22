@@ -2,99 +2,108 @@
 <div id="seedPhraseModal" class="modal neon-theme">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title">Your Seed Phrase</h2>
+            <div class="flex items-center gap-4">
+                <h2 class="modal-title text-2xl font-bold">Your Seed Phrase</h2>
+            </div>
             <button class="modal-close">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
         </div>
-        
+
         <div class="modal-body space-y-6">
-            <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
-                <p class="text-white/80 text-sm">This is your seed phrase. Write it down and store it in a safe place. You'll need it to recover your wallet.</p>
-                <p class="text-[#00ffa3] text-sm mt-2 font-medium">Never share your seed phrase with anyone!</p>
-            </div>
-
-            <div class="relative">
-                <div id="seedPhraseGrid" class="grid grid-cols-3 gap-3">
-                    <!-- Pre-made boxes for seed words -->
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">1</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">2</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">3</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">4</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">5</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">6</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">7</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">8</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">9</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">10</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">11</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
-                    <div class="p-3 rounded-xl flex items-center gap-2 bg-[#1a1a1a] border border-[#00ffa3]/20">
-                        <span class="text-[#00ffa3] text-sm font-medium">12</span>
-                        <span class="text-white/60 font-medium seed-word-text">•••••••</span>
-                    </div>
+            <div class="space-y-4">
+                <p class="text-white/70">
+                    This is your wallet's seed phrase. Write it down and store it in a safe place.
+                    You'll need it to recover your wallet if you lose access.
+                </p>
+                <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                    <p class="text-red-400 text-sm">
+                        <span class="font-bold">WARNING:</span> Never share your seed phrase with anyone.
+                        Anyone with these words can access your wallet.
+                    </p>
                 </div>
-                
-                <button id="revealSeedPhraseBtn" class="absolute inset-0 w-full h-full flex items-center justify-center neon-button rounded-xl bg-black/80 backdrop-blur-sm transition-all duration-300 z-20 hover:bg-black/90">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        <span class="text-white font-medium">Click to Reveal Seed Phrase</span>
-                    </div>
-                </button>
             </div>
 
-            <div class="flex flex-col space-y-3">
-                <button id="copySeedPhraseBtn" class="neon-button w-full p-4 rounded-xl flex items-center justify-center gap-2">
+            <!-- Seed Phrase Grid -->
+            <div id="seedPhraseGrid" class="grid grid-cols-3 gap-4 filter blur-lg transition-all duration-300">
+                <!-- Seed phrase words will be inserted here -->
+            </div>
+
+            <!-- Reveal Button -->
+            <button id="revealSeedPhraseBtn" class="neon-button w-full p-4 rounded-xl text-white font-medium">
+                <span class="flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                     </svg>
-                    <span class="text-white font-medium">Copy to Clipboard</span>
+                    Reveal Seed Phrase
+                </span>
+            </button>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-4">
+                <button id="copySeedPhraseBtn" class="neon-button p-4 rounded-xl text-white font-medium">
+                    <span class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        Copy to Clipboard
+                    </span>
                 </button>
-                
-                <button id="confirmSeedPhraseBtn" class="neon-button w-full p-4 rounded-xl flex items-center justify-center gap-2 bg-[#00ffa3]/10">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span class="text-white font-medium">I've Written It Down</span>
+                <button id="confirmSeedPhraseBtn" class="neon-button p-4 rounded-xl text-white font-medium">
+                    <span class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        I've Saved It
+                    </span>
                 </button>
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+<style>
+    #seedPhraseGrid .seed-word {
+        @apply relative bg-black/40 rounded-xl p-4 border border-[#00ffa3]/20 
+               hover:border-[#00ffa3] transition-all duration-300;
+    }
+
+    #seedPhraseGrid .seed-word-number {
+        @apply absolute top-2 left-2 text-xs text-[#00ffa3]/70;
+    }
+
+    #seedPhraseGrid .seed-word-text {
+        @apply text-white text-center font-medium select-all;
+    }
+
+    #copySeedPhraseBtn.copied::after {
+        content: 'Copied!';
+        @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+               bg-[#00ffa3] text-black text-sm font-medium px-2 py-1 rounded-lg;
+        animation: fadeOut 2s forwards;
+    }
+
+    @keyframes fadeOut {
+        0% { opacity: 1; }
+        70% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+</style>
+
+<script>
+    // Generate seed phrase grid
+    document.addEventListener('DOMContentLoaded', () => {
+        const seedPhraseGrid = document.getElementById('seedPhraseGrid');
+        if (seedPhraseGrid) {
+            seedPhraseGrid.innerHTML = Array.from({ length: 12 }, (_, i) => `
+                <div class="seed-word group">
+                    <span class="seed-word-number">${i + 1}</span>
+                    <div class="seed-word-text"></div>
+                </div>
+            `).join('');
+        }
+    });
+</script> 

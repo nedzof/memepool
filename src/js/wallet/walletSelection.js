@@ -1,7 +1,7 @@
 import { showModal, hideModal, showError } from '../modal.js';
 import { generateNewWallet } from './walletGeneration.js';
 import { initializeImportWallet } from './walletImport.js';
-import { setWalletLoading } from './walletUIUpdates.js';
+import { setWalletLoading } from './walletUIManager.js';
 import { SUPPORTED_WALLETS, detectAvailableWallets, initializeWallet } from './config.js';
 
 // Helper function to handle button setup with loading state and error handling

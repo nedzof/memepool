@@ -1,53 +1,23 @@
-import { showModal, hideModal, showWalletError } from './modalManager.js';
+import { showModal, hideModal, initializeModal, showError } from '../modal.js';
 import { validateMnemonic, encryptMnemonic } from './mnemonic.js';
 import { setupPasswordValidation } from './walletGeneration.js';
 
 // Initialize import wallet functionality
 export function initializeImportWallet() {
-    const importWalletModal = document.getElementById('importWalletModal');
-    const passwordSetupModal = document.getElementById('passwordSetupModal');
-    const seedPhraseInputs = document.getElementById('seedPhraseInputs');
-    const importWalletForm = document.getElementById('importWalletForm');
-    const confirmImportBtn = document.getElementById('confirmImport');
-
-    let seedPhrase = ''; // Store the seed phrase temporarily
-
-    // Setup navigation buttons
-    const backButtons = document.querySelectorAll('.back-to-menu');
-    const closeButtons = document.querySelectorAll('.close-modal');
-
-    backButtons.forEach(btn => {
-        btn.className = 'back-to-menu flex items-center gap-2 text-[#14F195]/70 hover:text-[#14F195] transition-colors duration-300 group';
-        btn.innerHTML = `
-            <svg class="w-5 h-5 group-hover:transform group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            <span class="text-sm font-medium">Back</span>
-        `;
-        btn.addEventListener('click', () => {
-            hideModal('importWalletModal');
-            hideModal('seedPhraseModal');
-            hideModal('passwordSetupModal');
-            showModal('initialSetupModal');
-        });
-    });
-
-    closeButtons.forEach(btn => {
-        btn.className = 'close-modal p-2 rounded-lg text-[#14F195]/70 hover:text-[#14F195] hover:bg-[#14F195]/10 transition-all duration-300';
-        btn.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        `;
-        btn.addEventListener('click', () => {
-            hideModal('importWalletModal');
-            hideModal('seedPhraseModal');
-            hideModal('passwordSetupModal');
-            showModal('initialSetupModal');
-        });
+    console.log('Initializing import wallet...');
+    
+    // Initialize import wallet modal
+    initializeModal('importWalletModal', {
+        backTo: 'walletSelectionModal',
+        onBack: () => {
+            // Clear any entered seed phrase
+            const seedInputs = document.querySelectorAll('.seed-word');
+            seedInputs.forEach(input => input.value = '');
+        }
     });
 
     // Create the seed phrase grid
+    const seedPhraseInputs = document.getElementById('seedPhraseInputs');
     if (seedPhraseInputs) {
         seedPhraseInputs.innerHTML = Array.from({ length: 12 }, (_, i) => `
             <div class="relative group">
@@ -99,11 +69,12 @@ export function initializeImportWallet() {
         });
     });
 
-    // Handle form submissions
+    // Handle form submission
+    const importWalletForm = document.getElementById('importWalletForm');
     if (importWalletForm) {
         importWalletForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            seedPhrase = Array.from(seedInputs)
+            const seedPhrase = Array.from(seedInputs)
                 .map(input => input.value.trim().toLowerCase())
                 .join(' ');
 
@@ -125,17 +96,20 @@ export function initializeImportWallet() {
                 setupPasswordValidation();
             } catch (error) {
                 console.error('Error initializing import wallet:', error);
-                showWalletError(error.message);
-                showWalletSelection();  // Use the new wallet selection modal
+                showError(error.message);
+                showModal('walletSelectionModal');
             }
         });
     }
+}
 
-    // Enable/disable import button based on form completion
-    function checkSeedPhraseCompletion() {
-        const allWordsEntered = Array.from(seedInputs).every(input => input.value.trim());
-        if (confirmImportBtn) {
-            confirmImportBtn.disabled = !allWordsEntered;
-        }
+// Enable/disable import button based on form completion
+function checkSeedPhraseCompletion() {
+    const seedInputs = document.querySelectorAll('.seed-word');
+    const confirmImportBtn = document.getElementById('confirmImport');
+    const allWordsEntered = Array.from(seedInputs).every(input => input.value.trim());
+    
+    if (confirmImportBtn) {
+        confirmImportBtn.disabled = !allWordsEntered;
     }
 } 

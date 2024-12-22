@@ -1,11 +1,12 @@
 import { bsv } from '../bsv.js';
 import { logError, logSecurityEvent } from '../errors.js';
 import { terminateSession } from './auth/session.js';
-import { fetchBalanceFromWhatsOnChain } from './blockchain.js';
-import { validateMnemonicRandomness } from './mnemonic.js';
+import { validateMnemonic } from './mnemonic.js';
+import { BitcoinWallet } from './bitcoin.js';
+import { fetchBalanceFromWhatsOnChain } from './bitcoin.js';
 
 // Re-export for backward compatibility
-export { validateMnemonicRandomness };
+export { validateMnemonic };
 
 // Derive public key from private key
 function derivePublicKey(privateKey) {

@@ -1,9 +1,13 @@
-// Export all necessary functions from their respective modules
-export { initializeWallet } from './wallet/walletInit.js';
-export { showWalletSelection } from './wallet/modalManager.js';
+// Core UI functions
+export { showModal, hideModal, showError, initializeModal } from './modal.js';
+
+// Wallet UI Management
+export { initializeWalletUI, updateWalletUI, resetWalletUI, setWalletLoading } from './wallet/walletUIManager.js';
+export { showWalletSelection } from './wallet/walletSelection.js';
+export { showMainWallet } from './wallet/modalManager.js';
 export { generateNewWallet } from './wallet/walletGeneration.js';
-export { showWalletError, showModal, hideModal, showMainWallet } from './wallet/modalManager.js';
+
+// Additional wallet features
 export { updateProfileWithPersistence } from './wallet/cache.js';
 export { authenticateWithX } from './wallet/auth/xAuth.js';
 export { setupReceiveModal } from './wallet/qrCode.js';
-export { updateBalanceDisplay } from './wallet/walletEvents.js';
