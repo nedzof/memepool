@@ -51,22 +51,41 @@
                 </button>
             </div>
             
-            <div class="modal-body space-y-4">
-                <!-- Wallet Options -->
-                <button class="neon-button w-full p-4 rounded-xl flex items-center justify-between group" data-wallet="okx">
-                    <span class="text-white font-medium">OKX Wallet</span>
-                    <img src="/src/assets/okx-logo.png" alt="OKX" class="w-8 h-8">
-                </button>
-                
-                <button class="neon-button w-full p-4 rounded-xl flex items-center justify-between group" data-wallet="unisat">
-                    <span class="text-white font-medium">Unisat Wallet</span>
-                    <img src="/src/assets/unisat-logo.png" alt="Unisat" class="w-8 h-8">
-                </button>
-                
-                <button class="neon-button w-full p-4 rounded-xl flex items-center justify-between group" data-wallet="yours">
-                    <span class="text-white font-medium">Yours Wallet</span>
-                    <img src="/src/assets/yours-logo.png" alt="Yours" class="w-8 h-8">
-                </button>
+            <div class="modal-body space-y-6">
+                <!-- Wallet Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- OKX Wallet -->
+                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="okx">
+                        <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
+                            <img src="/src/assets/wallet-logos/okx-logo.svg" alt="OKX" class="w-10 h-10">
+                        </div>
+                        <span class="text-white font-medium text-sm text-center">OKX Wallet</span>
+                    </button>
+                    
+                    <!-- Unisat Wallet -->
+                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="unisat">
+                        <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
+                            <img src="/src/assets/wallet-logos/unisat-logo.png" alt="Unisat" class="w-10 h-10">
+                        </div>
+                        <span class="text-white font-medium text-sm text-center">Unisat Wallet</span>
+                    </button>
+                    
+                    <!-- Yours Wallet -->
+                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="yours">
+                        <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
+                            <img src="/src/assets/wallet-logos/yours-logo.svg" alt="Yours" class="w-10 h-10">
+                        </div>
+                        <span class="text-white font-medium text-sm text-center">Yours Wallet</span>
+                    </button>
+
+                    <!-- Phantom Wallet -->
+                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="phantom">
+                        <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
+                            <img src="/src/assets/wallet-logos/phantom-logo.svg" alt="Phantom" class="w-10 h-10">
+                        </div>
+                        <span class="text-white font-medium text-sm text-center">Phantom Wallet</span>
+                    </button>
+                </div>
 
                 <!-- Divider -->
                 <div class="relative py-4">
