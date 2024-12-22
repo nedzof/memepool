@@ -204,30 +204,10 @@ function openSubmissionDetails(submission) {
 
                         <!-- Video container -->
                         <div class="relative rounded-xl overflow-hidden mb-6 group">
-                            <img src="${currentMemeImage}" alt="Submission Thumbnail" class="w-full aspect-video object-cover">
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <div class="transform group-hover:scale-110 transition-transform duration-300">
-                                    <div class="relative">
-                                        <div class="absolute inset-0 bg-[#00ffa3] opacity-20 rounded-full animate-pulse"></div>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Beat This Button -->
-                            <div class="absolute bottom-4 left-0 right-0 flex justify-center">
-                                <button class="gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20 text-white">
-                                    BEAT THIS
-                                </button>
-                            </div>
-
-                            <!-- Live viewer count -->
-                            <div class="absolute top-4 left-4 bg-[#080418]/95 backdrop-blur-md rounded-full px-4 py-1 flex items-center gap-2 border border-[#00ffa3]/30">
-                                <span class="animate-pulse text-red-500">●</span>
-                                <span class="text-white" id="liveViewers">${submission.liveViewers}</span>
+                            <img src="${currentMemeImage}" alt="Meme" class="w-full h-full object-cover">
+                            <!-- Live Banner -->
+                            <div class="absolute top-4 left-4 bg-[#080418]/95 backdrop-blur-md rounded-full px-4 py-1 border border-[#00ffa3]/30">
+                                <span class="text-[#00ffa3] font-bold">${submission.liveViewers}</span>
                                 <span class="text-white/70">watching</span>
                             </div>
 
