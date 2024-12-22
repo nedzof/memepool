@@ -1,6 +1,7 @@
 import { showModal, hideModal, initializeModal, showError } from '../modal.js';
-import { validateMnemonic, encryptMnemonic } from './mnemonic.js';
-import { setupPasswordValidation } from './walletGeneration.js';
+import { validateMnemonic } from './mnemonic.js';
+import { setupPasswordValidation } from './passwordSetup.js';
+import { initializeSeedPhraseModal } from './modals/seedPhraseModal.js';
 
 // Initialize import wallet functionality
 export function initializeImportWallet() {
@@ -93,7 +94,10 @@ export function initializeImportWallet() {
                 showModal('passwordSetupModal');
 
                 // Initialize password validation
-                setupPasswordValidation();
+                setupPasswordValidation(() => {
+                    showModal('seedPhraseModal');
+                    initializeSeedPhraseModal();
+                });
             } catch (error) {
                 console.error('Error initializing import wallet:', error);
                 showError(error.message);

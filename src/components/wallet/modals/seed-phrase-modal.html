@@ -57,7 +57,7 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
-                        I've Saved It
+                        Continue
                     </span>
                 </button>
             </div>
@@ -92,18 +92,4 @@
         100% { opacity: 0; }
     }
 </style>
-
-<script>
-    // Generate seed phrase grid
-    document.addEventListener('DOMContentLoaded', () => {
-        const seedPhraseGrid = document.getElementById('seedPhraseGrid');
-        if (seedPhraseGrid) {
-            seedPhraseGrid.innerHTML = Array.from({ length: 12 }, (_, i) => `
-                <div class="seed-word group">
-                    <span class="seed-word-number">${i + 1}</span>
-                    <div class="seed-word-text"></div>
-                </div>
-            `).join('');
-        }
-    });
-</script> 
+  </rewritten_file> 

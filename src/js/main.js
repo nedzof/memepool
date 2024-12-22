@@ -55,15 +55,26 @@ async function loadMainContent() {
 
 async function loadIncludedContent(element) {
     const includes = element.querySelectorAll('[data-include]');
+    console.log('Found includes:', includes.length);
+    
     const includePromises = Array.from(includes).map(async include => {
         const path = include.getAttribute('data-include');
+        console.log('Loading included content from path:', path);
+        
         try {
-            const response = await fetch(path);
+            // Remove leading slash if present
+            const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+            console.log('Normalized path:', normalizedPath);
+            
+            const response = await fetch(normalizedPath);
             if (!response.ok) {
                 throw new Error(`Failed to load included content: ${response.status}`);
             }
             const html = await response.text();
+            console.log('Loaded HTML content length:', html.length);
+            
             include.innerHTML = html;
+            
             // Recursively load any nested includes
             await loadIncludedContent(include);
             return true;
@@ -77,17 +88,23 @@ async function loadIncludedContent(element) {
 
 async function loadWalletModals() {
     try {
-        const response = await fetch('/src/components/wallet-modals.html');
+        console.log('Loading wallet modals...');
+        const response = await fetch('src/components/wallet-modals.html');
         if (!response.ok) {
             throw new Error(`Failed to load wallet modals: ${response.status}`);
         }
         const html = await response.text();
+        console.log('Loaded wallet modals HTML length:', html.length);
+        
         const modalsElement = document.getElementById('walletModals');
         if (modalsElement) {
             modalsElement.innerHTML = html;
             // Load included content
+            console.log('Loading included content for wallet modals...');
             await loadIncludedContent(modalsElement);
+            
             // Initialize modals after all content is loaded
+            console.log('Initializing modals...');
             document.querySelectorAll('.modal').forEach(modal => {
                 if (modal.id) {
                     console.log('Initializing modal:', modal.id);

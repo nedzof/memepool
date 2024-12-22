@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
 
 export default defineConfig({
+  plugins: [
+    wasm(),
+    topLevelAwait()
+  ],
   server: {
     port: 5173,
     strictPort: true,
@@ -22,13 +28,21 @@ export default defineConfig({
   resolve: {
     alias: {
       '@bsv/sdk': '@bsv/sdk/dist/index.js',
-      '@unisat/wallet-sdk': '@unisat/wallet-sdk/dist/index.js'
+      '@unisat/wallet-sdk': '@unisat/wallet-sdk/dist/index.js',
+      'crypto': 'crypto-browserify',
+      'stream': 'stream-browserify',
+      'buffer': 'buffer'
     }
   },
   optimizeDeps: {
     esbuildOptions: {
       target: 'esnext'
-    }
+    },
+    include: [
+      'buffer',
+      'crypto-browserify',
+      'stream-browserify'
+    ]
   },
   css: {
     devSourcemap: true

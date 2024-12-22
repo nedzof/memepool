@@ -25,4 +25,81 @@
             </button>
         </div>
     </div>
-</div> 
+</div>
+
+<script type="module">
+    import { showModal, hideModal } from '../../../js/modal.js';
+    import { showMainWallet } from '../../../js/walletUI.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('Success modal script loaded');
+        const continueBtn = document.getElementById('continueToWalletBtn');
+        if (continueBtn) {
+            console.log('Found continue button');
+            continueBtn.addEventListener('click', () => {
+                console.log('Continue button clicked');
+                hideModal('walletCreatedModal');
+                showMainWallet();
+            });
+        }
+    });
+</script>
+
+<style>
+    @keyframes checkmarkDraw {
+        0% {
+            stroke-dashoffset: 100;
+        }
+        100% {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    @keyframes modalFadeIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes successPulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .animate-checkmark {
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        animation: checkmarkDraw 0.8s ease forwards,
+                   successPulse 1.5s ease-in-out infinite;
+    }
+
+    #walletCreatedModal .modal-content {
+        animation: modalFadeIn 0.5s ease-out forwards;
+    }
+
+    .modal-button {
+        @apply relative overflow-hidden transition-all duration-300;
+        background: linear-gradient(90deg, #00ffa3, #00ffff);
+    }
+
+    .modal-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 255, 163, 0.2);
+    }
+
+    .modal-button:active {
+        transform: translateY(0);
+    }
+</style> 

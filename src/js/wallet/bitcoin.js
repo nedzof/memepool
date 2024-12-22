@@ -1,8 +1,16 @@
 import * as bitcoin from 'bitcoinjs-lib';
 import * as bip32 from 'bip32';
+import * as ecc from 'tiny-secp256k1';
 import * as bip39 from 'bip39';
+import ECPairFactory from 'ecpair';
 import { Buffer } from 'buffer';
 import { generateSecureMnemonic, validateMnemonic, encryptMnemonic, decryptMnemonic } from './mnemonic.js';
+
+// Initialize bip32 with secp256k1
+const bip32Instance = bip32.BIP32Factory(ecc);
+
+// Initialize ECPair with secp256k1
+const ECPair = ECPairFactory(ecc);
 
 // Bitcoin Utilities
 export function publicKeyToLegacyAddress(publicKey) {
@@ -118,14 +126,14 @@ export async function createWalletFromMnemonic(mnemonic) {
         const seed = await bip39.mnemonicToSeed(mnemonic);
         console.log('Generated seed from mnemonic');
 
-        const root = bip32.fromSeed(seed);
+        const root = bip32Instance.fromSeed(Buffer.from(seed));
         console.log('Created master node');
 
         const path = "m/44'/0'/0'/0/0";
         const child = root.derivePath(path);
         console.log('Derived child key at path:', path);
 
-        const keyPair = bitcoin.ECPair.fromPrivateKey(child.privateKey);
+        const keyPair = ECPair.fromPrivateKey(child.privateKey);
         console.log('Created key pair');
 
         const { address } = bitcoin.payments.p2pkh({ 
@@ -144,7 +152,7 @@ export async function createWalletFromMnemonic(mnemonic) {
         };
     } catch (error) {
         console.error('Error creating wallet from mnemonic:', error);
-        throw new Error('Failed to create wallet from mnemonic');
+        throw new Error('Failed to create wallet from mnemonic: ' + error.message);
     }
 }
 
@@ -238,4 +246,4 @@ export class BitcoinWallet {
 }
 
 // Export bitcoin libraries
-export { bitcoin, bip32, bip39 }; 
+export { bitcoin }; 
