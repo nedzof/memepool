@@ -148,13 +148,23 @@ export async function createWalletFromMnemonic(mnemonic) {
 
         console.log('Generated address:', payment.address);
 
-        return {
+        const walletData = {
             address: payment.address,
             legacyAddress: payment.address,
             publicKey: keyPair.publicKey.toString('hex'),
             privateKey: keyPair.privateKey.toString('hex'),
             sign: (tx) => keyPair.sign(tx)
         };
+
+        // Log all properties that will be validated
+        console.log('=== Wallet Properties for Validation ===');
+        console.log('publicKey:', walletData.publicKey);
+        console.log('legacyAddress:', walletData.legacyAddress);
+        console.log('connectionType: manual');
+        console.log('balance: 0');
+        console.log('=====================================');
+
+        return walletData;
     } catch (error) {
         console.error('Error creating wallet from mnemonic:', error);
         throw new Error('Failed to create wallet from mnemonic: ' + error.message);
@@ -189,6 +199,14 @@ export class BitcoinWallet {
 
             sessionStorage.setItem('temp_mnemonic', mnemonic);
             this.encryptedMnemonic = await encryptMnemonic(mnemonic, password);
+
+            // Log all properties after wallet is fully initialized
+            console.log('=== Final Wallet Instance Properties ===');
+            console.log('publicKey:', this.publicKey);
+            console.log('legacyAddress:', this.getLegacyAddress());
+            console.log('connectionType:', this.connectionType);
+            console.log('balance:', this.balance);
+            console.log('=====================================');
 
             return {
                 success: true,
