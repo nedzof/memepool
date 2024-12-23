@@ -12,6 +12,7 @@ import {
 } from './walletUI.js';
 import { handleConnectWalletClick } from './wallet/walletSelection.js';
 import { initializeWallet } from './wallet/config.js';
+import './header.js'; // Import header functionality
 
 // Expose wallet functions globally
 window.showWalletSelection = function() {

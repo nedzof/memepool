@@ -1,21 +1,22 @@
 <!-- Header Component -->
-<header class="fixed top-0 left-0 right-0 z-[1002] bg-[#0c0620]/80 backdrop-blur-lg">
-    <div class="container mx-auto px-4 py-4">
-        <div class="flex justify-between items-center max-w-5xl mx-auto">
+<header class="fixed top-0 left-0 right-0 z-[1002] bg-[#0c0620]/80 backdrop-blur-lg shadow-lg transition-all duration-300">
+    <nav class="container mx-auto px-4 py-4">
+        <div class="flex justify-between items-center max-w-7xl mx-auto">
             <!-- Logo -->
-            <div class="flex items-center ml-[calc(25vw-50px)]">
-                <img src="src/assets/images/Memepool_Logo.svg" alt="Memepool Logo" class="h-12">
+            <div class="flex items-center">
+                <img src="src/assets/images/Memepool_Logo.svg" alt="Memepool Logo" class="h-12 transition-transform duration-300 hover:scale-105">
             </div>
 
             <!-- Connect Wallet Button -->
-            <div class="flex items-center mr-[calc(25vw-50px)]">
-                <button id="walletConnectButton" 
-                        class="wallet-connect-btn bg-gradient-to-r from-[#00ffa3] to-[#00ffcf] px-6 py-2 text-sm rounded-lg font-semibold text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 relative overflow-hidden group"
-                        onclick="window.handleConnectWalletButtonClick()">
-                    <span class="relative z-10">Connect Wallet</span>
-                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="flex items-center">
+                <button id="connectWalletBtn" 
+                        class="connect-wallet-btn px-6 py-2 text-sm rounded-lg font-medium transition-all duration-300 hover:scale-105 text-black relative overflow-hidden group cursor-pointer"
+                        style="background: #00ffa3;
+                               box-shadow: 0 0 10px rgba(0, 255, 163, 0.3);">
+                    <div class="relative z-10">Connect Wallet</div>
+                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </button>
             </div>
         </div>
-    </div>
+    </nav>
 </header> 
