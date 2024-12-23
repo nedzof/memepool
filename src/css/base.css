@@ -38,7 +38,7 @@ body::before {
     transparent 60%
   );
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
   backdrop-filter: blur(30px) brightness(0.6);
 }
 
@@ -53,33 +53,39 @@ body::after {
   opacity: 0.15;
   mix-blend-mode: overlay;
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
 }
 
 /* Wrapper for all content */
 #app {
-  display: flex;
-  flex-direction: column;
+  position: relative;
   min-height: 100vh;
   width: 100%;
-  z-index: 1;
+  z-index: 3;
   backdrop-filter: blur(100px);
   background: rgba(0, 0, 0, 0.3);
-}
-
-/* Header styles */
-header {
-  flex: none;
-  width: 100%;
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
 /* Main content area */
 main {
-  flex: 1;
   position: relative;
-  z-index: 2;
-  padding-top: 80px; /* Height of header */
-  min-height: 0; /* Reset min-height */
+  z-index: 4;
+  min-height: calc(100vh - 80px); /* Adjust based on header height */
+  padding-top: 80px; /* Add padding for fixed header */
+}
+
+/* Fixed header styles */
+header.fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* Enhance text readability */

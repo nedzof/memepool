@@ -1,16 +1,17 @@
 <!-- Header Component -->
-<header class="fixed top-0 left-0 right-0 z-[1002] bg-[#0c0620]/80 backdrop-blur-lg shadow-lg transition-all duration-300 h-[80px] flex items-center">
-    <nav class="container mx-auto px-4">
-        <div class="flex justify-between items-center max-w-7xl mx-auto">
+<header class="fixed top-0 left-0 w-full z-[99999] bg-[#0c0620]/95 backdrop-blur-xl" style="transform: translateZ(0);">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex justify-between items-center max-w-5xl mx-auto">
             <!-- Logo -->
-            <div class="flex items-center">
-                <img src="src/assets/images/Memepool_Logo.svg" alt="Memepool Logo" class="h-12 transition-transform duration-300 hover:scale-105">
+            <div class="flex items-center ml-[calc(25vw-50px)]">
+                <img src="src/assets/images/Memepool_Logo.svg" alt="Memepool Logo" class="h-12">
             </div>
 
             <!-- Connect Wallet Button -->
-            <div class="flex items-center">
+            <div class="flex items-center mr-[calc(25vw-50px)]">
                 <button id="connectWalletBtn" 
-                        class="connect-wallet-btn px-6 py-2 text-sm rounded-lg font-medium transition-all duration-300 hover:scale-105 text-black relative overflow-hidden group cursor-pointer"
+                        class="connect-wallet-btn px-4 py-1.5 text-sm rounded-lg font-medium transition-all duration-300 hover:scale-105 text-black relative overflow-hidden group cursor-pointer"
+                        onclick="window.showWalletSelection()"
                         style="background: #00ffa3;
                                box-shadow: 0 0 10px rgba(0, 255, 163, 0.3);">
                     <div class="relative z-10">Connect Wallet</div>
@@ -18,5 +19,5 @@
                 </button>
             </div>
         </div>
-    </nav>
+    </div>
 </header> 

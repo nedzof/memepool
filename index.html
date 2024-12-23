@@ -1,63 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Memepire</title>
-    
-    <!-- Base styles -->
-    <link rel="stylesheet" href="src/css/variables.css">
-    <link rel="stylesheet" href="src/css/base.css">
-    
-    <!-- Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    
-    <!-- Additional styles -->
-    <link rel="stylesheet" href="src/css/styles.css">
-    
-    <!-- Component styles -->
-    <link rel="stylesheet" href="src/css/buttons.css">
-    <link rel="stylesheet" href="src/css/cards.css">
-    <link rel="stylesheet" href="src/css/forms.css">
-    <link rel="stylesheet" href="src/css/modals.css">
-    
-    <!-- Feature styles -->
-    <link rel="stylesheet" href="src/css/meme.css">
-    <link rel="stylesheet" href="src/css/submissions.css">
-    <link rel="stylesheet" href="src/css/wallet.css">
-    
-    <!-- Effects and animations -->
-    <link rel="stylesheet" href="src/css/effects.css">
-    <link rel="stylesheet" href="src/css/animations.css">
-    <link rel="stylesheet" href="src/css/helpers.css">
-    
-    <script type="module">
-        import { Buffer } from 'buffer';
-        window.Buffer = Buffer;
-    </script>
-    <div data-include="src/components/header.html"></div>
-  </head>
-  <body>
-    <div id="app">
-        <!-- Header will be loaded from header.html -->
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Memepire</title>
         
+        <!-- Base styles -->
+        <link rel="stylesheet" href="src/css/variables.css">
+        <link rel="stylesheet" href="src/css/base.css">
+        
+        <!-- Tailwind CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        
+        <!-- Additional styles -->
+        <link rel="stylesheet" href="src/css/styles.css">
+        
+        <!-- Component styles -->
+        <link rel="stylesheet" href="src/css/buttons.css">
+        <link rel="stylesheet" href="src/css/cards.css">
+        <link rel="stylesheet" href="src/css/forms.css">
+        <link rel="stylesheet" href="src/css/modals.css">
+        
+        <!-- Feature styles -->
+        <link rel="stylesheet" href="src/css/meme.css">
+        <link rel="stylesheet" href="src/css/submissions.css">
+        <link rel="stylesheet" href="src/css/wallet.css">
+        
+        <!-- Effects and animations -->
+        <link rel="stylesheet" href="src/css/effects.css">
+        <link rel="stylesheet" href="src/css/animations.css">
+        <link rel="stylesheet" href="src/css/helpers.css">
+        
+        <script type="module">
+            import { Buffer } from 'buffer';
+            window.Buffer = Buffer;
+        </script>
+    </head>
+    <body>
+        <div id="app" class="relative">
+            <!-- Header -->
+            <div data-include="src/components/header.html"></div>
 
-        <!-- Main content -->
-        <main class="pt-20">
-            <!-- Main content will be loaded here -->
-        </main>
+            <!-- Main content -->
+            <main class="relative z-1">
+                <!-- Main content will be loaded here -->
+            </main>
 
-        <!-- Wallet Modals Container -->
-        <div id="walletModals"></div>
-    </div>
+            <!-- Wallet Modals Container -->
+            <div id="walletModals"></div>
+        </div>
 
-  
+        <!-- Scripts -->
+        <script type="module" src="src/js/main.js"></script>
 
-    <!-- Scripts -->
-    <script type="module" src="src/js/main.js"></script>
-
-    <!-- Wallet Modals -->
-    <div data-include="src/components/wallet-modals.html"></div>
-
-  </body>
+        <!-- Wallet Modals -->
+        <div data-include="src/components/wallet-modals.html"></div>
+    </body>
 </html>

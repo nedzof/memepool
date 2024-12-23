@@ -146,15 +146,7 @@ async function initializeApp() {
         const appElement = document.getElementById('app');
         console.log('App element:', appElement);
         
-        // Ensure the header include div exists
-        if (!appElement.querySelector('[data-include="src/components/header.html"]')) {
-            console.log('Adding header include div');
-            const headerDiv = document.createElement('div');
-            headerDiv.setAttribute('data-include', 'src/components/header.html');
-            appElement.insertBefore(headerDiv, appElement.firstChild);
-        }
-        
-        // Load header and other included content first
+        // Load included content
         console.log('Loading included content...');
         const includedContentLoaded = await loadIncludedContent(appElement);
         if (!includedContentLoaded.every(Boolean)) {
@@ -184,14 +176,9 @@ async function initializeApp() {
         console.log('Initializing submissions...');
         initializeSubmissions();
 
-        // Initialize wallet button click handler
-        console.log('Setting up wallet button handler...');
-        const connectWalletBtn = document.getElementById('connectWalletBtn');
-        if (connectWalletBtn) {
-            connectWalletBtn.addEventListener('click', handleConnectWalletClick);
-        } else {
-            console.warn('Connect wallet button not found');
-        }
+        // Initialize wallet UI without showing selection
+        console.log('Initializing wallet UI...');
+        await initializeWalletUI();
 
         // Add global click handler for debugging
         document.addEventListener('click', (e) => {
