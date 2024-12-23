@@ -186,7 +186,8 @@ async function initializeApp() {
 
         // Initialize wallet selection
         console.log('Initializing wallet selection...');
-        await handleConnectWalletClick();
+        // Removed automatic wallet selection initialization
+        // Wallet selection will now only be triggered by user click
 
         // Add global click handler for debugging
         document.addEventListener('click', (e) => {

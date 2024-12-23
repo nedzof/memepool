@@ -34,34 +34,11 @@ export async function handleConnectWalletClick() {
         console.log('Handling connect wallet click');
         setWalletLoading(true);
         
-        // Always show wallet selection for now
+        // Show wallet selection only when explicitly called
         showWalletSelection();
-        return;
-
-        // This code is temporarily disabled to ensure wallet selection always shows
-        /*
-        const availableWallets = detectAvailableWallets();
-        const hasAvailableWallet = Object.values(availableWallets).some(available => available);
-        
-        if (!hasAvailableWallet) {
-            showWalletSelection();
-            return;
-        }
-        
-        const firstAvailableWallet = Object.entries(availableWallets)
-            .find(([_, available]) => available)?.[0];
-            
-        if (firstAvailableWallet) {
-            await initializeWallet(firstAvailableWallet);
-            showModal('mainWalletModal');
-        } else {
-            showWalletSelection();
-        }
-        */
     } catch (error) {
-        console.error('Error connecting wallet:', error);
-        showError(error.message || 'Failed to connect wallet');
-        showWalletSelection();
+        console.error('Error in wallet selection:', error);
+        showError(error.message || 'An error occurred while connecting wallet');
     } finally {
         setWalletLoading(false);
     }
