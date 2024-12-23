@@ -1,7 +1,33 @@
 // Header scroll behavior
 let lastScrollTop = 0;
-const header = document.querySelector('header');
+let header = null;
 const scrollThreshold = 50; // Amount of pixels to scroll before showing/hiding header
+
+function initializeHeader() {
+    console.log('Initializing header behavior...');
+    header = document.querySelector('header');
+    
+    if (!header) {
+        console.error('Header element not found');
+        return;
+    }
+    
+    console.log('Header element found:', header);
+    
+    // Initialize header state
+    handleScroll();
+    
+    // Add scroll event listener
+    document.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                handleScroll();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+}
 
 function handleScroll() {
     if (!header) return;
@@ -33,15 +59,6 @@ function handleScroll() {
 
 // Throttle scroll event
 let ticking = false;
-document.addEventListener('scroll', () => {
-    if (!ticking) {
-        window.requestAnimationFrame(() => {
-            handleScroll();
-            ticking = false;
-        });
-        ticking = true;
-    }
-});
 
-// Initialize header state
-handleScroll(); 
+// Export the initialization function
+export { initializeHeader }; 

@@ -12,7 +12,7 @@ import {
 } from './walletUI.js';
 import { handleConnectWalletClick } from './wallet/walletSelection.js';
 import { initializeWallet } from './wallet/config.js';
-import './header.js'; // Import header functionality
+import { initializeHeader } from './header.js';
 
 // Expose wallet functions globally
 window.showWalletSelection = function() {
@@ -198,6 +198,10 @@ async function initializeApp() {
             throw new Error('Failed to load included content');
         }
         console.log('All included content loaded successfully');
+
+        // Initialize header behavior after content is loaded
+        console.log('Initializing header behavior...');
+        initializeHeader();
         
         // Load main content
         console.log('Loading main content...');
