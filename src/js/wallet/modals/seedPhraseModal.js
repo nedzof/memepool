@@ -1,6 +1,7 @@
 import { showModal, hideModal, showError } from '../../modal.js';
 import { BitcoinWallet } from '../bitcoin.js';
 import { createSession } from '../auth/session.js';
+import { showMainWallet } from '../modalManager.js';
 
 console.log('=== Seed phrase modal script loading... ===');
 

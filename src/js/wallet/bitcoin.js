@@ -136,9 +136,15 @@ export async function createWalletFromMnemonic(mnemonic) {
         const keyPair = ECPair.fromPrivateKey(child.privateKey, { compressed: true });
         console.log('Created key pair');
 
+        // Convert the public key to a point object that bitcoinjs-lib expects
+        const publicKeyPoint = ecc.pointFromScalar(child.privateKey, true);
+        if (!publicKeyPoint) {
+            throw new Error('Failed to generate public key point');
+        }
+
         // Create payment object with the public key point
         const payment = bitcoin.payments.p2pkh({ 
-            pubkey: keyPair.publicKey,
+            pubkey: Buffer.from(publicKeyPoint),
             network: bitcoin.networks.bitcoin 
         });
 
