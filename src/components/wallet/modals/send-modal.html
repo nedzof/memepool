@@ -1,17 +1,13 @@
 <!-- Send Modal -->
-<div id="sendModal" class="modal">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl"
-         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
-        <!-- Modal Header -->
-        <div class="modal-header absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-xl rounded-t-2xl border-b border-[#00ffa3]/20">
+<div id="sendModal" class="modal neon-theme">
+    <div class="modal-content">
+        <div class="modal-header">
             <div class="flex items-center gap-4">
-                <button class="back-to-menu text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                <button class="back-to-main text-white/70 hover:text-white transition-colors flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    <span class="text-sm font-medium">Back</span>
+                    <span class="text-sm font-medium">Back to Main</span>
                 </button>
             </div>
             <button class="modal-close">
@@ -21,9 +17,8 @@
             </button>
         </div>
 
-        <!-- Modal Body -->
-        <div class="modal-body p-6 pt-16">
-            <h2 class="modal-title mb-6">Send</h2>
+        <div class="modal-body space-y-6">
+            <h2 class="modal-title">Send BSV</h2>
             
             <!-- Form -->
             <form id="sendForm" class="space-y-4">
@@ -32,62 +27,84 @@
                     <label for="recipientAddress" class="block text-sm font-medium text-white/60">Recipient Address</label>
                     <div class="relative">
                         <input type="text" id="recipientAddress" name="recipientAddress"
-                               class="modal-input font-mono text-sm"
-                               placeholder="Enter Solana address">
-                        <button type="button" id="pasteAddressBtn" 
-                                class="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                            </svg>
-                        </button>
+                               class="neon-input font-mono text-sm w-full truncate"
+                               placeholder="Enter BSV address">
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <button type="button" id="scanQRBtn" 
+                                    class="text-white/70 hover:text-white transition-colors p-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0 0h4m-4-8h4m-4 4h4m6-4v1m-4-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1M4 8h2m12 0h2M4 12h2m12 0h2M4 16h2m12 0h2"></path>
+                                </svg>
+                            </button>
+                            <button type="button" id="pasteAddressBtn" 
+                                    class="text-white/70 hover:text-white transition-colors p-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Amount -->
-                <div class="space-y-2">
+                <div class="space-y-4">
                     <label for="amount" class="block text-sm font-medium text-white/60">Amount</label>
                     <div class="relative">
                         <input type="number" id="amount" name="amount" step="0.000000001"
-                               class="modal-input text-sm"
+                               class="neon-input text-sm w-full pr-20"
                                placeholder="0.0">
                         <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                            <span class="text-white/60 text-sm">SOL</span>
+                            <span class="text-white/60 text-sm">BSV</span>
                             <button type="button" id="maxAmountBtn"
                                     class="text-[#00ffa3] text-sm font-medium hover:text-[#00ffa3]/80 transition-colors">
                                 MAX
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- Amount Slider -->
+                    <div class="space-y-2">
+                        <input type="range" id="amountSlider" 
+                               class="w-full appearance-none bg-[#00ffa3]/20 h-2 rounded-lg"
+                               min="0" max="100" value="0" step="1">
+                        <div class="flex justify-between text-xs text-white/60">
+                            <span>0%</span>
+                            <span>25%</span>
+                            <span>50%</span>
+                            <span>75%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Balance Info -->
-                <div class="bg-black/30 rounded-xl p-4">
+                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-white/60">Available Balance</span>
                         <span class="text-white font-medium">
-                            <span id="availableBalance">0.00</span> SOL
+                            <span id="availableBalance">0.00</span> BSV
                         </span>
                     </div>
                 </div>
 
                 <!-- Network Fee -->
-                <div class="bg-black/30 rounded-xl p-4">
+                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-white/60">Network Fee</span>
-                        <span class="text-white font-medium">~0.000005 SOL</span>
+                        <span class="text-white font-medium">~0.000005 BSV</span>
                     </div>
                 </div>
 
                 <!-- Send Button -->
                 <button type="submit" id="sendBtn"
-                        class="modal-button w-full py-3 px-4 font-bold">
-                    Send SOL
+                        class="neon-button w-full py-3 px-4 font-bold">
+                    Send BSV
                 </button>
             </form>
 
             <!-- Warning Message -->
-            <div class="mt-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+            <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
                 <div class="flex items-start gap-3">
                     <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

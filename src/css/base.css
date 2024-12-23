@@ -98,9 +98,110 @@ header.fixed {
 /* Color variables and themes */
 :root {
   --color-primary: #00ffa3;
-  --color-secondary: #00ffff;
-  --color-background: #0c0620;
+  --color-primary-hover: #00cc82;
+  --color-background: #000;
   --color-text: #fff;
+  --color-text-secondary: rgba(255, 255, 255, 0.6);
+}
+
+/* Custom range input styles */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Range track styles */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: rgba(0, 255, 163, 0.2);
+  height: 8px;
+  border-radius: 4px;
+}
+
+input[type="range"]::-moz-range-track {
+  background: rgba(0, 255, 163, 0.2);
+  height: 8px;
+  border-radius: 4px;
+}
+
+/* Range thumb styles */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -4px;
+  background-color: var(--color-primary);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 255, 163, 0.5);
+  box-shadow: 0 0 10px rgba(0, 255, 163, 0.3);
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb {
+  border: none;
+  background-color: var(--color-primary);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 255, 163, 0.5);
+  box-shadow: 0 0 10px rgba(0, 255, 163, 0.3);
+  transition: all 0.2s ease;
+}
+
+/* Range hover and focus states */
+input[type="range"]:hover::-webkit-slider-thumb {
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 0 15px rgba(0, 255, 163, 0.5);
+}
+
+input[type="range"]:hover::-moz-range-thumb {
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 0 15px rgba(0, 255, 163, 0.5);
+}
+
+/* QR Code styles */
+#qrcode {
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0, 255, 163, 0.1);
+}
+
+#qrcode img {
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.qr-loading {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Back button hover effect */
+.back-to-main:hover svg {
+  transform: translateX(-2px);
+  transition: transform 0.2s ease;
+}
+
+/* Copy button success state */
+.copy-success {
+  color: var(--color-primary);
+}
+
+/* Truncate long addresses */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Typography */

@@ -1,17 +1,13 @@
 <!-- Receive Modal -->
-<div id="receiveModal" class="modal">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl"
-         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
-        <!-- Modal Header -->
-        <div class="modal-header absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-xl rounded-t-2xl border-b border-[#00ffa3]/20">
+<div id="receiveModal" class="modal neon-theme">
+    <div class="modal-content">
+        <div class="modal-header">
             <div class="flex items-center gap-4">
-                <button class="back-to-menu text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                <button class="back-to-main text-white/70 hover:text-white transition-colors flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    <span class="text-sm font-medium">Back</span>
+                    <span class="text-sm font-medium">Back to Main</span>
                 </button>
             </div>
             <button class="modal-close">
@@ -21,25 +17,29 @@
             </button>
         </div>
 
-        <!-- Modal Body -->
-        <div class="modal-body p-6 pt-16">
-            <h2 class="modal-title mb-6">Receive</h2>
+        <div class="modal-body space-y-6">
+            <h2 class="modal-title">Receive BSV</h2>
             
             <!-- QR Code Section -->
-            <div class="bg-black/30 rounded-xl p-4 mb-6">
-                <div id="qrcode" class="w-full aspect-square bg-white rounded-lg flex items-center justify-center mb-4">
+            <div class="bg-black/20 p-6 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
+                <div id="qrcode" class="w-full aspect-square bg-white rounded-lg flex items-center justify-center mb-4 p-4">
                     <!-- QR Code will be generated here -->
+                    <div class="qr-loading animate-pulse">
+                        <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0 0h4m-4-8h4m-4 4h4m6-4v1m-4-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1M4 8h2m12 0h2M4 12h2m12 0h2M4 16h2m12 0h2"></path>
+                        </svg>
+                    </div>
                 </div>
                 <p class="text-white/60 text-sm text-center">Scan this QR code to receive funds</p>
             </div>
 
             <!-- Address Section -->
             <div class="space-y-4">
-                <div class="bg-black/30 rounded-xl p-4">
+                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
                     <label class="block text-sm font-medium text-white/60 mb-2">Your Wallet Address</label>
                     <div class="flex items-center gap-2">
                         <input type="text" id="walletAddress" readonly
-                               class="modal-input font-mono text-sm"
+                               class="neon-input font-mono text-sm w-full truncate"
                                value="">
                         <button id="copyAddressBtn" class="text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,10 +51,10 @@
                 </div>
 
                 <!-- Network Info -->
-                <div class="bg-black/30 rounded-xl p-4">
+                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-white/60">Network</span>
-                        <span class="text-white font-medium">Solana</span>
+                        <span class="text-white font-medium">Bitcoin SV</span>
                     </div>
                 </div>
 
@@ -65,7 +65,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                         </svg>
-                        <p class="text-sm text-yellow-500">Only send Solana (SOL) to this address. Sending any other assets may result in permanent loss.</p>
+                        <p class="text-sm text-yellow-500">Only send Bitcoin SV (BSV) to this address. Sending any other assets may result in permanent loss.</p>
                     </div>
                 </div>
             </div>
