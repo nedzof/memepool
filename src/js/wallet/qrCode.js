@@ -4,118 +4,111 @@ import { copyToClipboard } from '../utils.js';
 // Generate QR code for an address
 export async function generateQRCode(address) {
     try {
-        const qrCanvas = document.getElementById('qrCode');
-        if (!qrCanvas || !(qrCanvas instanceof HTMLCanvasElement)) {
-            console.error('QR code canvas element not found or not a canvas');
+        console.log('Starting QR code generation for address:', address);
+        
+        // Get the container and clear it
+        const qrContainer = document.getElementById('qrCode');
+        if (!qrContainer) {
+            console.error('QR code container not found');
             return;
         }
         
-        // Remove loading indicator
-        const loadingIndicator = qrCanvas.querySelector('.qr-loading');
-        if (loadingIndicator) {
-            loadingIndicator.remove();
-        }
+        // Clear the container
+        qrContainer.innerHTML = '';
         
-        // Set canvas dimensions
-        qrCanvas.width = 256;
-        qrCanvas.height = 256;
+        // Create a new canvas element
+        const qrCanvas = document.createElement('canvas');
+        qrCanvas.className = 'w-full h-full rounded-xl';
+        qrContainer.appendChild(qrCanvas);
+        
+        // Set canvas dimensions with higher resolution for better quality
+        const size = 512; // Higher resolution for better quality
+        qrCanvas.width = size;
+        qrCanvas.height = size;
+        qrCanvas.style.width = '100%';
+        qrCanvas.style.height = '100%';
         
         // Create background canvas for gradient and grid
         const bgCanvas = document.createElement('canvas');
-        bgCanvas.width = qrCanvas.width;
-        bgCanvas.height = qrCanvas.height;
+        bgCanvas.width = size;
+        bgCanvas.height = size;
         const bgCtx = bgCanvas.getContext('2d');
         
-        // Create radial gradient
+        // Create subtle radial gradient background
         const gradient = bgCtx.createRadialGradient(
-            qrCanvas.width / 2, qrCanvas.height / 2, 0,
-            qrCanvas.width / 2, qrCanvas.height / 2, qrCanvas.width / 2
+            size / 2, size / 2, 0,
+            size / 2, size / 2, size / 1.5
         );
-        gradient.addColorStop(0, '#00ffa3');  // Neon green
-        gradient.addColorStop(0.5, '#00ffff'); // Cyan
-        gradient.addColorStop(1, '#120c34');   // Dark
+        gradient.addColorStop(0, '#001a11');    // Dark green center
+        gradient.addColorStop(1, '#000000');    // Black edges
         
-        // Apply gradient
+        // Apply gradient background
         bgCtx.fillStyle = gradient;
-        bgCtx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+        bgCtx.fillRect(0, 0, size, size);
         
-        // Add grid pattern
+        // Add very subtle grid pattern
         bgCtx.strokeStyle = '#00ffa3';
         bgCtx.lineWidth = 0.5;
-        bgCtx.globalAlpha = 0.1;
-        const gridSize = 10;
+        bgCtx.globalAlpha = 0.05;
+        const gridSize = 20;
         
-        for (let x = 0; x <= qrCanvas.width; x += gridSize) {
+        // Draw vertical grid lines
+        for (let x = 0; x <= size; x += gridSize) {
             bgCtx.beginPath();
             bgCtx.moveTo(x, 0);
-            bgCtx.lineTo(x, qrCanvas.height);
+            bgCtx.lineTo(x, size);
             bgCtx.stroke();
         }
         
-        for (let y = 0; y <= qrCanvas.height; y += gridSize) {
+        // Draw horizontal grid lines
+        for (let y = 0; y <= size; y += gridSize) {
             bgCtx.beginPath();
             bgCtx.moveTo(0, y);
-            bgCtx.lineTo(qrCanvas.width, y);
+            bgCtx.lineTo(size, y);
             bgCtx.stroke();
         }
-        
-        // Create glow canvas
-        const glowCanvas = document.createElement('canvas');
-        glowCanvas.width = qrCanvas.width;
-        glowCanvas.height = qrCanvas.height;
-        const glowCtx = glowCanvas.getContext('2d');
         
         // Generate QR code on a temporary canvas
         const tempCanvas = document.createElement('canvas');
         await QRCode.toCanvas(tempCanvas, address, {
-            width: 256,
-            margin: 1,
+            width: size,
+            margin: 2,
             color: {
-                dark: '#00ffa3',  // Neon green
+                dark: '#00ffa3',  // Neon green QR code
                 light: '#00000000'  // Transparent background
             }
         });
         
-        // Apply outer glow
-        glowCtx.shadowColor = '#00ffa3';
-        glowCtx.shadowBlur = 20;
-        glowCtx.drawImage(tempCanvas, 0, 0);
-        
-        // Apply inner glow
-        glowCtx.shadowColor = '#00ffff';
-        glowCtx.shadowBlur = 10;
-        glowCtx.globalCompositeOperation = 'source-atop';
-        glowCtx.drawImage(tempCanvas, 0, 0);
-        
-        // Combine all layers on the main canvas
+        // Get the main canvas context
         const ctx = qrCanvas.getContext('2d');
         
-        // Draw background with reduced opacity
-        ctx.globalAlpha = 0.9;
+        // Draw background
+        ctx.globalAlpha = 1;
         ctx.drawImage(bgCanvas, 0, 0);
         
-        // Draw glow effect
-        ctx.globalAlpha = 0.8;
-        ctx.drawImage(glowCanvas, 0, 0);
+        // Create subtle glow effect
+        ctx.shadowColor = '#00ffa3';
+        ctx.shadowBlur = 15;
+        ctx.globalAlpha = 0.95;
+        ctx.drawImage(tempCanvas, 0, 0);
         
         // Draw sharp QR code on top
+        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
         ctx.drawImage(tempCanvas, 0, 0);
         
-        // Add vignette effect for darker edges
-        const vignette = ctx.createRadialGradient(
-            qrCanvas.width / 2, qrCanvas.height / 2, qrCanvas.width / 4,
-            qrCanvas.width / 2, qrCanvas.height / 2, qrCanvas.width / 1.5
-        );
-        vignette.addColorStop(0, 'rgba(0,0,0,0)');
-        vignette.addColorStop(1, 'rgba(0,0,0,0.3)');
-        
-        ctx.fillStyle = vignette;
-        ctx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
-        
-        console.log('Enhanced QR code generated for address:', address);
+        console.log('Successfully generated QR code for address:', address);
     } catch (error) {
         console.error('Error generating QR code:', error);
+        // Show error state in the container
+        const qrContainer = document.getElementById('qrCode');
+        if (qrContainer) {
+            qrContainer.innerHTML = `
+                <div class="text-red-500 text-sm text-center">
+                    Failed to generate QR code
+                </div>
+            `;
+        }
     }
 }
 
@@ -135,46 +128,6 @@ export function setupReceiveModal() {
         backToMainBtn: !!backToMainBtn
     });
     
-    // Function to update the display with the legacy address
-    const updateAddressDisplay = async (address) => {
-        console.log('Updating address display with:', address);
-        
-        if (!address) {
-            console.error('No address provided to display');
-            return;
-        }
-
-        // Update the input field
-        if (walletAddressInput) {
-            walletAddressInput.value = address;
-            // Force the input to update
-            walletAddressInput.dispatchEvent(new Event('input'));
-            console.log('Set legacy address in input:', address);
-        } else {
-            console.error('walletAddressInput element not found');
-        }
-        
-        // Generate QR code
-        const qrCanvas = document.getElementById('qrCode');
-        if (qrCanvas) {
-            try {
-                // Clear any existing content
-                const ctx = qrCanvas.getContext('2d');
-                ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-                
-                // Remove loading indicator if it exists
-                const loadingIndicator = qrCanvas.querySelector('.qr-loading');
-                if (loadingIndicator) {
-                    loadingIndicator.remove();
-                }
-                
-                await generateQRCode(address);
-            } catch (error) {
-                console.error('Failed to generate QR code:', error);
-            }
-        }
-    };
-    
     // Get and display the legacy address
     if (window.wallet) {
         console.log('Wallet found, getting legacy address...');
@@ -183,13 +136,18 @@ export function setupReceiveModal() {
             const legacyAddress = window.wallet.getLegacyAddress?.() || window.wallet.legacyAddress || window.wallet.address;
             
             if (legacyAddress) {
+                console.log('Got legacy address:', legacyAddress);
                 // Update the input field immediately if it exists
                 if (walletAddressInput) {
                     console.log('Setting legacy address:', legacyAddress);
                     walletAddressInput.value = legacyAddress;
                     walletAddressInput.dispatchEvent(new Event('input'));
+                    
+                    // Generate QR code immediately
+                    generateQRCode(legacyAddress).catch(error => {
+                        console.error('Failed to generate initial QR code:', error);
+                    });
                 } else {
-                    // If the input doesn't exist yet, wait for it
                     console.log('Waiting for input element...');
                     const checkInput = setInterval(() => {
                         const input = document.getElementById('walletAddress');
@@ -200,7 +158,9 @@ export function setupReceiveModal() {
                             console.log('Set legacy address after waiting:', legacyAddress);
                             
                             // Generate QR code after setting address
-                            generateQRCode(legacyAddress);
+                            generateQRCode(legacyAddress).catch(error => {
+                                console.error('Failed to generate QR code after waiting:', error);
+                            });
                         }
                     }, 100);
                 }
@@ -212,7 +172,13 @@ export function setupReceiveModal() {
             if (typeof window.wallet.on === 'function') {
                 window.wallet.on('addressChanged', (newAddress) => {
                     if (newAddress) {
-                        updateAddressDisplay(newAddress);
+                        if (walletAddressInput) {
+                            walletAddressInput.value = newAddress;
+                            walletAddressInput.dispatchEvent(new Event('input'));
+                        }
+                        generateQRCode(newAddress).catch(error => {
+                            console.error('Failed to generate QR code for new address:', error);
+                        });
                     }
                 });
             }
