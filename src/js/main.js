@@ -140,7 +140,7 @@ async function loadWalletModals() {
 
 // Add event listener for connect wallet button after initialization
 function setupConnectWalletButton() {
-    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const connectWalletBtn = document.getElementById('walletConnectButton');
     if (connectWalletBtn) {
         connectWalletBtn.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -152,8 +152,9 @@ function setupConnectWalletButton() {
                 showError('Failed to open wallet selection');
             }
         });
+        console.log('Wallet connect button initialized successfully');
     } else {
-        console.warn('Connect Wallet Button not found');
+        console.warn('Wallet connect button not found in the DOM');
     }
 }
 

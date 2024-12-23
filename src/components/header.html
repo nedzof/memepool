@@ -9,13 +9,11 @@
 
             <!-- Connect Wallet Button -->
             <div class="flex items-center mr-[calc(25vw-50px)]">
-                <button id="connectWalletBtn" 
-                        class="connect-wallet-btn px-4 py-1.5 text-sm rounded-lg font-medium transition-all duration-300 hover:scale-105 text-black relative overflow-hidden group cursor-pointer"
-                        onclick="console.log('Connect Wallet Button Clicked'); window.showWalletSelection()"
-                        style="background: #00ffa3;
-                               box-shadow: 0 0 10px rgba(0, 255, 163, 0.3);">
-                    <div class="relative z-10">Connect Wallet</div>
-                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <button id="walletConnectButton" 
+                        class="wallet-connect-btn bg-gradient-to-r from-[#00ffa3] to-[#00ffcf] px-6 py-2 text-sm rounded-lg font-semibold text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 relative overflow-hidden group"
+                        onclick="window.handleConnectWalletButtonClick()">
+                    <span class="relative z-10">Connect Wallet</span>
+                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </button>
             </div>
         </div>
