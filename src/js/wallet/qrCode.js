@@ -179,43 +179,45 @@ export function setupReceiveModal() {
     if (window.wallet) {
         console.log('Wallet found, getting legacy address...');
         try {
-            // Try to get the legacy address
-            console.log('Wallet object:', window.wallet);
-            console.log('getLegacyAddress function:', window.wallet.getLegacyAddress);
+            // Try to get the legacy address immediately
+            const legacyAddress = window.wallet.getLegacyAddress?.() || window.wallet.legacyAddress || window.wallet.address;
             
-            let legacyAddress;
-            if (typeof window.wallet.getLegacyAddress === 'function') {
-                legacyAddress = window.wallet.getLegacyAddress();
-            } else if (window.wallet.legacyAddress) {
-                legacyAddress = window.wallet.legacyAddress;
-            } else if (window.wallet.address) {
-                legacyAddress = window.wallet.address;
-            }
-            
-            console.log('Retrieved legacy address:', legacyAddress);
-            
-            if (!legacyAddress) {
+            if (legacyAddress) {
+                // Update the input field immediately if it exists
+                if (walletAddressInput) {
+                    console.log('Setting legacy address:', legacyAddress);
+                    walletAddressInput.value = legacyAddress;
+                    walletAddressInput.dispatchEvent(new Event('input'));
+                } else {
+                    // If the input doesn't exist yet, wait for it
+                    console.log('Waiting for input element...');
+                    const checkInput = setInterval(() => {
+                        const input = document.getElementById('walletAddress');
+                        if (input) {
+                            clearInterval(checkInput);
+                            input.value = legacyAddress;
+                            input.dispatchEvent(new Event('input'));
+                            console.log('Set legacy address after waiting:', legacyAddress);
+                            
+                            // Generate QR code after setting address
+                            generateQRCode(legacyAddress);
+                        }
+                    }, 100);
+                }
+            } else {
                 console.error('No legacy address available');
-                return;
             }
-            
-            // Update the display immediately
-            updateAddressDisplay(legacyAddress);
             
             // Also listen for address changes
             if (typeof window.wallet.on === 'function') {
                 window.wallet.on('addressChanged', (newAddress) => {
-                    console.log('Address changed to:', newAddress);
-                    updateAddressDisplay(newAddress);
+                    if (newAddress) {
+                        updateAddressDisplay(newAddress);
+                    }
                 });
             }
         } catch (error) {
-            console.error('Error setting up receive modal:', error);
-            console.error('Error details:', {
-                wallet: window.wallet,
-                error: error.message,
-                stack: error.stack
-            });
+            console.error('Error setting up legacy address:', error);
         }
     } else {
         console.error('No wallet object found in window');

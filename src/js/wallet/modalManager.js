@@ -1,6 +1,7 @@
 import { showModal, hideModal, showError } from '../modal.js';
 import { showWalletSelection } from './walletSelection.js';
 import { setupMainWalletEvents } from './walletEvents.js';
+import { setupReceiveModal } from './qrCode.js';
 
 // Wallet-specific modal functions
 export function showMainWallet() {
@@ -24,6 +25,7 @@ export function showSendModal() {
 export function showReceiveModal() {
     hideModal('mainWalletModal');
     showModal('receiveModal');
+    setupReceiveModal();
     setupBackToMainHandlers();
 }
 
