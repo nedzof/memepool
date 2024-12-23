@@ -17,11 +17,11 @@ import { initializeWallet } from './wallet/config.js';
 window.showWalletSelection = function() {
     console.log('Showing wallet selection modal');
     const modal = document.getElementById('walletSelectionModal');
-    if (modal) {
-        modal.style.display = 'block';
-    } else {
+    if (!modal) {
         console.error('Wallet selection modal not found');
+        return;
     }
+    showModal('walletSelectionModal');
 };
 
 async function loadMainContent() {
@@ -138,6 +138,25 @@ async function loadWalletModals() {
     }
 }
 
+// Add event listener for connect wallet button after initialization
+function setupConnectWalletButton() {
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                console.log('Connect Wallet Button Clicked');
+                await window.handleConnectWalletButtonClick();
+            } catch (error) {
+                console.error('Error in connect wallet button click:', error);
+                showError('Failed to open wallet selection');
+            }
+        });
+    } else {
+        console.warn('Connect Wallet Button not found');
+    }
+}
+
 async function initializeApp() {
     try {
         console.log('Initializing app...');
@@ -202,6 +221,9 @@ async function initializeApp() {
                 }))
             });
         }, true);
+
+        // Setup connect wallet button after content is loaded
+        setupConnectWalletButton();
 
         console.log('App initialization complete');
     } catch (error) {

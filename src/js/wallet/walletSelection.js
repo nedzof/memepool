@@ -28,58 +28,43 @@ async function setupWalletButton(buttonId, handler, options = {}) {
     });
 }
 
-// Handle connect wallet click - tries to connect to first available wallet or shows selection
+// Expose a global function to handle connect wallet click with error handling
+window.handleConnectWalletButtonClick = async function() {
+    try {
+        console.log('Connect Wallet Button Clicked');
+        
+        // Ensure wallet selection modal is accessible
+        const walletSelectionModal = document.getElementById('walletSelectionModal');
+        if (!walletSelectionModal) {
+            throw new Error('Wallet selection modal not found');
+        }
+
+        // Detect available wallets
+        const availableWallets = detectAvailableWallets();
+        console.log('Available Wallets:', availableWallets);
+
+        // Show wallet selection modal
+        showModal('walletSelectionModal');
+
+        // Setup wallet selection events
+        setupWalletSelectionEvents(availableWallets);
+    } catch (error) {
+        console.error('Error in connect wallet button:', error);
+        showError(error.message || 'Failed to open wallet selection');
+    }
+}
+
+// Modify handleConnectWalletClick to use the new global function
 export async function handleConnectWalletClick() {
     try {
         console.log('Handling connect wallet click');
-        
-        // Ensure wallet loading state is managed
         setWalletLoading(true);
         
-        // Find the connect wallet button
-        const connectWalletBtn = document.getElementById('connectWalletBtn');
-        if (!connectWalletBtn) {
-            console.error('Connect Wallet button not found');
-            throw new Error('Connect Wallet button is missing');
-        }
-
-        // Add click event listener with comprehensive error handling
-        connectWalletBtn.addEventListener('click', async (event) => {
-            try {
-                console.log('Connect Wallet button clicked');
-                
-                // Prevent multiple clicks
-                event.preventDefault();
-                event.stopPropagation();
-                
-                // Ensure button is not already disabled
-                if (connectWalletBtn.disabled) {
-                    console.warn('Connect Wallet button is currently disabled');
-                    return;
-                }
-
-                // Disable button during wallet selection
-                connectWalletBtn.disabled = true;
-                connectWalletBtn.classList.add('cursor-wait', 'opacity-50');
-
-                // Show wallet selection modal
-                showWalletSelection();
-            } catch (clickError) {
-                console.error('Error in Connect Wallet button click handler:', clickError);
-                showError(clickError.message || 'An unexpected error occurred while connecting wallet');
-            } finally {
-                // Re-enable button
-                connectWalletBtn.disabled = false;
-                connectWalletBtn.classList.remove('cursor-wait', 'opacity-50');
-                setWalletLoading(false);
-            }
-        });
-
-        // Trigger initial setup
-        showWalletSelection();
+        // Call the global function
+        await window.handleConnectWalletButtonClick();
     } catch (error) {
-        console.error('Error setting up Connect Wallet functionality:', error);
-        showError(error.message || 'Failed to set up wallet connection');
+        console.error('Error in wallet selection:', error);
+        showError(error.message || 'An error occurred while connecting wallet');
     } finally {
         setWalletLoading(false);
     }
