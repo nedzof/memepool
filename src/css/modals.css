@@ -19,8 +19,8 @@
 
 .modal-backdrop.visible {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -29,13 +29,13 @@
 /* Base Modal Container */
 .modal {
   position: fixed;
-  top: 50%;
+  top: 50vh;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.95);
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
-  margin: auto;
+  margin: 0 auto;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -55,7 +55,7 @@
 
 /* Neon Theme */
 .modal.neon-theme {
-  background: rgba(13, 16, 25, 0.45);
+  background: rgba(13, 16, 25, 0.95);
   border: 1px solid rgba(0, 255, 163, 0.15);
   border-radius: 32px;
   box-shadow: 0 0 80px rgba(0, 255, 163, 0.15),
@@ -64,35 +64,43 @@
   backdrop-filter: blur(20px);
 }
 
-.modal.open {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  display: block;
-}
-
-.modal.modal-exit {
-  transform: translate(-50%, -50%) scale(0.95);
-  opacity: 0;
-}
-
-/* Modal Content */
+/* Modal Content Scrolling */
 .modal-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  overflow: hidden;
+  max-height: calc(90vh - 4rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 163, 0.3) transparent;
 }
 
-.neon-theme .modal-content {
-  border-radius: 32px;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 255, 163, 0.03) 0%,
-    rgba(0, 255, 163, 0.01) 100%
-  );
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 255, 163, 0.3);
+  border-radius: 3px;
+}
+
+/* Modal Animation */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.modal.visible {
+  animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Modal Header */
