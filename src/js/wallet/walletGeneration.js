@@ -10,9 +10,20 @@ export async function generateNewWallet() {
     console.log('Generating new wallet...');
     
     try {
-        // Show password setup modal first
-        showModal('passwordSetupModal');
-        setupPasswordValidation(displaySeedPhrase);
+        // Verify password setup modal exists
+        const passwordSetupModal = document.getElementById('passwordSetupModal');
+        if (!passwordSetupModal) {
+            console.error('Password setup modal not found');
+            throw new Error('Password setup modal not found');
+        }
+        
+        // Initialize password validation with callback
+        console.log('Setting up password validation...');
+        setupPasswordValidation((mnemonic) => {
+            console.log('Password setup complete, displaying seed phrase...');
+            displaySeedPhrase(mnemonic);
+        });
+        
         return true;
     } catch (error) {
         console.error('Error in wallet generation:', error);
@@ -25,6 +36,10 @@ export async function generateNewWallet() {
 function displaySeedPhrase(mnemonic) {
     console.log('Displaying seed phrase...');
     
+    // Show the modal and initialize it first
+    showModal('seedPhraseModal');
+    initializeSeedPhraseModal();
+    
     const seedPhraseGrid = document.getElementById('seedPhraseGrid');
     if (!seedPhraseGrid) {
         console.error('Seed phrase container not found');
@@ -33,10 +48,12 @@ function displaySeedPhrase(mnemonic) {
 
     // Fill in the words (they'll be blurred initially)
     const words = mnemonic.split(' ');
-    seedPhraseGrid.querySelectorAll('.seed-word-text').forEach((element, index) => {
+    const wordElements = seedPhraseGrid.querySelectorAll('.seed-word-text');
+    
+    wordElements.forEach((element, index) => {
         if (words[index]) {
             element.textContent = words[index];
-            console.log(`Word ${index + 1} set`);
+            console.log(`Word ${index + 1} set:`, words[index]);
         }
     });
 
@@ -46,10 +63,6 @@ function displaySeedPhrase(mnemonic) {
     if (revealBtn) {
         revealBtn.classList.remove('opacity-0', 'pointer-events-none');
     }
-
-    // Show the modal and initialize it
-    showModal('seedPhraseModal');
-    initializeSeedPhraseModal();
 }
 
 // Show main wallet after setup

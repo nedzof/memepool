@@ -10,8 +10,8 @@ import {
     showWalletSelection,
     showMainWallet 
 } from './walletUI.js';
-import { handleConnectWalletClick } from './wallet/walletSelection.js';
-import { initializeWallet } from './wallet/config.js';
+import { handleConnectWalletClick, setupWalletSelectionEvents } from './wallet/walletSelection.js';
+import { initializeWallet, detectAvailableWallets } from './wallet/config.js';
 
 // Expose wallet functions globally
 window.showWalletSelection = function() {
@@ -115,6 +115,7 @@ async function loadWalletModals() {
         const modalsElement = document.getElementById('walletModals');
         if (modalsElement) {
             modalsElement.innerHTML = html;
+            
             // Load included content
             console.log('Loading included content for wallet modals...');
             await loadIncludedContent(modalsElement);
@@ -129,6 +130,24 @@ async function loadWalletModals() {
                     console.warn('Found modal without ID, skipping initialization');
                 }
             });
+
+            // Verify critical modals are loaded
+            const criticalModals = ['walletSelectionModal', 'passwordSetupModal', 'seedPhraseModal'];
+            for (const modalId of criticalModals) {
+                const modal = document.getElementById(modalId);
+                if (!modal) {
+                    console.error(`Critical modal ${modalId} not found after loading`);
+                    throw new Error(`Critical modal ${modalId} not found`);
+                }
+                console.log(`Critical modal ${modalId} loaded successfully`);
+            }
+
+            // Setup wallet selection events
+            console.log('Setting up initial wallet selection events...');
+            const availableWallets = detectAvailableWallets();
+            setupWalletSelectionEvents(availableWallets);
+            console.log('Initial wallet selection events setup complete');
+
             return true;
         }
         return false;

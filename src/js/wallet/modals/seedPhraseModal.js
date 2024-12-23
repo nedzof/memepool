@@ -24,13 +24,16 @@ export function initializeSeedPhraseModal() {
         return;
     }
 
-    // Generate grid HTML
-    seedPhraseGrid.innerHTML = Array.from({ length: 12 }, (_, i) => `
-        <div class="seed-word group">
-            <span class="seed-word-number">${i + 1}</span>
-            <div class="seed-word-text"></div>
-        </div>
-    `).join('');
+    // Only generate grid HTML if it's empty
+    if (!seedPhraseGrid.children.length) {
+        // Generate grid HTML
+        seedPhraseGrid.innerHTML = Array.from({ length: 12 }, (_, i) => `
+            <div class="seed-word group">
+                <span class="seed-word-number">${i + 1}</span>
+                <div class="seed-word-text"></div>
+            </div>
+        `).join('');
+    }
 
     // Handle reveal button click
     const revealBtn = document.getElementById('revealSeedPhraseBtn');

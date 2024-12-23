@@ -6,79 +6,79 @@ import { SUPPORTED_WALLETS, detectAvailableWallets, initializeWallet } from './c
 
 // Helper function to handle button setup with loading state and error handling
 async function setupWalletButton(buttonId, handler, options = {}) {
+    console.log('Setting up button:', buttonId);
     const button = document.getElementById(buttonId);
-    if (!button) return;
+    if (!button) {
+        console.error(`Button with id ${buttonId} not found`);
+        return;
+    }
+    console.log('Found button:', button);
 
-    button.addEventListener('click', async () => {
+    button.addEventListener('click', async (e) => {
+        console.log(`Button ${buttonId} clicked`);
         try {
             setWalletLoading(true);
+            console.log('Set wallet loading state');
             
             await options.preAction?.();
+            console.log('Executing handler for', buttonId);
             await handler();
+            console.log('Handler execution complete');
 
-            if (options.hideModal) hideModal('walletSelectionModal');
-            if (options.showModal) showModal(options.showModal);
+            if (options.hideModal) {
+                console.log('Hiding modal');
+                hideModal('walletSelectionModal');
+            }
+            if (options.showModal) {
+                console.log('Showing modal:', options.showModal);
+                showModal(options.showModal);
+            }
         } catch (error) {
             console.error(`Error in ${buttonId}:`, error);
             showError(error.message || options.errorMessage || 'An error occurred');
             options.onError?.(error);
         } finally {
             setWalletLoading(false);
+            console.log('Wallet loading state cleared');
         }
     });
+    console.log(`Click handler added to ${buttonId}`);
 }
 
-// Expose a global function to handle connect wallet click with error handling
-window.handleConnectWalletButtonClick = async function() {
-    console.log('Global handleConnectWalletButtonClick called');
-    try {
-        // Ensure the function is properly attached to window
-        if (typeof window.handleConnectWalletButtonClick !== 'function') {
-            console.error('handleConnectWalletButtonClick not properly attached to window');
-        }
-        
-        console.log('Connect Wallet Button Clicked');
-        
-        // Ensure wallet selection modal is accessible
-        const walletSelectionModal = document.getElementById('walletSelectionModal');
-        console.log('Wallet Selection Modal:', walletSelectionModal);
-        
-        if (!walletSelectionModal) {
-            console.error('Wallet selection modal not found in DOM');
-            throw new Error('Wallet selection modal not found');
-        }
-
-        // Detect available wallets
-        const availableWallets = detectAvailableWallets();
-        console.log('Available Wallets:', availableWallets);
-
-        // Show wallet selection modal
-        console.log('Showing wallet selection modal');
-        showModal('walletSelectionModal');
-
-        // Setup wallet selection events
-        console.log('Setting up wallet selection events');
-        setupWalletSelectionEvents(availableWallets);
-        
-        return true;
-    } catch (error) {
-        console.error('Error in connect wallet button:', error);
-        showError(error.message || 'Failed to open wallet selection');
-        throw error; // Re-throw to be caught by the button click handler
-    }
-}
-
-// Modify handleConnectWalletClick to use the new global function
+// Handle connect wallet click - tries to connect to first available wallet or shows selection
 export async function handleConnectWalletClick() {
     try {
         console.log('Handling connect wallet click');
         setWalletLoading(true);
         
-        // Call the global function
-        await window.handleConnectWalletButtonClick();
+        // Always show wallet selection for now
+        showWalletSelection();
+        return;
+
+        // This code is temporarily disabled to ensure wallet selection always shows
+        /*
+        const availableWallets = detectAvailableWallets();
+        const hasAvailableWallet = Object.values(availableWallets).some(available => available);
+        
+        if (!hasAvailableWallet) {
+            showWalletSelection();
+            return;
+        }
+        
+        const firstAvailableWallet = Object.entries(availableWallets)
+            .find(([_, available]) => available)?.[0];
+            
+        if (firstAvailableWallet) {
+            await initializeWallet(firstAvailableWallet);
+            showModal('mainWalletModal');
+        } else {
+            showWalletSelection();
+        }
+        */
     } catch (error) {
-        console.error('Error in wallet selection:', error);
-        showError(error.message || 'An error occurred while connecting wallet');
+        console.error('Error connecting wallet:', error);
+        showError(error.message || 'Failed to connect wallet');
+        showWalletSelection();
     } finally {
         setWalletLoading(false);
     }
@@ -98,20 +98,35 @@ export function showImportWalletModal() {
 }
 
 export function showWalletSelection() {
+    console.log('Showing wallet selection modal...');
     const availableWallets = detectAvailableWallets();
+    console.log('Available wallets:', availableWallets);
+    
     showModal('walletSelectionModal');
+    console.log('Setting up wallet selection events...');
     setupWalletSelectionEvents(availableWallets);
+    console.log('Wallet selection events setup complete');
 }
 
 // Setup wallet selection events
 export function setupWalletSelectionEvents(availableWallets) {
+    console.log('Setting up wallet selection events...');
     const modal = document.getElementById('walletSelectionModal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('Wallet selection modal not found');
+        return;
+    }
+    console.log('Found wallet selection modal');
 
     // Setup wallet buttons
     Object.entries(SUPPORTED_WALLETS).forEach(([key, wallet]) => {
+        console.log('Setting up wallet button:', key);
         const button = document.getElementById(wallet.id);
-        if (!button) return;
+        if (!button) {
+            console.error(`Button for wallet ${key} not found`);
+            return;
+        }
+        console.log('Found button for wallet:', key);
 
         if (availableWallets[key]) {
             setupWalletButton(wallet.id, async () => {
@@ -132,18 +147,43 @@ export function setupWalletSelectionEvents(availableWallets) {
         }
     });
 
+    console.log('Setting up create wallet button...');
     // Setup create and import wallet buttons
-    setupWalletButton('createWalletBtn', generateNewWallet, {
-        hideModal: true,
-        showModal: 'passwordSetupModal',
-        onError: () => showModal('walletSelectionModal'),
+    setupWalletButton('createWalletBtn', async () => {
+        try {
+            console.log('Create wallet button clicked');
+            hideModal('walletSelectionModal');
+            
+            // Verify password setup modal exists
+            const passwordSetupModal = document.getElementById('passwordSetupModal');
+            if (!passwordSetupModal) {
+                console.error('Password setup modal not found');
+                throw new Error('Password setup modal not found');
+            }
+            console.log('Found password setup modal');
+            
+            // Show password setup modal and generate wallet
+            console.log('Showing password setup modal');
+            showModal('passwordSetupModal');
+            await generateNewWallet();
+        } catch (error) {
+            console.error('Error in create wallet flow:', error);
+            showError(error.message || 'Failed to create wallet');
+            showModal('walletSelectionModal');
+        }
+    }, {
         errorMessage: 'Failed to create new wallet'
     });
+    console.log('Create wallet button setup complete');
 
+    console.log('Setting up import wallet button...');
     setupWalletButton('importWalletBtn', initializeImportWallet, {
         hideModal: true,
         showModal: 'importWalletModal',
         onError: () => showModal('walletSelectionModal'),
         errorMessage: 'Failed to initialize import wallet'
     });
+    console.log('Import wallet button setup complete');
+    
+    console.log('All wallet selection events setup complete');
 } 

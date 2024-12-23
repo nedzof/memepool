@@ -15,10 +15,6 @@ export class Modal {
             document.body.appendChild(this.backdrop);
         }
 
-        // Ensure modal is centered
-        this.centerModal();
-        window.addEventListener('resize', () => this.centerModal());
-
         // Set up close button handlers
         const closeButtons = this.modal.querySelectorAll('.modal-close');
         closeButtons.forEach(button => {
@@ -57,53 +53,35 @@ export class Modal {
         });
     }
 
-    centerModal() {
-        if (!this.modal) return;
-        
-        // Get viewport height
-        const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-        
-        // Get modal height
-        const modalHeight = this.modal.offsetHeight;
-        
-        // Calculate top position to center
-        const topPosition = Math.max(0, (vh - modalHeight) / 2);
-        
-        // Apply centering
-        this.modal.style.top = `${topPosition}px`;
-        this.modal.style.transform = 'translateX(-50%)';
-    }
-
     show() {
-        if (!this.modal || !this.backdrop) return;
+        if (!this.modal) return;
         
         // Show backdrop
         this.backdrop.classList.add('visible');
-        document.body.style.overflow = 'hidden';
         
-        // Show and center modal
+        // Show modal
         this.modal.style.display = 'block';
-        this.centerModal();
-        
-        // Trigger animation
+        // Use requestAnimationFrame to ensure display change is applied before adding classes
         requestAnimationFrame(() => {
-            this.modal.classList.add('visible');
+            this.modal.classList.add('open');
+            this.modal.classList.remove('modal-exit');
         });
     }
 
     hide() {
-        if (!this.modal || !this.backdrop) return;
+        if (!this.modal) return;
         
-        this.modal.classList.remove('visible');
+        // Hide modal with animation
+        this.modal.classList.remove('open');
+        this.modal.classList.add('modal-exit');
+        
+        // Hide backdrop
         this.backdrop.classList.remove('visible');
-        document.body.style.overflow = '';
         
         // Wait for animation to complete before hiding
         setTimeout(() => {
-            if (!this.modal.classList.contains('visible')) {
-                this.modal.style.display = 'none';
-            }
-        }, 400);
+            this.modal.style.display = 'none';
+        }, 300); // Match the CSS transition duration
     }
 }
 
