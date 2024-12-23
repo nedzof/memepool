@@ -33,13 +33,14 @@ function validatePasswords() {
 
 // Setup password validation
 export function setupPasswordValidation(onSuccess) {
-    console.log('Setting up password validation');
+    console.log('Setting up password validation with callback:', !!onSuccess);
     
     const form = document.getElementById('passwordSetupForm');
     if (!form) {
         console.error('Password setup form not found');
         return;
     }
+    console.log('Found password setup form');
 
     // Setup input event listeners
     const setupPassword = document.getElementById('setupPassword');
@@ -47,15 +48,17 @@ export function setupPasswordValidation(onSuccess) {
     
     if (setupPassword) {
         setupPassword.addEventListener('input', (e) => updatePasswordStrength(e.target.value));
+        console.log('Added password strength listener');
     }
     if (confirmPassword) {
         confirmPassword.addEventListener('input', validatePasswords);
+        console.log('Added password validation listener');
     }
 
     // Setup form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        console.log('Password setup form submitted');
+        console.log('Password form submitted');
         
         const password = setupPassword?.value;
         const confirm = confirmPassword?.value;
@@ -80,12 +83,15 @@ export function setupPasswordValidation(onSuccess) {
             
             // Store password temporarily
             sessionStorage.setItem('temp_password', password);
+            console.log('Stored password in session storage');
             
             // Hide password modal
             hideModal('passwordSetupModal');
+            console.log('Password modal hidden');
             
             // Call success callback
             if (onSuccess) {
+                console.log('Calling success callback');
                 onSuccess(sessionStorage.getItem('temp_mnemonic'));
             }
         } catch (error) {
@@ -93,4 +99,5 @@ export function setupPasswordValidation(onSuccess) {
             showError(error.message);
         }
     });
+    console.log('Password form submission handler setup complete');
 } 

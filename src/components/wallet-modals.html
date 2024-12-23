@@ -32,6 +32,12 @@
         <!-- Password Setup Modal -->
         <div data-include="src/components/wallet/modals/password-setup-modal.html"></div>
 
+        <!-- Import Seed Modal -->
+        <div data-include="src/components/wallet/modals/import-seed-modal.html"></div>
+
+        <!-- Import Seed Confirmation Modal -->
+        <div data-include="src/components/wallet/modals/import-seed-confirmation-modal.html"></div>
+
         <!-- Import Wallet Modal -->
         <div data-include="src/components/wallet/modals/import-wallet-modal.html"></div>
 
@@ -110,7 +116,9 @@
                     </button>
 
                     <!-- Import Wallet -->
-                    <button id="importWalletBtn" class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group">
+                    <button id="importWalletBtn" 
+                            onclick="window.handleImportWalletClick()"
+                            class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group">
                         <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
                             <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>

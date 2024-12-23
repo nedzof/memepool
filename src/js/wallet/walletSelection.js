@@ -1,8 +1,9 @@
 import { showModal, hideModal, showError } from '../modal.js';
 import { generateNewWallet } from './walletGeneration.js';
-import { initializeImportWallet } from './walletImport.js';
 import { setWalletLoading } from './walletUIManager.js';
 import { SUPPORTED_WALLETS, detectAvailableWallets, initializeWallet } from './config.js';
+import { initializeImportSeed } from './modals/importSeedModal.js';
+import { setupPasswordValidation } from './passwordSetup.js';
 
 // Helper function to handle button setup with loading state and error handling
 async function setupWalletButton(buttonId, handler, options = {}) {
@@ -14,7 +15,7 @@ async function setupWalletButton(buttonId, handler, options = {}) {
     }
     console.log('Found button:', button);
 
-    button.addEventListener('click', async (e) => {
+    const clickHandler = async (e) => {
         console.log(`Button ${buttonId} clicked`);
         try {
             setWalletLoading(true);
@@ -26,7 +27,7 @@ async function setupWalletButton(buttonId, handler, options = {}) {
             console.log('Handler execution complete');
 
             if (options.hideModal) {
-                console.log('Hiding modal');
+                console.log('Hiding modal:', 'walletSelectionModal');
                 hideModal('walletSelectionModal');
             }
             if (options.showModal) {
@@ -41,7 +42,15 @@ async function setupWalletButton(buttonId, handler, options = {}) {
             setWalletLoading(false);
             console.log('Wallet loading state cleared');
         }
-    });
+    };
+
+    // Remove any existing click listeners
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    console.log('Removed existing click listeners');
+
+    // Add the click handler to the new button
+    newButton.addEventListener('click', clickHandler);
     console.log(`Click handler added to ${buttonId}`);
 }
 
@@ -91,12 +100,6 @@ export function showCreateWalletModal() {
     generateNewWallet();
 }
 
-export function showImportWalletModal() {
-    hideModal('walletSelectionModal');
-    showModal('importWalletModal');
-    initializeImportWallet();
-}
-
 export function showWalletSelection() {
     console.log('Showing wallet selection modal...');
     const availableWallets = detectAvailableWallets();
@@ -107,6 +110,20 @@ export function showWalletSelection() {
     setupWalletSelectionEvents(availableWallets);
     console.log('Wallet selection events setup complete');
 }
+
+// Handle import wallet click
+window.handleImportWalletClick = function() {
+    console.log('Import wallet button clicked');
+    hideModal('walletSelectionModal');
+    showModal('passwordSetupModal');
+    
+    // Setup password validation with callback to show import seed
+    setupPasswordValidation(() => {
+        console.log('Password setup complete, showing import seed modal...');
+        showModal('importSeedModal');
+        initializeImportSeed();
+    });
+};
 
 // Setup wallet selection events
 export function setupWalletSelectionEvents(availableWallets) {
@@ -147,43 +164,15 @@ export function setupWalletSelectionEvents(availableWallets) {
         }
     });
 
-    console.log('Setting up create wallet button...');
-    // Setup create and import wallet buttons
+    // Setup create wallet button
     setupWalletButton('createWalletBtn', async () => {
-        try {
-            console.log('Create wallet button clicked');
-            hideModal('walletSelectionModal');
-            
-            // Verify password setup modal exists
-            const passwordSetupModal = document.getElementById('passwordSetupModal');
-            if (!passwordSetupModal) {
-                console.error('Password setup modal not found');
-                throw new Error('Password setup modal not found');
-            }
-            console.log('Found password setup modal');
-            
-            // Show password setup modal and generate wallet
-            console.log('Showing password setup modal');
-            showModal('passwordSetupModal');
-            await generateNewWallet();
-        } catch (error) {
-            console.error('Error in create wallet flow:', error);
-            showError(error.message || 'Failed to create wallet');
-            showModal('walletSelectionModal');
-        }
+        console.log('Create wallet button clicked');
+        hideModal('walletSelectionModal');
+        showModal('passwordSetupModal');
+        await generateNewWallet();
     }, {
         errorMessage: 'Failed to create new wallet'
     });
-    console.log('Create wallet button setup complete');
-
-    console.log('Setting up import wallet button...');
-    setupWalletButton('importWalletBtn', initializeImportWallet, {
-        hideModal: true,
-        showModal: 'importWalletModal',
-        onError: () => showModal('walletSelectionModal'),
-        errorMessage: 'Failed to initialize import wallet'
-    });
-    console.log('Import wallet button setup complete');
     
     console.log('All wallet selection events setup complete');
 } 
