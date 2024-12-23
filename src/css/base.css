@@ -58,7 +58,8 @@ body::after {
 
 /* Wrapper for all content */
 #app {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   width: 100%;
   z-index: 1;
@@ -66,11 +67,19 @@ body::after {
   background: rgba(0, 0, 0, 0.3);
 }
 
+/* Header styles */
+header {
+  flex: none;
+  width: 100%;
+}
+
 /* Main content area */
 main {
+  flex: 1;
   position: relative;
   z-index: 2;
-  min-height: calc(100vh - 80px); /* Adjust based on header height */
+  padding-top: 80px; /* Height of header */
+  min-height: 0; /* Reset min-height */
 }
 
 /* Enhance text readability */
