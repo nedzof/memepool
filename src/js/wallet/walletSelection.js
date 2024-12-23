@@ -30,12 +30,21 @@ async function setupWalletButton(buttonId, handler, options = {}) {
 
 // Expose a global function to handle connect wallet click with error handling
 window.handleConnectWalletButtonClick = async function() {
+    console.log('Global handleConnectWalletButtonClick called');
     try {
+        // Ensure the function is properly attached to window
+        if (typeof window.handleConnectWalletButtonClick !== 'function') {
+            console.error('handleConnectWalletButtonClick not properly attached to window');
+        }
+        
         console.log('Connect Wallet Button Clicked');
         
         // Ensure wallet selection modal is accessible
         const walletSelectionModal = document.getElementById('walletSelectionModal');
+        console.log('Wallet Selection Modal:', walletSelectionModal);
+        
         if (!walletSelectionModal) {
+            console.error('Wallet selection modal not found in DOM');
             throw new Error('Wallet selection modal not found');
         }
 
@@ -44,13 +53,18 @@ window.handleConnectWalletButtonClick = async function() {
         console.log('Available Wallets:', availableWallets);
 
         // Show wallet selection modal
+        console.log('Showing wallet selection modal');
         showModal('walletSelectionModal');
 
         // Setup wallet selection events
+        console.log('Setting up wallet selection events');
         setupWalletSelectionEvents(availableWallets);
+        
+        return true;
     } catch (error) {
         console.error('Error in connect wallet button:', error);
         showError(error.message || 'Failed to open wallet selection');
+        throw error; // Re-throw to be caught by the button click handler
     }
 }
 

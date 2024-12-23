@@ -129,6 +129,9 @@ async function loadWalletModals() {
                     console.warn('Found modal without ID, skipping initialization');
                 }
             });
+
+            // Setup connect wallet button after modals are loaded
+            setupConnectWalletButton();
             return true;
         }
         return false;
@@ -140,21 +143,33 @@ async function loadWalletModals() {
 
 // Add event listener for connect wallet button after initialization
 function setupConnectWalletButton() {
-    const connectWalletBtn = document.getElementById('walletConnectButton');
+    console.log('Setting up connect wallet button...');
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    console.log('Found connect wallet button:', connectWalletBtn);
+
     if (connectWalletBtn) {
-        connectWalletBtn.addEventListener('click', async (e) => {
+        console.log('Adding click event listener to connect wallet button');
+        // Remove any existing click listeners
+        const newButton = connectWalletBtn.cloneNode(true);
+        connectWalletBtn.parentNode.replaceChild(newButton, connectWalletBtn);
+        
+        newButton.addEventListener('click', async (e) => {
+            console.log('Connect wallet button clicked!');
             e.preventDefault();
+            e.stopPropagation();
             try {
-                console.log('Connect Wallet Button Clicked');
-                await window.handleConnectWalletButtonClick();
+                if (typeof window.handleConnectWalletButtonClick === 'function') {
+                    await window.handleConnectWalletButtonClick();
+                } else {
+                    throw new Error('handleConnectWalletButtonClick is not defined');
+                }
             } catch (error) {
                 console.error('Error in connect wallet button click:', error);
                 showError('Failed to open wallet selection');
             }
         });
-        console.log('Wallet connect button initialized successfully');
     } else {
-        console.warn('Wallet connect button not found in the DOM');
+        console.error('Connect Wallet Button not found in the DOM');
     }
 }
 
@@ -204,11 +219,6 @@ async function initializeApp() {
         console.log('Initializing submissions...');
         initializeSubmissions();
 
-        // Initialize wallet selection
-        console.log('Initializing wallet selection...');
-        // Removed automatic wallet selection initialization
-        // Wallet selection will now only be triggered by user click
-
         // Add global click handler for debugging
         document.addEventListener('click', (e) => {
             console.log('Click detected:', {
@@ -223,8 +233,11 @@ async function initializeApp() {
             });
         }, true);
 
-        // Setup connect wallet button after content is loaded
-        setupConnectWalletButton();
+        // Setup connect wallet button one more time after everything is loaded
+        setTimeout(() => {
+            console.log('Final setup of connect wallet button');
+            setupConnectWalletButton();
+        }, 1000);
 
         console.log('App initialization complete');
     } catch (error) {
