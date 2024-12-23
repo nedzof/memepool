@@ -1,28 +1,24 @@
-<!-- Success Animation Modal -->
-<div id="walletCreatedModal" class="modal">
+<!-- Loading Animation Modal -->
+<div id="walletCreatedModal" class="modal neon-theme">
     <div class="modal-backdrop"></div>
-    <div class="modal-content border border-[#00ffa3]/30 rounded-2xl max-w-md w-full relative backdrop-blur-xl"
-         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
-                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
+    <div class="modal-content"
+         style="background: rgba(13, 16, 25, 0.45);
+                border: 1px solid rgba(0, 255, 163, 0.15);
+                box-shadow: 0 0 80px rgba(0, 255, 163, 0.15),
+                           inset 0 0 40px rgba(0, 255, 163, 0.03);">
         <!-- Modal Body -->
         <div class="modal-body p-6 pt-16 text-center">
-            <h2 class="modal-title mb-6">Wallet Created!</h2>
+            <h2 class="modal-title mb-12" style="text-shadow: 0 0 20px rgba(0, 255, 163, 0.9), 0 0 40px rgba(0, 255, 163, 0.5);">
+                Generating Wallet...
+            </h2>
             
-            <!-- Success Animation -->
-            <div class="w-24 h-24 mx-auto mb-6">
-                <svg class="w-full h-full text-[#00ffa3] animate-checkmark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
+            <!-- Loading Spinner -->
+            <div class="w-24 h-24 mx-auto mb-12">
+                <div class="loading-spinner"></div>
             </div>
 
             <!-- Message -->
-            <p class="text-white/80 mb-6">Your wallet has been successfully created.</p>
-
-            <!-- Continue Button -->
-            <button id="continueToWalletBtn"
-                    class="modal-button w-full py-3 px-4 font-bold">
-                Continue to Wallet
-            </button>
+            <p class="text-white/80 mb-8">Please wait while we set up your wallet</p>
         </div>
     </div>
 </div>
@@ -32,26 +28,17 @@
     import { showMainWallet } from '../../../js/walletUI.js';
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('Success modal script loaded');
-        const continueBtn = document.getElementById('continueToWalletBtn');
-        if (continueBtn) {
-            console.log('Found continue button');
-            continueBtn.addEventListener('click', () => {
-                console.log('Continue button clicked');
-                hideModal('walletCreatedModal');
-                showMainWallet();
-            });
-        }
+        console.log('Loading modal script loaded');
     });
 </script>
 
 <style>
-    @keyframes checkmarkDraw {
+    @keyframes spin {
         0% {
-            stroke-dashoffset: 100;
+            transform: rotate(0deg);
         }
         100% {
-            stroke-dashoffset: 0;
+            transform: rotate(360deg);
         }
     }
 
@@ -66,40 +53,28 @@
         }
     }
 
-    @keyframes successPulse {
-        0% {
-            transform: scale(1);
-        }
-        50% {
-            transform: scale(1.05);
-        }
-        100% {
-            transform: scale(1);
-        }
-    }
-
-    .animate-checkmark {
-        stroke-dasharray: 100;
-        stroke-dashoffset: 100;
-        animation: checkmarkDraw 0.8s ease forwards,
-                   successPulse 1.5s ease-in-out infinite;
+    .loading-spinner {
+        width: 100%;
+        height: 100%;
+        border: 4px solid rgba(0, 255, 163, 0.1);
+        border-left-color: #00ffa3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        box-shadow: 0 0 25px rgba(0, 255, 163, 0.3),
+                   inset 0 0 15px rgba(0, 255, 163, 0.1);
     }
 
     #walletCreatedModal .modal-content {
         animation: modalFadeIn 0.5s ease-out forwards;
+        border-radius: 32px;
+        background: linear-gradient(
+            180deg,
+            rgba(0, 255, 163, 0.03) 0%,
+            rgba(0, 255, 163, 0.01) 100%
+        );
     }
 
-    .modal-button {
-        @apply relative overflow-hidden transition-all duration-300;
-        background: linear-gradient(90deg, #00ffa3, #00ffff);
-    }
-
-    .modal-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0, 255, 163, 0.2);
-    }
-
-    .modal-button:active {
-        transform: translateY(0);
+    .modal-backdrop {
+        backdrop-filter: blur(30px) brightness(0.5);
     }
 </style> 

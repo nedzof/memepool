@@ -17,56 +17,35 @@
             </button>
         </div>
 
-        <div class="modal-body space-y-6">
-            <h2 class="modal-title">Receive BSV</h2>
+        <div class="modal-body space-y-3">
+            <!-- Legacy Address Display -->
+            <div class="bg-black/40 p-2 rounded-xl border border-[#00ffa3]/20 backdrop-blur-lg">
+                <div class="flex items-center gap-2">
+                    <input type="text" id="walletAddress" readonly
+                           class="flex-1 bg-black/20 text-[#00ffa3] font-mono text-sm rounded-lg px-3 py-2 border border-[#00ffa3]/20 focus:outline-none focus:border-[#00ffa3]/40"
+                           placeholder="Loading address..."
+                           value=""
+                           style="min-height: 40px; word-break: break-all;">
+                    <button id="copyAddressBtn" class="text-[#00ffa3] hover:text-white transition-colors p-2 rounded-lg hover:bg-[#00ffa3]/10 flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
             
             <!-- QR Code Section -->
-            <div class="bg-black/20 p-6 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
-                <div id="qrcode" class="w-full aspect-square bg-white rounded-lg flex items-center justify-center mb-4 p-4">
+            <div class="bg-black/40 p-3 rounded-2xl border border-[#00ffa3]/20 backdrop-blur-lg">
+                <div id="qrCode" class="w-56 h-56 mx-auto bg-transparent rounded-xl flex items-center justify-center">
                     <!-- QR Code will be generated here -->
                     <div class="qr-loading animate-pulse">
-                        <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0 0h4m-4-8h4m-4 4h4m6-4v1m-4-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1M4 8h2m12 0h2M4 12h2m12 0h2M4 16h2m12 0h2"></path>
+                        <svg class="w-12 h-12 text-[#00ffa3]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0 0h4m-4-8h4m-4 4h4m6-4v1m-4-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1M4 8h2m12 0h2M4 12h2m12 0h2M4 16h2m12 0h2"></path>
                         </svg>
                     </div>
                 </div>
-                <p class="text-white/60 text-sm text-center">Scan this QR code to receive funds</p>
-            </div>
-
-            <!-- Address Section -->
-            <div class="space-y-4">
-                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
-                    <label class="block text-sm font-medium text-white/60 mb-2">Your Wallet Address</label>
-                    <div class="flex items-center gap-2">
-                        <input type="text" id="walletAddress" readonly
-                               class="neon-input font-mono text-sm w-full truncate"
-                               value="">
-                        <button id="copyAddressBtn" class="text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Network Info -->
-                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-white/60">Network</span>
-                        <span class="text-white font-medium">Bitcoin SV</span>
-                    </div>
-                </div>
-
-                <!-- Warning Message -->
-                <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-                    <div class="flex items-start gap-3">
-                        <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                        </svg>
-                        <p class="text-sm text-yellow-500">Only send Bitcoin SV (BSV) to this address. Sending any other assets may result in permanent loss.</p>
-                    </div>
+                <div class="text-center mt-2">
+                    <span class="text-[#00ffa3] text-sm">Scan to receive BSV</span>
                 </div>
             </div>
         </div>
