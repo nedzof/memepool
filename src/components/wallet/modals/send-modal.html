@@ -1,16 +1,16 @@
 <!-- Send Modal -->
 <div id="sendModal" class="modal neon-theme">
-    <div class="modal-content">
+    <div class="modal-content bg-gradient-to-b from-[#003321] to-[#001a11]">
         <div class="modal-header">
             <div class="flex items-center gap-4">
-                <button class="back-to-main text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                <button class="back-to-main text-white/90 hover:text-white transition-colors flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
                     <span class="text-sm font-medium">Back to Main</span>
                 </button>
             </div>
-            <button class="modal-close">
+            <button class="modal-close text-white/90 hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -18,29 +18,30 @@
         </div>
 
         <div class="modal-body space-y-6">
-            <h2 class="modal-title">Send BSV</h2>
+            <h2 class="text-2xl font-bold text-[#00ffa3] text-center mb-2">Send BSV</h2>
             
             <!-- Form -->
-            <form id="sendForm" class="space-y-4">
+            <form id="sendForm" class="space-y-6">
                 <!-- Recipient Address -->
                 <div class="space-y-2">
-                    <label for="recipientAddress" class="block text-sm font-medium text-white/60">Recipient Address</label>
-                    <div class="relative">
+                    <label for="recipientAddress" class="block text-sm font-medium text-[#00ffa3]">Recipient Address</label>
+                    <div class="relative flex items-center">
                         <input type="text" id="recipientAddress" name="recipientAddress"
-                               class="neon-input font-mono text-sm w-full truncate"
+                               class="w-full bg-transparent border border-[#00ffa3]/20 rounded-xl px-4 py-3 text-white font-mono text-sm 
+                               focus:outline-none focus:border-[#00ffa3]/50 focus:ring-1 focus:ring-[#00ffa3]/50 transition-all 
+                               placeholder-white/30 pr-24"
                                placeholder="Enter BSV address">
-                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        <div class="absolute right-2 flex items-center gap-1">
                             <button type="button" id="scanQRBtn" 
-                                    class="text-white/70 hover:text-white transition-colors p-2">
+                                    class="text-[#00ffa3] hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0 0h4m-4-8h4m-4 4h4m6-4v1m-4-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1M4 8h2m12 0h2M4 12h2m12 0h2M4 16h2m12 0h2"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0 0h4m-4-8h4m-4 4h4m6-4v1m-4-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1m-2-1v1M4 8h2m12 0h2M4 12h2m12 0h2M4 16h2m12 0h2"></path>
                                 </svg>
                             </button>
                             <button type="button" id="pasteAddressBtn" 
-                                    class="text-white/70 hover:text-white transition-colors p-2">
+                                    class="text-[#00ffa3] hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                 </svg>
                             </button>
                         </div>
@@ -49,15 +50,22 @@
 
                 <!-- Amount -->
                 <div class="space-y-4">
-                    <label for="amount" class="block text-sm font-medium text-white/60">Amount</label>
-                    <div class="relative">
+                    <div class="flex items-center justify-between">
+                        <label for="amount" class="block text-sm font-medium text-[#00ffa3]">Amount</label>
+                        <div class="flex items-center gap-3">
+                            <span class="text-white/50 text-xs">Available: <span id="availableBalance" class="text-white/80">0.00</span> BSV</span>
+                        </div>
+                    </div>
+                    <div class="relative flex items-center">
                         <input type="number" id="amount" name="amount" step="0.000000001"
-                               class="neon-input text-sm w-full pr-20"
+                               class="w-full bg-transparent border border-[#00ffa3]/20 rounded-xl px-4 py-3 text-white text-sm 
+                               focus:outline-none focus:border-[#00ffa3]/50 focus:ring-1 focus:ring-[#00ffa3]/50 transition-all 
+                               placeholder-white/30 pr-24"
                                placeholder="0.0">
-                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        <div class="absolute right-2 flex items-center gap-2">
                             <span class="text-white/60 text-sm">BSV</span>
                             <button type="button" id="maxAmountBtn"
-                                    class="text-[#00ffa3] text-sm font-medium hover:text-[#00ffa3]/80 transition-colors">
+                                    class="text-[#00ffa3] text-sm font-medium hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5">
                                 MAX
                             </button>
                         </div>
@@ -66,9 +74,10 @@
                     <!-- Amount Slider -->
                     <div class="space-y-2">
                         <input type="range" id="amountSlider" 
-                               class="w-full appearance-none bg-[#00ffa3]/20 h-2 rounded-lg"
+                               class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-[#00ffa3]/20"
+                               style="background: linear-gradient(to right, #00ffa3 0%, #00ffa3 var(--value, 0%), rgba(0, 255, 163, 0.2) var(--value, 0%), rgba(0, 255, 163, 0.2) 100%);"
                                min="0" max="100" value="0" step="1">
-                        <div class="flex justify-between text-xs text-white/60">
+                        <div class="flex justify-between text-xs text-[#00ffa3]/70">
                             <span>0%</span>
                             <span>25%</span>
                             <span>50%</span>
@@ -78,41 +87,103 @@
                     </div>
                 </div>
 
-                <!-- Balance Info -->
-                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-white/60">Available Balance</span>
-                        <span class="text-white font-medium">
-                            <span id="availableBalance">0.00</span> BSV
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Network Fee -->
-                <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-white/60">Network Fee</span>
-                        <span class="text-white font-medium">~0.000005 BSV</span>
-                    </div>
+                <!-- Network Fee - Inline -->
+                <div class="text-right">
+                    <span class="text-white/50 text-xs">Network Fee: <span class="text-white/80">~0.000005 BSV</span></span>
                 </div>
 
                 <!-- Send Button -->
                 <button type="submit" id="sendBtn"
-                        class="neon-button w-full py-3 px-4 font-bold">
-                    Send BSV
+                        class="relative w-full py-4 px-4 rounded-xl bg-gradient-to-r from-[#00ffa3] via-[#00ffa3] to-[#00ffdd] text-black text-lg font-bold 
+                        hover:from-[#00ffa3] hover:via-[#4dffbb] hover:to-[#00ffdd]
+                        active:from-[#00cc82] active:to-[#00cc82]
+                        transition-all duration-200 overflow-hidden group
+                        shadow-[0_0_20px_rgba(0,255,163,0.3)] hover:shadow-[0_0_30px_rgba(0,255,163,0.5)]">
+                    <div class="absolute inset-0 bg-[#00ffa3] opacity-0 group-hover:opacity-20 blur-xl 
+                         transition-opacity duration-300 animate-pulse"></div>
+                    <div class="relative flex items-center justify-center gap-2">
+                        <span>Send BSV</span>
+                        <svg class="w-6 h-6 transform group-hover:translate-x-1 transition-transform" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </div>
+                    <div class="absolute inset-0 border border-[#00ffa3] rounded-xl"></div>
+                    <div class="absolute inset-0 border border-[#00ffa3] rounded-xl animate-pulse"></div>
                 </button>
-            </form>
 
-            <!-- Warning Message -->
-            <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-                <div class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                    <p class="text-sm text-yellow-500">Double-check the recipient's address before sending. Transactions cannot be reversed.</p>
+                <!-- Warning Message -->
+                <div class="relative overflow-hidden bg-black/40 rounded-xl border border-yellow-500/30 p-3 backdrop-blur-lg">
+                    <div class="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent"></div>
+                    <div class="relative flex items-start gap-3">
+                        <svg class="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <p class="text-xs text-yellow-500">Double-check the recipient's address before sending. Transactions cannot be reversed.</p>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-</div> 
+</div>
+
+<style>
+/* Custom slider styling */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #00ffa3;
+    cursor: pointer;
+    border: 2px solid rgba(0, 255, 163, 0.3);
+    box-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
+    transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    background: #fff;
+    border-color: #00ffa3;
+    box-shadow: 0 0 15px rgba(0, 255, 163, 0.8);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #00ffa3;
+    cursor: pointer;
+    border: 2px solid rgba(0, 255, 163, 0.3);
+    box-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
+    transition: all 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    background: #fff;
+    border-color: #00ffa3;
+    box-shadow: 0 0 15px rgba(0, 255, 163, 0.8);
+}
+
+/* Modal backdrop blur */
+.modal-backdrop {
+    backdrop-filter: blur(8px);
+}
+
+/* Input autofill styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-text-fill-color: white;
+    -webkit-box-shadow: 0 0 0px 1000px rgba(0, 0, 0, 0.2) inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+</style> 
