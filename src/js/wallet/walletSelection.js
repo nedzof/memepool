@@ -32,13 +32,54 @@ async function setupWalletButton(buttonId, handler, options = {}) {
 export async function handleConnectWalletClick() {
     try {
         console.log('Handling connect wallet click');
+        
+        // Ensure wallet loading state is managed
         setWalletLoading(true);
         
-        // Show wallet selection only when explicitly called
+        // Find the connect wallet button
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        if (!connectWalletBtn) {
+            console.error('Connect Wallet button not found');
+            throw new Error('Connect Wallet button is missing');
+        }
+
+        // Add click event listener with comprehensive error handling
+        connectWalletBtn.addEventListener('click', async (event) => {
+            try {
+                console.log('Connect Wallet button clicked');
+                
+                // Prevent multiple clicks
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Ensure button is not already disabled
+                if (connectWalletBtn.disabled) {
+                    console.warn('Connect Wallet button is currently disabled');
+                    return;
+                }
+
+                // Disable button during wallet selection
+                connectWalletBtn.disabled = true;
+                connectWalletBtn.classList.add('cursor-wait', 'opacity-50');
+
+                // Show wallet selection modal
+                showWalletSelection();
+            } catch (clickError) {
+                console.error('Error in Connect Wallet button click handler:', clickError);
+                showError(clickError.message || 'An unexpected error occurred while connecting wallet');
+            } finally {
+                // Re-enable button
+                connectWalletBtn.disabled = false;
+                connectWalletBtn.classList.remove('cursor-wait', 'opacity-50');
+                setWalletLoading(false);
+            }
+        });
+
+        // Trigger initial setup
         showWalletSelection();
     } catch (error) {
-        console.error('Error in wallet selection:', error);
-        showError(error.message || 'An error occurred while connecting wallet');
+        console.error('Error setting up Connect Wallet functionality:', error);
+        showError(error.message || 'Failed to set up wallet connection');
     } finally {
         setWalletLoading(false);
     }
