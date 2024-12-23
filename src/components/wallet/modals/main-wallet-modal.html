@@ -1,0 +1,72 @@
+<!-- Main Wallet Modal -->
+<div id="mainWalletModal" class="modal neon-theme">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Wallet</h2>
+            <button class="modal-close">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="modal-body space-y-6">
+            <!-- Balance Display -->
+            <div class="bg-black/20 p-6 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
+                <div class="text-center">
+                    <h3 class="text-white/60 text-sm mb-2">Total Balance</h3>
+                    <div class="text-3xl font-bold text-white balance-display">0.00 BSV</div>
+                    <div class="text-[#00ffa3] text-sm mt-1 usd-value">$0.00 USD</div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Send Button -->
+                <button id="sendBtn" class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group">
+                    <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                    <span class="text-white font-medium text-sm">Send</span>
+                </button>
+
+                <!-- Receive Button -->
+                <button id="receiveBtn" class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group">
+                    <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </div>
+                    <span class="text-white font-medium text-sm">Receive</span>
+                </button>
+            </div>
+
+            <!-- Profile Section -->
+            <div class="bg-black/20 p-4 rounded-xl border border-[#00ffa3]/10 backdrop-blur-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-[#00ffa3] to-[#00ffff] flex items-center justify-center">
+                            <span class="text-black font-bold user-initials">AN</span>
+                        </div>
+                        <div>
+                            <div class="text-white font-medium username-display">Anonymous</div>
+                            <div class="text-white/60 text-sm address-display">Loading...</div>
+                        </div>
+                    </div>
+                    <button id="profileBtn" class="text-[#00ffa3] hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Disconnect Button -->
+            <button id="disconnectBtn" class="w-full py-3 px-4 rounded-xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all">
+                Disconnect Wallet
+            </button>
+        </div>
+    </div>
+</div> 

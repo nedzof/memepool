@@ -178,6 +178,44 @@ async function fetchCurrentBlockNumber() {
     }
 }
 
+// Utility function to calculate center points and transformations
+function calculateTransformation(sourceRect, targetRect) {
+    const sourceCenter = {
+        x: sourceRect.left + sourceRect.width / 2,
+        y: sourceRect.top + sourceRect.height / 2
+    };
+    const targetCenter = {
+        x: targetRect.left + targetRect.width / 2,
+        y: targetRect.top + targetRect.height / 2
+    };
+
+    // Calculate translation to align centers
+    const translateX = targetCenter.x - sourceCenter.x;
+    const translateY = targetCenter.y - sourceCenter.y;
+
+    // Calculate scale
+    const scaleX = targetRect.width / sourceRect.width;
+    const scaleY = targetRect.height / sourceRect.height;
+
+    return {
+        translateX,
+        translateY,
+        scale: Math.min(scaleX, scaleY)
+    };
+}
+
+// Utility function to update block content
+function updateBlockContent(block, blockNumber) {
+    const blockDisplay = block.querySelector('.block-number-display span');
+    if (blockDisplay) {
+        blockDisplay.textContent = `#${blockNumber}`;
+    }
+    const img = block.querySelector('img');
+    if (img) {
+        img.src = getImageForBlock(blockNumber);
+    }
+}
+
 export function shiftBlocks() {
     if (isAnimating) return;
     isAnimating = true;
@@ -230,26 +268,8 @@ export function shiftBlocks() {
         if (firstPastBlock) {
             const currentRect = currentMeme.getBoundingClientRect();
             const targetRect = firstPastBlock.getBoundingClientRect();
+            const { translateX, translateY, scale } = calculateTransformation(currentRect, targetRect);
             
-            // Calculate center points
-            const currentCenter = {
-                x: currentRect.left + currentRect.width / 2,
-                y: currentRect.top + currentRect.height / 2
-            };
-            const targetCenter = {
-                x: targetRect.left + targetRect.width / 2,
-                y: targetRect.top + targetRect.height / 2
-            };
-
-            // Calculate translation to align centers
-            const translateX = targetCenter.x - currentCenter.x;
-            const translateY = targetCenter.y - currentCenter.y;
-
-            // Calculate scale
-            const scaleX = targetRect.width / currentRect.width;
-            const scaleY = targetRect.height / currentRect.height;
-            const scale = Math.min(scaleX, scaleY);
-
             animatedCurrent.style.setProperty('--end-scale', scale);
             animatedCurrent.style.setProperty('--target-x', `${translateX}px`);
             animatedCurrent.style.setProperty('--target-y', `${translateY}px`);
@@ -261,25 +281,8 @@ export function shiftBlocks() {
         const animatedUpcoming = createAnimatedElement(lastUpcoming);
         const lastUpcomingRect = lastUpcoming.getBoundingClientRect();
         const currentTargetRect = currentMeme.getBoundingClientRect();
-
-        // Calculate center points for upcoming to current
-        const upcomingCenter = {
-            x: lastUpcomingRect.left + lastUpcomingRect.width / 2,
-            y: lastUpcomingRect.top + lastUpcomingRect.height / 2
-        };
-        const currentTargetCenter = {
-            x: currentTargetRect.left + currentTargetRect.width / 2,
-            y: currentTargetRect.top + currentTargetRect.height / 2
-        };
-
-        // Calculate translation to align centers
-        const upcomingTranslateX = currentTargetCenter.x - upcomingCenter.x;
-        const upcomingTranslateY = currentTargetCenter.y - upcomingCenter.y;
-
-        // Calculate scale
-        const upcomingScaleX = currentTargetRect.width / lastUpcomingRect.width;
-        const upcomingScaleY = currentTargetRect.height / lastUpcomingRect.height;
-        const upcomingScale = Math.max(upcomingScaleX, upcomingScaleY);
+        const { translateX: upcomingTranslateX, translateY: upcomingTranslateY, scale: upcomingScale } = 
+            calculateTransformation(lastUpcomingRect, currentTargetRect);
 
         animatedUpcoming.style.setProperty('--end-scale', upcomingScale);
         animatedUpcoming.style.setProperty('--target-x', `${upcomingTranslateX}px`);
@@ -333,26 +336,12 @@ export function shiftBlocks() {
             // Update block numbers and content
             upcomingBlocksArray.forEach((block, index) => {
                 const blockNumber = currentBlockNumber + (upcomingBlocksArray.length - index);
-                const blockDisplay = block.querySelector('.block-number-display span');
-                if (blockDisplay) {
-                    blockDisplay.textContent = `#${blockNumber}`;
-                }
-                const img = block.querySelector('img');
-                if (img) {
-                    img.src = getImageForBlock(blockNumber);
-                }
+                updateBlockContent(block, blockNumber);
             });
 
             pastBlocksArray.forEach((block, index) => {
                 const blockNumber = currentBlockNumber - (index + 1);
-                const blockDisplay = block.querySelector('.block-number-display span');
-                if (blockDisplay) {
-                    blockDisplay.textContent = `#${blockNumber}`;
-                }
-                const img = block.querySelector('img');
-                if (img) {
-                    img.src = getImageForBlock(blockNumber);
-                }
+                updateBlockContent(block, blockNumber);
             });
 
             // Update current meme number

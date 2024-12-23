@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { copyToClipboard } from '../utils.js';
 
 // Generate QR code for an address
 export async function generateQRCode(address) {
@@ -75,26 +76,18 @@ export function setupReceiveModal() {
     }
 
     if (copyAddressBtn && walletAddressInput) {
-        copyAddressBtn.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(walletAddressInput.value);
-                copyAddressBtn.innerHTML = `
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    Copied!
-                `;
-                setTimeout(() => {
-                    copyAddressBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                        </svg>
-                        Copy Address
-                    `;
-                }, 2000);
-            } catch (error) {
-                console.error('Failed to copy address:', error);
-            }
+        copyAddressBtn.addEventListener('click', () => {
+            copyToClipboard(walletAddressInput.value, copyAddressBtn, `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Copied!
+            `, `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                </svg>
+                Copy Address
+            `);
         });
     }
 } 

@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { copyToClipboard } from './utils.js';
 
 export async function generateQRCode(address) {
     try {
@@ -126,27 +127,8 @@ export function setupReceiveModal() {
     }
 
     if (copyAddressBtn && addressInput) {
-        copyAddressBtn.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(addressInput.value);
-                
-                // Update button text temporarily
-                const originalContent = copyAddressBtn.innerHTML;
-                copyAddressBtn.innerHTML = `
-                    <div class="relative z-10 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        <span>Copied!</span>
-                    </div>
-                `;
-                
-                setTimeout(() => {
-                    copyAddressBtn.innerHTML = originalContent;
-                }, 2000);
-            } catch (error) {
-                console.error('Failed to copy address:', error);
-            }
+        copyAddressBtn.addEventListener('click', () => {
+            copyToClipboard(addressInput.value, copyAddressBtn);
         });
     }
 } 
