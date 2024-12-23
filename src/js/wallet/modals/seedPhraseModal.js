@@ -118,7 +118,7 @@ export function initializeSeedPhraseModal() {
                 // Create session
                 const sessionData = {
                     loginType: 'manual',
-                    publicKey: result.publicKey,
+                    publicKey: result.publicKey.startsWith('0x') ? result.publicKey : `0x${result.publicKey}`,
                     balance: result.balance,
                     address: result.address
                 };

@@ -69,7 +69,7 @@ export function validateWalletProperties(wallet) {
         }
 
         // Validate public key format
-        const pubKeyRegex = /^[0-9a-fA-F]{66}$/;  // 33 bytes (compressed) = 66 hex chars
+        const pubKeyRegex = /^0x[0-9a-fA-F]{66}$/;  // 0x prefix + 33 bytes (compressed) = 68 chars total
         if (!pubKeyRegex.test(wallet.publicKey)) {
             throw new Error('Invalid public key format');
         }

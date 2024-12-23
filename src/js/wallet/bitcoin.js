@@ -157,7 +157,7 @@ export async function createWalletFromMnemonic(mnemonic) {
         const walletData = {
             address: payment.address,
             legacyAddress: payment.address,
-            publicKey: keyPair.publicKey.toString('hex'),
+            publicKey: '0x' + Buffer.from(keyPair.publicKey).toString('hex'),
             privateKey: keyPair.privateKey.toString('hex'),
             sign: (tx) => keyPair.sign(tx)
         };
@@ -194,7 +194,7 @@ export class BitcoinWallet {
             }
 
             this.wallet = await createWalletFromMnemonic(mnemonic);
-            this.publicKey = this.wallet.publicKey;
+            this.publicKey = this.wallet.publicKey.startsWith('0x') ? this.wallet.publicKey : `0x${this.wallet.publicKey}`;
 
             try {
                 this.balance = await fetchBalanceFromWhatsOnChain(this.wallet.legacyAddress);
