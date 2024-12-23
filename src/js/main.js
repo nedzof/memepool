@@ -16,12 +16,8 @@ import { initializeWallet } from './wallet/config.js';
 // Expose wallet functions globally
 window.showWalletSelection = function() {
     console.log('Showing wallet selection modal');
-    const modal = document.getElementById('walletSelectionModal');
-    if (!modal) {
-        console.error('Wallet selection modal not found');
-        return;
-    }
-    showModal('walletSelectionModal');
+    const { showWalletSelection } = require('./walletUI.js');
+    showWalletSelection();
 };
 
 async function loadMainContent() {
