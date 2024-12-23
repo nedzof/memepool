@@ -13,17 +13,37 @@ export function showMainWallet() {
     setupMainWalletEvents();
 }
 
+// Show send modal
+export function showSendModal() {
+    hideModal('mainWalletModal');
+    showModal('sendModal');
+    setupBackToMainHandlers();
+}
+
+// Show receive modal
+export function showReceiveModal() {
+    hideModal('mainWalletModal');
+    showModal('receiveModal');
+    setupBackToMainHandlers();
+}
+
 // Setup back-to-main functionality
 export function setupBackToMainHandlers() {
+    console.log('Setting up back-to-main handlers');
     const backButtons = document.querySelectorAll('.back-to-main');
     backButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            // Get the current modal
-            const currentModal = button.closest('.modal');
+        // Remove existing listeners
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        // Add new click listener
+        newButton.addEventListener('click', () => {
+            console.log('Back to main clicked');
+            const currentModal = newButton.closest('.modal');
             if (currentModal) {
-                // Hide current modal
+                console.log('Hiding current modal:', currentModal.id);
                 hideModal(currentModal.id);
-                // Show main wallet modal
+                console.log('Showing main wallet modal');
                 showMainWallet();
             }
         });

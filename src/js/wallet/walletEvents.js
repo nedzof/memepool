@@ -1,50 +1,50 @@
 import { updateWalletUI, startBalanceUpdates, stopBalanceUpdates } from './walletUIManager.js';
-import { showModal, hideModal, initializeModal } from '../modal.js';
+import { showModal, hideModal, showSendModal, showReceiveModal } from './modalManager.js';
 import { disconnectWallet } from './config.js';
 
 // Setup main wallet events
 export function setupMainWalletEvents() {
     console.log('Setting up main wallet events');
     
-    // Initialize main wallet modal
-    initializeModal('mainWalletModal', {
-        listeners: {
-            '#sendBtn': () => {
-                hideModal('mainWalletModal');
-                showModal('sendModal');
-            },
-            '#receiveBtn': () => {
-                hideModal('mainWalletModal');
-                showModal('receiveModal');
-            },
-            '#profileBtn': () => {
-                hideModal('mainWalletModal');
-                showModal('profileSetupModal');
-            },
-            '#disconnectBtn': () => {
-                disconnectWallet();
-                location.reload();
-            }
-        }
-    });
+    // Get all the buttons
+    const sendBtn = document.getElementById('sendBtn');
+    const receiveBtn = document.getElementById('receiveBtn');
+    const profileBtn = document.getElementById('profileBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
 
-    // Initialize send modal
-    initializeModal('sendModal', {
-        returnTo: 'mainWalletModal'
-    });
+    // Setup Send button
+    if (sendBtn) {
+        sendBtn.addEventListener('click', () => {
+            console.log('Send button clicked');
+            showSendModal();
+        });
+    }
 
-    // Initialize receive modal
-    initializeModal('receiveModal', {
-        returnTo: 'mainWalletModal'
-    });
+    // Setup Receive button
+    if (receiveBtn) {
+        receiveBtn.addEventListener('click', () => {
+            console.log('Receive button clicked');
+            showReceiveModal();
+        });
+    }
 
-    // Initialize profile setup modal
-    initializeModal('profileSetupModal', {
-        returnTo: 'mainWalletModal'
-    });
+    // Setup Profile button
+    if (profileBtn) {
+        profileBtn.addEventListener('click', () => {
+            console.log('Profile button clicked');
+            hideModal('mainWalletModal');
+            showModal('profileSetupModal');
+        });
+    }
 
-    // Start balance updates
-    startBalanceUpdates();
+    // Setup Disconnect button
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', () => {
+            console.log('Disconnect button clicked');
+            disconnectWallet();
+            location.reload();
+        });
+    }
 }
 
 // Clean up wallet events
