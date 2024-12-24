@@ -4,6 +4,41 @@ import { setWalletLoading } from './walletUIManager.js';
 import { SUPPORTED_WALLETS, detectAvailableWallets, initializeWallet } from './config.js';
 import { initializeImportSeed } from './modals/importSeedModal.js';
 import { setupPasswordValidation } from './passwordSetup.js';
+import { generateSecureMnemonic } from './mnemonic.js';
+import { initializeSeedPhraseModal } from './modals/seedPhraseModal.js';
+
+// Helper function to display seed phrase
+function displaySeedPhrase(mnemonic) {
+    console.log('Displaying seed phrase...');
+    
+    // Show the modal and initialize it first
+    showModal('seedPhraseModal');
+    initializeSeedPhraseModal();
+    
+    const seedPhraseGrid = document.getElementById('seedPhraseGrid');
+    if (!seedPhraseGrid) {
+        console.error('Seed phrase container not found');
+        return;
+    }
+
+    // Fill in the words (they'll be blurred initially)
+    const words = mnemonic.split(' ');
+    const wordElements = seedPhraseGrid.querySelectorAll('.seed-word-text');
+    
+    wordElements.forEach((element, index) => {
+        if (words[index]) {
+            element.textContent = words[index];
+            console.log(`Word ${index + 1} set:`, words[index]);
+        }
+    });
+
+    // Make sure grid is blurred and reveal button is visible
+    seedPhraseGrid.classList.add('filter', 'blur-lg');
+    const revealBtn = document.getElementById('revealSeedPhraseBtn');
+    if (revealBtn) {
+        revealBtn.classList.remove('opacity-0', 'pointer-events-none');
+    }
+}
 
 // Helper function to handle button setup with loading state and error handling
 async function setupWalletButton(buttonId, handler, options = {}) {
@@ -97,7 +132,17 @@ export async function handleConnectWalletClick() {
 export function showCreateWalletModal() {
     hideModal('walletSelectionModal');
     showModal('passwordSetupModal');
-    generateNewWallet();
+    
+    // Setup password validation first, then generate mnemonic
+    setupPasswordValidation(async () => {
+        // Generate new mnemonic after password is set
+        const mnemonic = await generateSecureMnemonic();
+        console.log('Generated secure mnemonic');
+        sessionStorage.setItem('temp_mnemonic', mnemonic);
+        
+        // Display the seed phrase
+        displaySeedPhrase(mnemonic);
+    });
 }
 
 export function showWalletSelection() {
@@ -117,7 +162,7 @@ window.handleImportWalletClick = function() {
     hideModal('walletSelectionModal');
     showModal('passwordSetupModal');
     
-    // Setup password validation with callback to show import seed
+    // Setup password validation with callback to show import seed only
     setupPasswordValidation(() => {
         console.log('Password setup complete, showing import seed modal...');
         showModal('importSeedModal');
@@ -167,9 +212,7 @@ export function setupWalletSelectionEvents(availableWallets) {
     // Setup create wallet button
     setupWalletButton('createWalletBtn', async () => {
         console.log('Create wallet button clicked');
-        hideModal('walletSelectionModal');
-        showModal('passwordSetupModal');
-        await generateNewWallet();
+        showCreateWalletModal();
     }, {
         errorMessage: 'Failed to create new wallet'
     });

@@ -70,9 +70,10 @@ export function validateMnemonicRandomness(mnemonic) {
 
     // Check for repeating patterns
     const patternCheck = words.join(' ');
-    const patterns = patternCheck.match(/(.+ .+).*\1/);
+    // Only check for obvious repeating patterns (3 or more word sequences that repeat)
+    const patterns = patternCheck.match(/(.{3,}\s+.{3,}\s+.{3,})\s+.*\1/);
     if (patterns) {
-        throw new Error('Mnemonic contains patterns');
+        throw new Error('Mnemonic contains obvious repeating patterns');
     }
 
     // Check entropy using BIP39

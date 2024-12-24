@@ -17,6 +17,11 @@ export async function generateNewWallet() {
             throw new Error('Password setup modal not found');
         }
         
+        // Generate new mnemonic first
+        const mnemonic = await generateSecureMnemonic();
+        console.log('Generated secure mnemonic');
+        sessionStorage.setItem('temp_mnemonic', mnemonic);
+        
         // Initialize password validation with callback
         console.log('Setting up password validation...');
         setupPasswordValidation((mnemonic) => {

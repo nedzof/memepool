@@ -123,6 +123,24 @@ function createSeedPhraseGrid() {
 
             // Handle regular input
             input.addEventListener('input', (e) => {
+                const word = e.target.value.toLowerCase().trim();
+                
+                // Validate against BIP39 wordlist if word is complete
+                if (word && !word.endsWith(' ') && !bip39.wordlists.english.includes(word)) {
+                    input.classList.add('invalid');
+                    const errorDiv = document.getElementById('seedPhraseError');
+                    if (errorDiv) {
+                        errorDiv.textContent = `"${word}" is not a valid BIP39 word`;
+                        errorDiv.classList.remove('hidden');
+                    }
+                } else {
+                    input.classList.remove('invalid');
+                    const errorDiv = document.getElementById('seedPhraseError');
+                    if (errorDiv) {
+                        errorDiv.classList.add('hidden');
+                    }
+                }
+
                 // Move to next input if space or comma is typed
                 if (e.target.value.includes(' ') || e.target.value.includes(',')) {
                     const words = e.target.value
@@ -133,12 +151,35 @@ function createSeedPhraseGrid() {
                         .filter(word => word.length > 0);
                     
                     if (words.length > 0) {
-                        e.target.value = words[0];
+                        // Validate first word against BIP39 wordlist
+                        const firstWord = words[0];
+                        if (!bip39.wordlists.english.includes(firstWord)) {
+                            input.classList.add('invalid');
+                            const errorDiv = document.getElementById('seedPhraseError');
+                            if (errorDiv) {
+                                errorDiv.textContent = `"${firstWord}" is not a valid BIP39 word`;
+                                errorDiv.classList.remove('hidden');
+                            }
+                            return;
+                        }
+                        
+                        e.target.value = firstWord;
+                        input.classList.remove('invalid');
                         
                         // Fill subsequent inputs if there are more words
                         words.slice(1).forEach((word, wordIndex) => {
                             const targetIndex = index + wordIndex + 1;
                             if (targetIndex < inputs.length) {
+                                // Validate each word against BIP39 wordlist
+                                if (!bip39.wordlists.english.includes(word)) {
+                                    const errorDiv = document.getElementById('seedPhraseError');
+                                    if (errorDiv) {
+                                        errorDiv.textContent = `"${word}" is not a valid BIP39 word`;
+                                        errorDiv.classList.remove('hidden');
+                                    }
+                                    return;
+                                }
+                                
                                 inputs[targetIndex].value = word;
                                 inputs[targetIndex].classList.add('animate-fill');
                                 setTimeout(() => inputs[targetIndex].classList.remove('animate-fill'), 800);
@@ -172,51 +213,130 @@ function createSeedPhraseGrid() {
         if (pasteButton) {
             pasteButton.onclick = async function() {
                 try {
-                    // Try to get clipboard text
                     let text = '';
-                    try {
-                        text = await navigator.clipboard.readText();
-                    } catch (err) {
-                        // Fallback to execCommand
-                        const textarea = document.createElement('textarea');
-                        textarea.style.position = 'fixed';
-                        textarea.style.opacity = '0';
-                        document.body.appendChild(textarea);
-                        textarea.focus();
-                        document.execCommand('paste');
-                        text = textarea.value;
-                        document.body.removeChild(textarea);
-                    }
-
-                    if (text) {
-                        // Split text into words, handling multiple formats
-                        let words = text
-                            .toLowerCase()
-                            .replace(/[\n\r\t,]+/g, ' ')
-                            .trim()
-                            .split(/\s+/)
-                            .filter(word => word.length > 0);
-
-                        // Fill in the inputs
-                        inputs.forEach((input, index) => {
-                            if (words[index]) {
-                                input.value = words[index];
-                                input.classList.add('animate-fill');
-                                setTimeout(() => input.classList.remove('animate-fill'), 800);
-                            } else {
-                                input.value = '';
+                    
+                    // Try multiple clipboard access methods
+                    const methods = [
+                        // Method 1: Modern Clipboard API
+                        async () => {
+                            if (!navigator.clipboard) {
+                                throw new Error('Clipboard API not available');
                             }
-                        });
-
-                        // Focus the next empty input or the last one
-                        const nextEmptyInput = Array.from(inputs).find(input => !input.value) || inputs[11];
-                        nextEmptyInput.focus();
+                            return await navigator.clipboard.readText();
+                        },
+                        
+                        // Method 2: execCommand paste
+                        async () => {
+                            const textarea = document.createElement('textarea');
+                            textarea.style.cssText = 'position:fixed;pointer-events:none;opacity:0;';
+                            document.body.appendChild(textarea);
+                            textarea.focus();
+                            
+                            const successful = document.execCommand('paste');
+                            const text = textarea.value;
+                            document.body.removeChild(textarea);
+                            
+                            if (!successful || !text) {
+                                throw new Error('execCommand paste failed');
+                            }
+                            return text;
+                        },
+                        
+                        // Method 3: Input paste event
+                        async () => {
+                            return new Promise((resolve, reject) => {
+                                const input = document.createElement('input');
+                                input.style.cssText = 'position:fixed;pointer-events:none;opacity:0;';
+                                document.body.appendChild(input);
+                                
+                                const cleanup = () => {
+                                    input.removeEventListener('paste', handler);
+                                    document.body.removeChild(input);
+                                };
+                                
+                                const handler = (e) => {
+                                    const text = e.clipboardData.getData('text');
+                                    cleanup();
+                                    if (!text) {
+                                        reject(new Error('No text in clipboard'));
+                                    } else {
+                                        resolve(text);
+                                    }
+                                };
+                                
+                                input.addEventListener('paste', handler);
+                                input.focus();
+                                document.execCommand('paste');
+                                
+                                // Cleanup if paste event doesn't fire
+                                setTimeout(() => {
+                                    cleanup();
+                                    reject(new Error('Paste timeout'));
+                                }, 1000);
+                            });
+                        }
+                    ];
+                    
+                    // Try each method in sequence until one works
+                    let lastError;
+                    for (const method of methods) {
+                        try {
+                            text = await method();
+                            if (text) break;
+                        } catch (e) {
+                            console.warn('Clipboard method failed:', e);
+                            lastError = e;
+                        }
                     }
+                    
+                    if (!text) {
+                        throw new Error('Could not access clipboard. Please try copying your seed phrase again, or type it manually.');
+                    }
+
+                    // Clean and validate the text
+                    const words = text
+                        .toLowerCase()
+                        .replace(/\d+\.?\s*/g, '') // Remove numbers with dots
+                        .replace(/[\n\r\t,]+/g, ' ') // Replace newlines and tabs
+                        .trim()
+                        .split(/\s+/)
+                        .filter(word => word.length > 0);
+
+                    if (words.length === 0) {
+                        throw new Error('No valid words found in clipboard');
+                    }
+
+                    // Validate all words against BIP39 wordlist before filling
+                    const invalidWords = words.filter(word => !bip39.wordlists.english.includes(word));
+                    if (invalidWords.length > 0) {
+                        throw new Error(`Invalid BIP39 words: ${invalidWords.join(', ')}`);
+                    }
+
+                    // Fill in the inputs with animation
+                    const inputs = document.querySelectorAll('.seed-word');
+                    inputs.forEach((input, index) => {
+                        if (words[index]) {
+                            input.value = words[index];
+                            input.classList.add('animate-fill');
+                            setTimeout(() => input.classList.remove('animate-fill'), 800);
+                        } else {
+                            input.value = '';
+                        }
+                    });
+
+                    // Focus the next empty input or the last one
+                    const nextEmptyInput = Array.from(inputs).find(input => !input.value) || inputs[inputs.length - 1];
+                    nextEmptyInput.focus();
+
+                    // Show success feedback
+                    pasteButton.classList.add('success');
+                    setTimeout(() => pasteButton.classList.remove('success'), 2000);
+
                 } catch (error) {
                     console.error('Paste error:', error);
                     const errorDiv = document.getElementById('seedPhraseError');
                     if (errorDiv) {
-                        errorDiv.textContent = 'Failed to paste. Please try typing manually.';
+                        errorDiv.textContent = error.message || 'Failed to paste. Please try typing manually.';
                         errorDiv.classList.remove('hidden');
                         setTimeout(() => errorDiv.classList.add('hidden'), 3000);
                     }
@@ -240,8 +360,16 @@ function setupFormSubmission() {
 
             try {
                 // Initial seed phrase validation
+                console.log('Validating seed phrase:', seedPhrase);
                 const isValid = await validateMnemonic(seedPhrase);
+                console.log('Validation result:', isValid);
                 if (!isValid) {
+                    // Check if all words are in BIP39 wordlist
+                    const words = seedPhrase.split(' ');
+                    const invalidWords = words.filter(word => !bip39.wordlists.english.includes(word));
+                    if (invalidWords.length > 0) {
+                        throw new Error(`Invalid words in seed phrase: ${invalidWords.join(', ')}`);
+                    }
                     throw new Error('Invalid seed phrase');
                 }
 
@@ -259,6 +387,17 @@ function setupFormSubmission() {
                 }
 
                 const walletDetails = await tempWallet.generateNewWallet(password, seedPhrase);
+
+                // Hide import modal and show success animation
+                hideModal('importSeedModal');
+                showModal('walletCreatedModal');
+
+                // Update success modal text to show validation
+                const title = document.querySelector('#walletCreatedModal .modal-title');
+                const message = document.querySelector('#walletCreatedModal .text-white\\/80');
+                
+                if (title) title.innerHTML = 'Validating Wallet...<br><br><br>';
+                if (message) message.textContent = 'Please wait while we validate your wallet';
 
                 // Validate wallet properties
                 await validateWalletProperties({
@@ -278,37 +417,15 @@ function setupFormSubmission() {
                     balance: walletDetails.balance
                 }));
 
-                // Hide import modal and show success animation
-                hideModal('importSeedModal');
-                showModal('walletCreatedModal');
+                // Update text to show success and return to main menu
+                if (title) title.innerHTML = 'Wallet Imported Successfully<br><br><br>';
+                if (message) message.textContent = 'Returning to main menu...';
 
-                // Update success modal text
-                const title = document.querySelector('#walletCreatedModal .modal-title');
-                const message = document.querySelector('#walletCreatedModal .text-white\\/80');
-                
-                if (title) title.innerHTML = 'Validating Wallet...<br><br><br>';
-                if (message) message.textContent = 'Please wait while we validate your wallet';
-                
-                // Add continue button after all validations are complete
-                const modalBody = document.querySelector('#walletCreatedModal .modal-body');
-                if (modalBody) {
-                    const continueBtn = document.createElement('button');
-                    continueBtn.id = 'continueToWalletBtn';
-                    continueBtn.className = 'w-full py-3 px-4 rounded-xl bg-[#00ffa3] text-black font-bold ' +
-                                          'hover:bg-[#00ffa3]/90 transition-all';
-                    continueBtn.textContent = 'Continue to Wallet';
-                    
-                    continueBtn.addEventListener('click', () => {
-                        hideModal('walletCreatedModal');
-                        showMainWallet();
-                    });
-                    
-                    modalBody.appendChild(continueBtn);
-
-                    // Update success message
-                    if (title) title.innerHTML = 'Wallet Ready!<br><br><br>';
-                    if (message) message.textContent = 'Your wallet has been imported successfully';
-                }
+                // Wait for a short delay then return to main menu
+                setTimeout(() => {
+                    hideModal('walletCreatedModal');
+                    showModal('walletSelectionModal');
+                }, 2000);
 
             } catch (error) {
                 console.error('Error in import seed:', error);

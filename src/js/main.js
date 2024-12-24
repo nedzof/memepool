@@ -199,19 +199,6 @@ async function initializeApp() {
         console.log('Initializing wallet UI...');
         await initializeWalletUI();
 
-        // Add global click handler for debugging
-        document.addEventListener('click', (e) => {
-            console.log('Click detected:', {
-                target: e.target,
-                x: e.clientX,
-                y: e.clientY,
-                path: e.composedPath().map(el => ({
-                    tagName: el.tagName,
-                    className: el.className,
-                    id: el.id
-                }))
-            });
-        }, true);
 
         console.log('App initialization complete');
     } catch (error) {

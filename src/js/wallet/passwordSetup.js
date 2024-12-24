@@ -74,13 +74,6 @@ export function setupPasswordValidation(onSuccess) {
         }
         
         try {
-            // Generate secure mnemonic if not importing
-            if (!sessionStorage.getItem('temp_mnemonic')) {
-                const mnemonic = await generateSecureMnemonic();
-                console.log('Generated secure mnemonic');
-                sessionStorage.setItem('temp_mnemonic', mnemonic);
-            }
-            
             // Store password temporarily
             sessionStorage.setItem('temp_password', password);
             console.log('Stored password in session storage');

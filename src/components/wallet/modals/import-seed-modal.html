@@ -5,24 +5,81 @@
             0% { 
                 background-color: rgba(20, 241, 149, 0.2);
                 border-color: rgba(20, 241, 149, 1);
-                box-shadow: 0 0 20px rgba(20, 241, 149, 0.4);
+                box-shadow: 0 0 20px rgba(20, 241, 149, 0.4),
+                           inset 0 0 10px rgba(20, 241, 149, 0.4);
+                transform: scale(1.02);
             }
             50% {
                 background-color: rgba(20, 241, 149, 0.1);
                 border-color: rgba(20, 241, 149, 0.8);
-                box-shadow: 0 0 15px rgba(20, 241, 149, 0.3);
+                box-shadow: 0 0 15px rgba(20, 241, 149, 0.3),
+                           inset 0 0 7px rgba(20, 241, 149, 0.3);
+                transform: scale(1.01);
             }
             100% { 
-                background-color: transparent;
+                background-color: rgba(20, 241, 149, 0.05);
                 border-color: rgba(20, 241, 149, 0.3);
-                box-shadow: 0 0 10px rgba(20, 241, 149, 0.1);
+                box-shadow: 0 0 10px rgba(20, 241, 149, 0.2),
+                           inset 0 0 5px rgba(20, 241, 149, 0.2);
+                transform: scale(1);
             }
         }
         .animate-fill {
-            animation: fillAnimation 0.8s ease-out;
+            animation: fillAnimation 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .seed-word::placeholder {
             color: rgba(20, 241, 149, 0.3);
+        }
+        .seed-word {
+            caret-color: #14F195;
+        }
+        .seed-word:focus {
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        .seed-word.invalid {
+            border-color: rgba(255, 59, 48, 0.5) !important;
+            background-color: rgba(255, 59, 48, 0.1) !important;
+            color: rgba(255, 59, 48, 1) !important;
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px #14F195,
+                           0 0 10px #14F195,
+                           0 0 15px #14F195;
+            }
+            to {
+                box-shadow: 0 0 10px #14F195,
+                           0 0 20px #14F195,
+                           0 0 30px #14F195;
+            }
+        }
+
+        /* Success feedback for paste button */
+        #pasteFromClipboard.success {
+            background-color: rgba(20, 241, 149, 0.1);
+            border-color: rgba(20, 241, 149, 0.4);
+            color: rgba(20, 241, 149, 1);
+            transform: scale(1.02);
+            transition: all 0.3s ease;
+        }
+        #pasteFromClipboard.success::after {
+            content: '✓';
+            position: absolute;
+            right: 1rem;
+            opacity: 1;
+            animation: fadeOut 2s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
         }
     </style>
 
@@ -63,14 +120,15 @@
                     <!-- Paste Button -->
                     <button type="button" 
                             id="pasteFromClipboard"
-                            class="w-full py-3 px-4 rounded-xl text-[#14F195] font-medium 
-                                   bg-[#14F195]/5 border border-[#14F195]/20
-                                   hover:bg-[#14F195]/10 hover:border-[#14F195]/30
-                                   focus:bg-[#14F195]/15 focus:border-[#14F195]/40
+                            data-tooltip="Click to paste your seed phrase from clipboard"
+                            class="w-full py-3 px-4 rounded-xl text-[#14F195]/60 font-medium 
+                                   bg-[#14F195]/5 border border-[#14F195]/10
+                                   hover:bg-[#14F195]/10 hover:border-[#14F195]/20 hover:text-[#14F195]/80
+                                   focus:bg-[#14F195]/10 focus:border-[#14F195]/30 focus:text-[#14F195]
                                    transition-all duration-300
                                    flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        <svg class="w-5 h-5 opacity-60 group-hover:opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
                                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                         </svg>
                         Paste from Clipboard
