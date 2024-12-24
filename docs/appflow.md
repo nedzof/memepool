@@ -8,7 +8,6 @@ graph TD
     E --> F
     F --> G[Access Main Platform]
 
-
 Flow 2: Core Platform Flow
 graph TD
     A[Main Platform] --> B{User Type}
@@ -43,4 +42,3 @@ graph TD
     F --> G[Block Found]
     G --> H[Distribute Rewards]
     H --> A
-
