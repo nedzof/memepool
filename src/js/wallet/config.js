@@ -53,6 +53,27 @@ async function initOKXWallet() {
     }
 }
 
+// Initialize Phantom wallet interface
+async function initPhantomWallet() {
+    if (!window.phantom?.solana) throw new Error('Phantom wallet not found');
+
+    try {
+        const resp = await window.phantom.solana.connect();
+        const address = resp.publicKey.toString();
+        if (!address) throw new Error('No address found');
+        
+        return {
+            type: 'phantom',
+            getAddress: () => address,
+            getPublicKey: () => address,
+            getBalance: () => getBalance(address)
+        };
+    } catch (error) {
+        console.error('Error initializing Phantom wallet:', error);
+        throw error;
+    }
+}
+
 // Required wallet interface methods
 const REQUIRED_METHODS = ['getAddress', 'getBalance', 'getPublicKey'];
 
@@ -75,6 +96,16 @@ export const SUPPORTED_WALLETS = {
         initialize: initOKXWallet,
         installUrl: 'https://www.okx.com/web3',
         errorMessage: 'Failed to connect to OKX Wallet',
+        retryAttempts: 3,
+        retryDelay: 1000
+    },
+    phantom: {
+        id: 'phantomWalletBtn',
+        name: 'Phantom',
+        checkAvailability: () => window.phantom?.solana !== undefined,
+        initialize: initPhantomWallet,
+        installUrl: 'https://phantom.app',
+        errorMessage: 'Failed to connect to Phantom Wallet',
         retryAttempts: 3,
         retryDelay: 1000
     }
@@ -140,7 +171,7 @@ export async function initializeWallet(walletType) {
 export function disconnectWallet() {
     // Clear session storage
     sessionStorage.removeItem('temp_mnemonic');
-    localStorage.removeItem('memepire_wallet_session');
+    localStorage.removeItem('memepool_wallet_session');
 
     // Clear global wallet instance
     if (window.wallet?.disconnect) {

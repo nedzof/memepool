@@ -1,4 +1,4 @@
-import { bsv } from '../bsv.js';
+import { publicKeyToLegacyAddress } from './bitcoin.js';
 import { logError, logSecurityEvent } from '../errors.js';
 import { terminateSession } from './auth/session.js';
 import { validateMnemonic } from './mnemonic.js';
@@ -8,31 +8,11 @@ import { fetchBalanceFromWhatsOnChain } from './bitcoin.js';
 // Re-export for backward compatibility
 export { validateMnemonic };
 
-// Derive public key from private key
-function derivePublicKey(privateKey) {
-    try {
-        const bsvPrivateKey = bsv.PrivateKey.fromWIF(privateKey);
-        const publicKey = bsvPrivateKey.toPublicKey();
-        return publicKey.toString('hex');
-    } catch (error) {
-        console.error('Error deriving public key:', error);
-        throw new Error('Failed to derive public key from private key');
-    }
-}
-
-// Convert public key to legacy address
-function publicKeyToLegacyAddress(publicKey) {
-    try {
-        const pubKey = bsv.PublicKey.fromString(publicKey);
-        return pubKey.toAddress().toString();
-    } catch (error) {
-        console.error('Error converting public key to address:', error);
-        throw new Error('Failed to convert public key to legacy address');
-    }
-}
+// Valid connection types
+const VALID_CONNECTION_TYPES = ['okx', 'unisat', 'phantom', 'yours', 'manual', 'imported'];
 
 // Common public key validation logic
-async function validatePublicKey(publicKey) {
+export async function validatePublicKey(publicKey) {
     try {
         // Validate legacy address derivation
         const legacyAddress = publicKeyToLegacyAddress(publicKey);
@@ -81,8 +61,7 @@ export function validateWalletProperties(wallet) {
         }
 
         // Validate connection type
-        const validTypes = ['okx', 'unisat', 'yours', 'manual', 'imported'];
-        if (!validTypes.includes(wallet.connectionType)) {
+        if (!VALID_CONNECTION_TYPES.includes(wallet.connectionType)) {
             throw new Error('Invalid connection type');
         }
 

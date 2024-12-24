@@ -1,10 +1,18 @@
 import { showModal, hideModal, showError } from '../../modal.js';
-import { validateMnemonic } from '../mnemonic.js';
+import { validateMnemonic, validateMnemonicRandomness } from '../mnemonic.js';
 import { setupPasswordValidation } from '../passwordSetup.js';
 import { BitcoinWallet } from '../bitcoin.js';
+import { validateWalletProperties, validatePublicKey } from '../validation.js';
+
+let isInitialized = false;
 
 // Initialize import seed functionality
 export function initializeImportSeed() {
+    if (isInitialized) {
+        console.log('Import seed already initialized, skipping...');
+        return;
+    }
+    
     console.log('Initializing import seed...');
     
     // Initialize modal navigation
@@ -15,6 +23,29 @@ export function initializeImportSeed() {
     
     // Setup form submission
     setupFormSubmission();
+
+    // Mark as initialized
+    isInitialized = true;
+
+    // Add cleanup when modal is closed
+    const modal = document.getElementById('importSeedModal');
+    if (modal) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    // Check if modal is being hidden
+                    if (modal.style.display === 'none') {
+                        clearSeedInputs();
+                        clearImportData();
+                        isInitialized = false;
+                        observer.disconnect();
+                    }
+                }
+            });
+        });
+        
+        observer.observe(modal, { attributes: true });
+    }
 }
 
 // Initialize modal navigation
@@ -37,37 +68,101 @@ function createSeedPhraseGrid() {
             <div class="relative group">
                 <span class="absolute top-2 left-2 text-xs text-[#14F195] font-medium z-20">${i + 1}</span>
                 <input type="text" 
-                       class="seed-word w-full bg-black/20 backdrop-blur-sm rounded-xl p-3 pl-7 text-white font-medium relative z-10 
+                       class="seed-word w-full bg-transparent rounded-xl p-3 pl-7 text-[#14F195] font-medium relative z-10 
                               border border-[#14F195]/20 outline-none
                               transition-all duration-300
                               placeholder-[#14F195]/20
                               shadow-[0_0_10px_rgba(20,241,149,0.05)]
                               hover:border-[#14F195]/40 hover:bg-[#14F195]/5
                               hover:shadow-[0_0_15px_rgba(20,241,149,0.15)]
-                              focus:border-[#14F195]/60 focus:bg-[#14F195]/10
-                              focus:shadow-[0_0_20px_rgba(20,241,149,0.2)]"
-                       placeholder="word ${i + 1}"
+                              focus:border-[#14F195] focus:bg-[#14F195]/10
+                              focus:shadow-[0_0_20px_rgba(20,241,149,0.3)]"
+                       placeholder="Enter word ${i + 1}"
+                       autocomplete="off"
+                       spellcheck="false"
                        tabindex="${i + 1}">
                 <div class="absolute inset-0 rounded-xl bg-gradient-to-b from-[#14F195]/5 to-transparent opacity-0 
                            group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                <div class="absolute inset-0 rounded-xl bg-[#14F195]/5 opacity-0 group-hover:opacity-100 
+                           blur-xl transition-all duration-300 pointer-events-none"></div>
             </div>
         `).join('');
 
         // Add input event listeners
         const inputs = seedPhraseInputs.querySelectorAll('input');
         inputs.forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                if (e.target.value.includes(' ')) {
-                    e.target.value = e.target.value.replace(/\s+/g, '');
+            // Handle paste event
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedText = e.clipboardData.getData('text');
+                if (pastedText) {
+                    // Clean up the text: remove numbers, newlines, and extra spaces
+                    const cleanedText = pastedText
+                        .replace(/\d+\.?\s*/g, '') // Remove numbers with or without dots
+                        .replace(/[\n\r\t,]+/g, ' ') // Replace newlines and tabs with spaces
+                        .toLowerCase()
+                        .trim()
+                        .split(/\s+/)
+                        .filter(word => word.length > 0);
+
+                    // Fill in the inputs starting from the current input
+                    cleanedText.forEach((word, wordIndex) => {
+                        const targetIndex = index + wordIndex;
+                        if (targetIndex < inputs.length) {
+                            inputs[targetIndex].value = word;
+                            inputs[targetIndex].classList.add('animate-fill');
+                            setTimeout(() => inputs[targetIndex].classList.remove('animate-fill'), 800);
+                        }
+                    });
+
+                    // Focus the next empty input or the last one
+                    const nextEmptyInput = Array.from(inputs).find((input, i) => i > index && !input.value) || inputs[11];
+                    nextEmptyInput.focus();
                 }
-                if (e.target.value && index < inputs.length - 1) {
-                    inputs[index + 1].focus();
+            });
+
+            // Handle regular input
+            input.addEventListener('input', (e) => {
+                // Move to next input if space or comma is typed
+                if (e.target.value.includes(' ') || e.target.value.includes(',')) {
+                    const words = e.target.value
+                        .toLowerCase()
+                        .replace(/[,]+/g, ' ')
+                        .trim()
+                        .split(/\s+/)
+                        .filter(word => word.length > 0);
+                    
+                    if (words.length > 0) {
+                        e.target.value = words[0];
+                        
+                        // Fill subsequent inputs if there are more words
+                        words.slice(1).forEach((word, wordIndex) => {
+                            const targetIndex = index + wordIndex + 1;
+                            if (targetIndex < inputs.length) {
+                                inputs[targetIndex].value = word;
+                                inputs[targetIndex].classList.add('animate-fill');
+                                setTimeout(() => inputs[targetIndex].classList.remove('animate-fill'), 800);
+                            }
+                        });
+                    }
+
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                }
+                
+                // Add animation when word is entered
+                if (e.target.value) {
+                    e.target.classList.add('animate-fill');
+                    setTimeout(() => e.target.classList.remove('animate-fill'), 800);
                 }
             });
 
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !e.target.value && index > 0) {
                     inputs[index - 1].focus();
+                } else if (e.key === 'Enter' && e.target.value && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
                 }
             });
         });
@@ -97,18 +192,10 @@ function createSeedPhraseGrid() {
                         // Split text into words, handling multiple formats
                         let words = text
                             .toLowerCase()
-                            .replace(/[\n\r\t,]+/g, ' ') // Replace newlines, tabs, commas with spaces
+                            .replace(/[\n\r\t,]+/g, ' ')
                             .trim()
                             .split(/\s+/)
                             .filter(word => word.length > 0);
-
-                        // If we got exactly one word, try to split it into 12 parts
-                        if (words.length === 1 && words[0].length >= 24) {
-                            words = words[0].match(/.{1,8}/g) || [];
-                        }
-
-                        // Take first 12 words
-                        words = words.slice(0, 12);
 
                         // Fill in the inputs
                         inputs.forEach((input, index) => {
@@ -116,6 +203,8 @@ function createSeedPhraseGrid() {
                                 input.value = words[index];
                                 input.classList.add('animate-fill');
                                 setTimeout(() => input.classList.remove('animate-fill'), 800);
+                            } else {
+                                input.value = '';
                             }
                         });
 
@@ -150,11 +239,14 @@ function setupFormSubmission() {
                 .join(' ');
 
             try {
-                // Validate seed phrase
+                // Initial seed phrase validation
                 const isValid = await validateMnemonic(seedPhrase);
                 if (!isValid) {
                     throw new Error('Invalid seed phrase');
                 }
+
+                // Additional security checks for randomness
+                await validateMnemonicRandomness(seedPhrase);
 
                 // Store seed phrase temporarily
                 sessionStorage.setItem('temp_mnemonic', seedPhrase);
@@ -168,16 +260,56 @@ function setupFormSubmission() {
 
                 const walletDetails = await tempWallet.generateNewWallet(password, seedPhrase);
 
-                // Store wallet details for confirmation
+                // Validate wallet properties
+                await validateWalletProperties({
+                    publicKey: walletDetails.publicKey,
+                    legacyAddress: walletDetails.address,
+                    connectionType: 'imported',
+                    balance: walletDetails.balance
+                });
+
+                // Validate public key
+                await validatePublicKey(walletDetails.publicKey);
+
+                // Store wallet details for later use
                 sessionStorage.setItem('temp_wallet_details', JSON.stringify({
                     address: walletDetails.address,
                     publicKey: walletDetails.publicKey,
                     balance: walletDetails.balance
                 }));
 
-                // Show confirmation modal
+                // Hide import modal and show success animation
                 hideModal('importSeedModal');
-                showImportConfirmation();
+                showModal('walletCreatedModal');
+
+                // Update success modal text
+                const title = document.querySelector('#walletCreatedModal .modal-title');
+                const message = document.querySelector('#walletCreatedModal .text-white\\/80');
+                
+                if (title) title.innerHTML = 'Validating Wallet...<br><br><br>';
+                if (message) message.textContent = 'Please wait while we validate your wallet';
+                
+                // Add continue button after all validations are complete
+                const modalBody = document.querySelector('#walletCreatedModal .modal-body');
+                if (modalBody) {
+                    const continueBtn = document.createElement('button');
+                    continueBtn.id = 'continueToWalletBtn';
+                    continueBtn.className = 'w-full py-3 px-4 rounded-xl bg-[#00ffa3] text-black font-bold ' +
+                                          'hover:bg-[#00ffa3]/90 transition-all';
+                    continueBtn.textContent = 'Continue to Wallet';
+                    
+                    continueBtn.addEventListener('click', () => {
+                        hideModal('walletCreatedModal');
+                        showMainWallet();
+                    });
+                    
+                    modalBody.appendChild(continueBtn);
+
+                    // Update success message
+                    if (title) title.innerHTML = 'Wallet Ready!<br><br><br>';
+                    if (message) message.textContent = 'Your wallet has been imported successfully';
+                }
+
             } catch (error) {
                 console.error('Error in import seed:', error);
                 const errorDiv = document.getElementById('seedPhraseError');
@@ -185,79 +317,6 @@ function setupFormSubmission() {
                     errorDiv.textContent = error.message;
                     errorDiv.classList.remove('hidden');
                 }
-            }
-        });
-    }
-}
-
-// Show import confirmation
-function showImportConfirmation() {
-    try {
-        const walletDetails = JSON.parse(sessionStorage.getItem('temp_wallet_details'));
-        if (!walletDetails) {
-            throw new Error('Wallet details not found');
-        }
-
-        // Update confirmation modal with wallet details
-        document.getElementById('walletAddress').textContent = walletDetails.address;
-        document.getElementById('publicKey').textContent = walletDetails.publicKey;
-        document.getElementById('walletBalance').textContent = `${walletDetails.balance} BTC`;
-
-        // Setup confirmation buttons
-        setupConfirmationButtons();
-
-        // Show confirmation modal
-        showModal('importSeedConfirmationModal');
-    } catch (error) {
-        console.error('Error showing confirmation:', error);
-        showError(error.message);
-    }
-}
-
-// Setup confirmation buttons
-function setupConfirmationButtons() {
-    const cancelButton = document.getElementById('cancelImport');
-    const confirmButton = document.getElementById('confirmImport');
-
-    if (cancelButton) {
-        cancelButton.addEventListener('click', () => {
-            clearImportData();
-            hideModal('importSeedConfirmationModal');
-            showModal('walletSelectionModal');
-        });
-    }
-
-    if (confirmButton) {
-        confirmButton.addEventListener('click', async () => {
-            try {
-                const mnemonic = sessionStorage.getItem('temp_mnemonic');
-                const password = sessionStorage.getItem('temp_password');
-
-                if (!mnemonic || !password) {
-                    throw new Error('Missing required data for import');
-                }
-
-                // Create final wallet instance
-                const wallet = new BitcoinWallet();
-                const result = await wallet.generateNewWallet(password, mnemonic);
-
-                if (!result || !result.publicKey) {
-                    throw new Error('Failed to import wallet');
-                }
-
-                // Clear temporary data
-                clearImportData();
-
-                // Show success modal and redirect to main wallet
-                hideModal('importSeedConfirmationModal');
-                showModal('successAnimationModal');
-                setTimeout(() => {
-                    hideModal('successAnimationModal');
-                    showModal('mainWalletModal');
-                }, 2000);
-            } catch (error) {
-                console.error('Error confirming import:', error);
-                showError(error.message);
             }
         });
     }
@@ -278,4 +337,4 @@ function clearSeedInputs() {
     if (errorDiv) {
         errorDiv.classList.add('hidden');
     }
-} 
+}
