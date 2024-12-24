@@ -107,41 +107,23 @@ export function initializeSeedPhraseModal() {
                     throw new Error('Failed to generate wallet properly');
                 }
 
-                // Log all properties that will be validated
-                console.log('Wallet properties for validation:', {
-                    publicKey: wallet.publicKey,
-                    legacyAddress: wallet.getLegacyAddress(),
-                    connectionType: wallet.getConnectionType(),
-                    balance: wallet.balance
-                });
-
-                // Create session
-                const sessionData = {
-                    loginType: 'manual',
-                    publicKey: result.publicKey.startsWith('0x') ? result.publicKey : `0x${result.publicKey}`,
-                    balance: result.balance,
-                    address: result.address
-                };
-                console.log('Creating session with data:', sessionData);
-                const sessionId = createSession(sessionData);
-                console.log('Created session:', { sessionId });
-
-                // Store wallet instance globally
-                window.wallet = wallet;
-                console.log('Stored wallet instance globally:', window.wallet);
-
-                // Hide seed phrase modal and show success modal
-                console.log('Hiding seed phrase modal and showing success modal');
+                // Hide current modal and show success animation
                 hideModal('seedPhraseModal');
                 showModal('walletCreatedModal');
 
-                // After success modal, show main wallet
+                // After a short delay, hide success animation and show main wallet
                 setTimeout(() => {
                     hideModal('walletCreatedModal');
-                    showMainWallet();
-                }, 3500); // Show success modal for 3.5 seconds before proceeding
+                    showMainWallet(); // This function should show the main wallet menu
+                }, 2000); // 2 second delay for the success animation
+
+                // Clean up session storage
+                sessionStorage.removeItem('temp_mnemonic');
+                sessionStorage.removeItem('temp_password');
+                sessionStorage.removeItem('wallet_flow');
+
             } catch (error) {
-                console.error('Error in wallet setup:', error);
+                console.error('Error in continue handler:', error);
                 showError(error.message);
             }
         };

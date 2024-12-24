@@ -133,12 +133,13 @@ export function showCreateWalletModal() {
     hideModal('walletSelectionModal');
     showModal('passwordSetupModal');
     
-    // Setup password validation first, then generate mnemonic
+    // Setup password validation for create flow
     setupPasswordValidation(async () => {
         // Generate new mnemonic after password is set
         const mnemonic = await generateSecureMnemonic();
         console.log('Generated secure mnemonic');
         sessionStorage.setItem('temp_mnemonic', mnemonic);
+        sessionStorage.setItem('wallet_flow', 'create'); // Mark this as create flow
         
         // Display the seed phrase
         displaySeedPhrase(mnemonic);
@@ -162,9 +163,10 @@ window.handleImportWalletClick = function() {
     hideModal('walletSelectionModal');
     showModal('passwordSetupModal');
     
-    // Setup password validation with callback to show import seed only
+    // Setup password validation for import flow
     setupPasswordValidation(() => {
         console.log('Password setup complete, showing import seed modal...');
+        sessionStorage.setItem('wallet_flow', 'import'); // Mark this as import flow
         showModal('importSeedModal');
         initializeImportSeed();
     });

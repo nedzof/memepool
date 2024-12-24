@@ -421,11 +421,16 @@ function setupFormSubmission() {
                 if (title) title.innerHTML = 'Wallet Imported Successfully<br><br><br>';
                 if (message) message.textContent = 'Returning to main menu...';
 
-                // Wait for a short delay then return to main menu
+                // After a short delay, hide success animation and show main wallet
                 setTimeout(() => {
                     hideModal('walletCreatedModal');
-                    showModal('walletSelectionModal');
-                }, 2000);
+                    showMainWallet(); // This function should show the main wallet menu
+                }, 2000); // 2 second delay for the success animation
+
+                // Clean up session storage
+                sessionStorage.removeItem('temp_mnemonic');
+                sessionStorage.removeItem('temp_password');
+                sessionStorage.removeItem('wallet_flow');
 
             } catch (error) {
                 console.error('Error in import seed:', error);
