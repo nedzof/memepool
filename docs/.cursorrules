@@ -1,72 +1,87 @@
-# Memepire Platform Rules
+Memepire Platform Development Guidelines
 
-## Code Style & Standards
-- Use Prettier for code formatting
-- Follow ESLint configuration
-- Use TypeScript for type safety
-- Follow component naming conventions
+Core Development Principles
+- Write clean, maintainable, and self-documenting code
+- Follow DRY (Don't Repeat Yourself) principle
+- Implement SOLID principles in object-oriented design
+- Create modular, reusable components and functions
+- Prioritize code readability and maintainability
 
-## Git Workflow
-- Feature branches from develop
-- PR reviews required
-- Squash merges
-- Semantic versioning
+Technical Standards
+1. Code Quality
+   - TypeScript for type safety
+   - ESLint for code linting
+   - Prettier for consistent formatting
+   - Strict typing with interfaces and type definitions
+   - Comprehensive error handling and logging
 
-## Testing Requirements
-- Unit tests for utilities
-- Integration tests for components
-- E2E tests for critical flows
+2. Architecture & Design
+   - Component-based architecture
+   - Clear separation of concerns
+   - Dependency injection where appropriate
+   - Proper state management
+   - Scalable and maintainable design patterns
 
-• Review and leverage existing codebase before writing new code
-• Follow DRY (Don't Repeat Yourself) principle - reuse code instead of duplicating
-• Ensure proper imports/exports and module connectivity
-• Implement proper error handling and logging
-• Use consistent naming conventions across the project
-• Write clear documentation and comments
-• Create reusable components, functions, and modules
-• Follow SOLID principles in object-oriented design
-• Include input validation for all user inputs
-• Implement proper security measures and data sanitization
-• Add comprehensive unit tests and integration tests
-• Optimize code performance and memory usage
-• Use type definitions and interfaces for type safety
-• Follow project's established folder structure
-• Implement proper state management
-• Create clear API contracts and documentation
-• Handle edge cases and failure scenarios
-• Use dependency injection where appropriate
-• Implement proper authentication and authorization
-• Add monitoring and debugging capabilities
-• Follow version control best practices
-• Create modular and maintainable code
-• Implement caching strategies where beneficial
-• Use design patterns appropriately
-• Consider scalability in architectural decisions
-• Follow database best practices and optimization
-• Implement proper backup and recovery mechanisms
-• Use environment variables for configuration
-• Follow security best practices and prevent vulnerabilities
-• Create clear API endpoints with proper documentation
-• Implement proper data validation and sanitization
-• Use async/await patterns where appropriate
-• Implement proper memory management
-• Follow responsive design principles for UI
-• Create clear separation of concerns
-• Use proper git branching strategy
-• Implement continuous integration practices
-• Follow code review guidelines
-• Create clear deployment documentation
-• Use proper package management
-• Keep dependencies updated and secure
-• Implement proper logging strategy
-• Create clear error messages and user feedback
-• Follow accessibility guidelines
-• Implement proper data migration strategies
-• Use proper environment configuration
-• Follow coding style guidelines
-• Implement proper testing strategy
-• Create proper build and deployment scripts
-• Use proper versioning for APIs
-• Implement proper database indexing
-• Follow RESTful principles for APIs
-• Create proper backup strategies
+3. Security & Performance
+   - Input validation and data sanitization
+   - Authentication and authorization implementation
+   - Security best practices and vulnerability prevention
+   - Performance optimization
+   - Caching strategies
+   - Memory management
+
+4. Testing Strategy
+   - Unit tests for utilities and functions
+   - Integration tests for components
+   - E2E tests for critical user flows
+   - Test coverage requirements
+   - Automated testing in CI pipeline
+
+5. Version Control & Deployment
+   - Feature branch workflow
+   - Pull request reviews required
+   - Semantic versioning
+   - Continuous integration practices
+   - Environment-specific configurations
+   - Automated deployment pipelines
+
+6. Documentation Requirements
+   - Code comments for complex logic
+   - API documentation with examples
+   - Component documentation
+   - Setup and deployment guides
+   - Architecture diagrams
+   - Database schemas
+
+7. Database & API Design
+   - RESTful API principles
+   - Proper database indexing
+   - Data migration strategies
+   - Backup and recovery procedures
+   - API versioning
+   - Clear API contracts
+
+8. Frontend Development
+   - Responsive design principles
+   - Accessibility compliance (WCAG)
+   - Component reusability
+   - UI/UX consistency
+   - Performance optimization
+
+9. Monitoring & Maintenance
+   - Logging strategy
+   - Error tracking
+   - Performance monitoring
+   - Dependency management
+   - Security updates
+   - Regular code audits
+
+Best Practices for AI-Assisted Development
+- Provide clear context and requirements
+- Include relevant code snippets and examples
+- Specify architectural constraints
+- Reference existing patterns in the codebase
+- Define expected inputs and outputs
+- Mention error handling requirements
+- Include performance expectations
+- Specify testing requirements
