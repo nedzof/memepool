@@ -1,0 +1,72 @@
+# Memepire Platform Rules
+
+## Code Style & Standards
+- Use Prettier for code formatting
+- Follow ESLint configuration
+- Use TypeScript for type safety
+- Follow component naming conventions
+
+## Git Workflow
+- Feature branches from develop
+- PR reviews required
+- Squash merges
+- Semantic versioning
+
+## Testing Requirements
+- Unit tests for utilities
+- Integration tests for components
+- E2E tests for critical flows
+
+• Review and leverage existing codebase before writing new code
+• Follow DRY (Don't Repeat Yourself) principle - reuse code instead of duplicating
+• Ensure proper imports/exports and module connectivity
+• Implement proper error handling and logging
+• Use consistent naming conventions across the project
+• Write clear documentation and comments
+• Create reusable components, functions, and modules
+• Follow SOLID principles in object-oriented design
+• Include input validation for all user inputs
+• Implement proper security measures and data sanitization
+• Add comprehensive unit tests and integration tests
+• Optimize code performance and memory usage
+• Use type definitions and interfaces for type safety
+• Follow project's established folder structure
+• Implement proper state management
+• Create clear API contracts and documentation
+• Handle edge cases and failure scenarios
+• Use dependency injection where appropriate
+• Implement proper authentication and authorization
+• Add monitoring and debugging capabilities
+• Follow version control best practices
+• Create modular and maintainable code
+• Implement caching strategies where beneficial
+• Use design patterns appropriately
+• Consider scalability in architectural decisions
+• Follow database best practices and optimization
+• Implement proper backup and recovery mechanisms
+• Use environment variables for configuration
+• Follow security best practices and prevent vulnerabilities
+• Create clear API endpoints with proper documentation
+• Implement proper data validation and sanitization
+• Use async/await patterns where appropriate
+• Implement proper memory management
+• Follow responsive design principles for UI
+• Create clear separation of concerns
+• Use proper git branching strategy
+• Implement continuous integration practices
+• Follow code review guidelines
+• Create clear deployment documentation
+• Use proper package management
+• Keep dependencies updated and secure
+• Implement proper logging strategy
+• Create clear error messages and user feedback
+• Follow accessibility guidelines
+• Implement proper data migration strategies
+• Use proper environment configuration
+• Follow coding style guidelines
+• Implement proper testing strategy
+• Create proper build and deployment scripts
+• Use proper versioning for APIs
+• Implement proper database indexing
+• Follow RESTful principles for APIs
+• Create proper backup strategies
