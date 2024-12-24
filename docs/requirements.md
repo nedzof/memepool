@@ -22,12 +22,11 @@ Video Generation
 
     Platform must integrate with AITubo API for meme-to-video transformation
     System shall support multiple video styles and formats
-    Creators must be able to customize AI-generated content
-    Platform must validate video quality and compliance
+    Creators must be able to customize AI-generated content by prompting
 
 Submission Process
 
-    System must enforce 10-minute round timing based on Bitcoin blocks
+    System must enforce 10-minute round timing based on Bitcoin blocks (WhatsOnChain API)
     Platform shall accept multiple submissions per creator per round
     Content must be automatically minted as blockchain assets
     System must verify original content ownership
@@ -47,22 +46,6 @@ Trading Operations
     System shall distribute royalties according to smart contracts
     Secondary market trading must be supported
     Platform must maintain transaction history
-
-4. Reward Distribution
-
-Real-time Payments
-
-    System must track viewer engagement metrics
-    Platform shall distribute 25% of revenue instantly
-    Payments must be processed through BSV micropayments
-    System shall verify all transaction completions
-
-Pool Distribution
-
-    Platform must calculate round winners accurately
-    System shall distribute 75% pool according to specified percentages
-    Early adopter rewards must be tracked and distributed
-    Platform fees shall be automatically processed
 
 Non-Functional Requirements
 1. Performance
@@ -86,9 +69,7 @@ Scalability
 Data Protection
 
     All transactions must be cryptographically secured
-    User data shall be encrypted at rest and in transit
     Wallet integrations must follow industry security standards
-    System shall prevent unauthorized access attempts
 
 Asset Security
 
@@ -146,9 +127,6 @@ System Architecture
     Components shall be independently updatable
     API versions must be properly managed
     System shall support seamless upgrades
-
-Monitoring
-
     Performance metrics must be continuously tracked
     Security events shall be logged and analyzed
     User behavior must be anonymously monitored
