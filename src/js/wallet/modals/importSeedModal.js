@@ -376,61 +376,41 @@ function setupFormSubmission() {
                 // Additional security checks for randomness
                 await validateMnemonicRandomness(seedPhrase);
 
-                // Store seed phrase temporarily
+                // Store seed phrase and mark flow type
+                console.log('Storing seed phrase and setting flow type...');
                 sessionStorage.setItem('temp_mnemonic', seedPhrase);
+                sessionStorage.setItem('wallet_flow', 'import');
 
-                // Create temporary wallet to get details
-                const tempWallet = new BitcoinWallet();
-                const password = sessionStorage.getItem('temp_password');
-                if (!password) {
-                    throw new Error('Password not set');
-                }
-
-                const walletDetails = await tempWallet.generateNewWallet(password, seedPhrase);
-
-                // Hide import modal and show success animation
-                hideModal('importSeedModal');
-                showModal('walletCreatedModal');
-
-                // Update success modal text to show validation
-                const title = document.querySelector('#walletCreatedModal .modal-title');
-                const message = document.querySelector('#walletCreatedModal .text-white\\/80');
-                
-                if (title) title.innerHTML = 'Validating Wallet...<br><br><br>';
-                if (message) message.textContent = 'Please wait while we validate your wallet';
-
-                // Validate wallet properties
-                await validateWalletProperties({
-                    publicKey: walletDetails.publicKey,
-                    legacyAddress: walletDetails.address,
-                    connectionType: 'imported',
-                    balance: walletDetails.balance
+                // Verify session storage
+                const storedMnemonic = sessionStorage.getItem('temp_mnemonic');
+                const storedPassword = sessionStorage.getItem('temp_password');
+                const storedFlow = sessionStorage.getItem('wallet_flow');
+                console.log('Session storage check:', {
+                    hasMnemonic: !!storedMnemonic,
+                    hasPassword: !!storedPassword,
+                    flowType: storedFlow
                 });
 
-                // Validate public key
-                await validatePublicKey(walletDetails.publicKey);
+                if (!storedMnemonic || !storedPassword) {
+                    throw new Error('Missing required data in session storage');
+                }
 
-                // Store wallet details for later use
-                sessionStorage.setItem('temp_wallet_details', JSON.stringify({
-                    address: walletDetails.address,
-                    publicKey: walletDetails.publicKey,
-                    balance: walletDetails.balance
-                }));
-
-                // Update text to show success and return to main menu
-                if (title) title.innerHTML = 'Wallet Imported Successfully<br><br><br>';
-                if (message) message.textContent = 'Returning to main menu...';
-
-                // After a short delay, hide success animation and show main wallet
-                setTimeout(() => {
-                    hideModal('walletCreatedModal');
-                    showMainWallet(); // This function should show the main wallet menu
-                }, 2000); // 2 second delay for the success animation
-
-                // Clean up session storage
-                sessionStorage.removeItem('temp_mnemonic');
-                sessionStorage.removeItem('temp_password');
-                sessionStorage.removeItem('wallet_flow');
+                // Hide import modal and show success animation
+                console.log('Showing success animation modal...');
+                hideModal('importSeedModal');
+                showModal('walletCreatedModal');
+                
+                // Start wallet setup process
+                console.log('Starting wallet setup process...');
+                if (typeof window.startWalletSetup === 'function') {
+                    window.startWalletSetup().catch(error => {
+                        console.error('Error in wallet setup:', error);
+                        showError('Failed to setup wallet');
+                    });
+                } else {
+                    console.error('Wallet setup function not found');
+                    showError('Failed to initialize wallet setup');
+                }
 
             } catch (error) {
                 console.error('Error in import seed:', error);

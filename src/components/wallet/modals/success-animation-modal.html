@@ -18,17 +18,124 @@
             </div>
 
             <!-- Message -->
-            <p class="text-white/80 mb-8">Please wait while we set up your wallet</p>
+            <p class="text-white/80 mb-8" id="validationMessage">Please wait while we set up your wallet</p>
         </div>
     </div>
 </div>
 
 <script type="module">
-    import { showModal, hideModal } from '../../../js/modal.js';
+    import { showModal, hideModal, showError } from '../../../js/modal.js';
     import { showMainWallet } from '../../../js/walletUI.js';
+    import { BitcoinWallet } from '../../../js/wallet/bitcoin.js';
+    import { createSession } from '../../../js/wallet/auth/session.js';
+    import { validateWalletProperties, validatePublicKey } from '../../../js/wallet/validation.js';
+    import { setupMainWalletEvents } from '../../../js/wallet/walletEvents.js';
+    import { updateWalletUI } from '../../../js/wallet/walletUIManager.js';
 
+    let isProcessing = false;
+
+    async function processWalletSetup() {
+        if (isProcessing) {
+            console.log('Setup already in progress, skipping...');
+            return;
+        }
+
+        isProcessing = true;
+        const message = document.getElementById('validationMessage');
+        console.log('Starting wallet setup process...');
+
+        try {
+            // Get stored data
+            const mnemonic = sessionStorage.getItem('temp_mnemonic');
+            const password = sessionStorage.getItem('temp_password');
+            
+            console.log('Session storage check:', {
+                hasMnemonic: !!mnemonic,
+                hasPassword: !!password
+            });
+            
+            if (!mnemonic || !password) {
+                throw new Error('Missing wallet data');
+            }
+
+            // Create wallet instance
+            if (message) message.textContent = 'Creating wallet...';
+            const wallet = new BitcoinWallet();
+            console.log('Creating wallet instance...');
+            const result = await wallet.generateNewWallet(password, mnemonic);
+
+            if (!result || !result.publicKey) {
+                throw new Error('Failed to generate wallet');
+            }
+
+            // Create session
+            if (message) message.textContent = 'Creating session...';
+            const sessionData = {
+                loginType: 'manual',
+                publicKey: result.publicKey.startsWith('0x') ? result.publicKey : `0x${result.publicKey}`,
+                balance: result.balance,
+                address: result.address
+            };
+
+            // Store wallet instance globally
+            window.wallet = wallet;
+            console.log('Wallet instance stored globally');
+
+            // Create session
+            const sessionId = createSession(sessionData);
+            console.log('Session created:', sessionId);
+
+            if (message) message.textContent = 'Finalizing setup...';
+            
+            // Hide current modal
+            hideModal('walletCreatedModal');
+            
+            // Update wallet UI with the new wallet data
+            console.log('Updating wallet UI...');
+            await updateWalletUI(result.balance);
+            
+            // Setup main wallet events
+            console.log('Setting up main wallet events...');
+            setupMainWalletEvents();
+            
+            // Show main wallet modal
+            console.log('Showing main wallet modal...');
+            showModal('mainWalletModal');
+            
+            // Clean up session storage
+            console.log('Cleaning up session storage...');
+            sessionStorage.removeItem('temp_mnemonic');
+            sessionStorage.removeItem('temp_password');
+            sessionStorage.removeItem('wallet_flow');
+            
+            console.log('Wallet setup complete');
+
+        } catch (error) {
+            console.error('Error in wallet setup:', error);
+            if (message) message.textContent = 'Error setting up wallet';
+            showError(error.message || 'Failed to setup wallet');
+            
+            // Wait a bit before hiding the modal
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            hideModal('walletCreatedModal');
+            showModal('walletSelectionModal');
+        } finally {
+            isProcessing = false;
+        }
+    }
+
+    // Export the setup function to the window object
+    window.startWalletSetup = processWalletSetup;
+
+    // Initialize success animation modal
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('Loading modal script loaded');
+        console.log('Success animation modal script loaded');
+        const modal = document.getElementById('walletCreatedModal');
+        if (!modal) {
+            console.error('Success animation modal not found');
+            return;
+        }
+        console.log('Success animation modal initialized');
     });
 </script>
 

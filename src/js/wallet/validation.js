@@ -20,10 +20,13 @@ export async function validatePublicKey(publicKey) {
             throw new Error('Failed to derive legacy address');
         }
         
-        // Confirm balance retrieval
-        const balance = await fetchBalanceFromWhatsOnChain(legacyAddress);
-        if (balance === null) {
-            throw new Error('Failed to retrieve balance');
+        try {
+            // Attempt to retrieve balance but don't fail validation if it fails
+            const balance = await fetchBalanceFromWhatsOnChain(legacyAddress);
+            console.log('Initial balance check:', balance);
+        } catch (error) {
+            // Log the error but continue with validation
+            console.warn('Balance check failed but continuing validation:', error);
         }
         
         return true;

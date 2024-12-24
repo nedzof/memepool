@@ -61,6 +61,11 @@ export class Modal {
         
         // Show modal
         this.modal.style.display = 'block';
+        
+        // Dispatch show event before animation
+        const showEvent = new Event('show', { bubbles: true });
+        this.modal.dispatchEvent(showEvent);
+        
         // Use requestAnimationFrame to ensure display change is applied before adding classes
         requestAnimationFrame(() => {
             this.modal.classList.add('open');

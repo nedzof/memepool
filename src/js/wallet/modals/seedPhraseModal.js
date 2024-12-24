@@ -94,33 +94,9 @@ export function initializeSeedPhraseModal() {
                     throw new Error('Missing mnemonic or password in session storage');
                 }
 
-                // Create wallet instance
-                const wallet = new BitcoinWallet();
-                console.log('Created wallet instance:', wallet);
-
-                // Generate wallet
-                console.log('Calling generateNewWallet');
-                const result = await wallet.generateNewWallet(password, mnemonic);
-                console.log('Wallet generation result:', result);
-
-                if (!result || !result.publicKey) {
-                    throw new Error('Failed to generate wallet properly');
-                }
-
                 // Hide current modal and show success animation
                 hideModal('seedPhraseModal');
                 showModal('walletCreatedModal');
-
-                // After a short delay, hide success animation and show main wallet
-                setTimeout(() => {
-                    hideModal('walletCreatedModal');
-                    showMainWallet(); // This function should show the main wallet menu
-                }, 2000); // 2 second delay for the success animation
-
-                // Clean up session storage
-                sessionStorage.removeItem('temp_mnemonic');
-                sessionStorage.removeItem('temp_password');
-                sessionStorage.removeItem('wallet_flow');
 
             } catch (error) {
                 console.error('Error in continue handler:', error);

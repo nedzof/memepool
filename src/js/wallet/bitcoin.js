@@ -76,11 +76,45 @@ export async function fetchBalanceFromWhatsOnChain(address) {
     try {
         if (!address) return 0;
         
-        const response = await rateLimitedFetch(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`);
-        if (!response.ok) throw new Error('Failed to fetch balance');
+        // Add exponential backoff retry logic
+        const maxRetries = 3;
+        let currentRetry = 0;
+        let lastError = null;
+
+        while (currentRetry < maxRetries) {
+            try {
+                // Add longer delay between retries
+                const delay = Math.min(1000 * Math.pow(2, currentRetry), 5000);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                
+                const response = await rateLimitedFetch(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`);
+                
+                // Handle rate limiting specifically
+                if (response.status === 429) {
+                    throw new Error('Rate limit exceeded');
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.confirmed / 100000000; // Convert satoshis to BSV
+            } catch (error) {
+                console.warn(`Attempt ${currentRetry + 1} failed:`, error);
+                lastError = error;
+                currentRetry++;
+                
+                // If it's not a rate limit error and we got a response, don't retry
+                if (error.message !== 'Rate limit exceeded') {
+                    break;
+                }
+            }
+        }
         
-        const data = await response.json();
-        return data.confirmed / 100000000; // Convert satoshis to BSV
+        // If we exhausted all retries, return 0 but log the error
+        console.error('Failed to fetch balance after retries:', lastError);
+        return 0;
     } catch (error) {
         console.error('Error fetching balance:', error);
         return 0;
@@ -91,7 +125,7 @@ export async function fetchBalanceFromWhatsOnChain(address) {
 export async function checkUsernameAvailability(username) {
     try {
         const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
-        const script = createOpReturnScript(['MEMEPIRE_USERNAME', normalizedUsername]);
+        const script = createOpReturnScript(['MEMEPOOL_USERNAME', normalizedUsername]);
         
         if (!script) {
             throw new Error('Failed to create script');
