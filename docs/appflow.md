@@ -17,7 +17,7 @@
 ### Content Storage
 1. Store original meme (BSV)
 2. Store 3D version (BSV)
-3. Record metadata (MongoDB)
+3. Record metadata (Redis)
 4. Update blockchain records
 
 ## 2. Round Management
@@ -25,7 +25,7 @@
 ### Round Initialization
 1. Sync with Bitcoin block time
 2. Load queued submissions
-3. Initialize voting system
+3. Initialize realtime voting by watching per second through microstransactions
 4. Start engagement tracking
 
 ### Engagement Tracking
@@ -37,7 +37,7 @@
 ### Round Completion
 1. Finalize vote tallies
 2. Calculate rewards
-3. Distribute BSV payments
+3. Distribute BSV pavotingyments
 4. Update leaderboards
 
 ## 3. Wallet Integration

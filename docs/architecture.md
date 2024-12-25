@@ -7,7 +7,8 @@
 - Backend (Node.js)
 - Blockchain (BSV)
 - AI Processing (AITubo)
-- Data Storage (MongoDB/BSV)
+- Data Storage (BSV)
+- MetaData Storage (BSV)
 
 ### Key Features
 - 3D meme transformation
@@ -36,8 +37,6 @@
 
 ### Technology Stack
 - Node.js
-- Express
-- MongoDB
 - Redis Cache
 - WebSocket
 
@@ -80,16 +79,37 @@
 ## 6. Data Management
 
 ### Storage Solutions
-- MongoDB (Core Data)
-- IPFS (Content)
+- Redis(Metadata)
+- BSV (Content)
 - Redis (Cache)
-- S3 (Backups)
 
 ### Data Flow
 - Content Pipeline
 - User Data
 - Analytics
 - Backups
+
+## Data Storage
+
+### Redis (Fast/Temporary)
+- Active sessions & auth tokens
+- Rate limiting
+- Message queues
+- Recent message cache
+- Active user states
+
+### BSV (Permanent)
+- User profiles & public keys
+- All messages & content
+- Transactions & payments
+- Smart contract states
+- Content signatures & proofs
+
+### Storage Principles
+- Use Redis for anything requiring fast access or temporary storage
+- Use BSV for permanent/immutable records
+- Cache frequent BSV data in Redis
+- No additional databases needed for basic functionality
 
 ## 7. Security Architecture
 

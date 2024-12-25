@@ -36,7 +36,7 @@ Memepool is built on a robust technical foundation:
 - **Backend**: Node.js services for content management, round tracking, and blockchain interaction.
 - **Blockchain**: Built on Bitcoin SV (BSV) for scalability, security, and instant microtransactions.
 - **AI**: Integrated with AITubo.ai for fast, high-quality 3D transformations.
-- **Storage**: BSV Storage for decentralized content storage, MongoDB/BSV for metadata management.
+- **Storage**: BSV Storage for decentralized content storage, Redis and BSV for metadata management.
 
 Dive deeper into the technical stack and architecture in the [System Architecture](docs/architecture.md) overview.
 
