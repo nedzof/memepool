@@ -36,24 +36,8 @@ Memepool is built on a robust technical foundation:
 - **Backend**: Node.js services for content management, round tracking, and blockchain interaction.
 - **Blockchain**: Built on Bitcoin SV (BSV) for scalability, security, and instant microtransactions.
 - **AI**: Integrated with AITubo.ai for fast, high-quality 3D transformations.
-- **Storage**: IPFS for decentralized content storage, MongoDB for metadata management.
+- **Storage**: BSV Storage for decentralized content storage, MongoDB/BSV for metadata management.
 
 Dive deeper into the technical stack and architecture in the [System Architecture](docs/architecture.md) overview.
 
-## Roadmap
-
-Memepool is constantly evolving with new features, improvements, and expansions:
-
-- **Phase 1**: Launch of the core platform with basic meme creation, round mechanics, and wallet integration.
-- **Phase 2**: Introduction of advanced creator tools, additional wallets, enhanced analytics, and performance optimizations.
-- **Phase 3**: Scaling of the platform with enhanced AI features, advanced monitoring, system optimizations, and new integrations.
-
 The detailed development plan and phases are outlined in the [Product Design Requirements](docs/pdr.md) document.
-
-## Get Involved
-
-Memepool is open to everyone. Whether you're a creator looking to showcase your skills, a viewer eager to discover the best content, or a developer interested in contributing to the platform's growth, there's a place for you.
-
-Join the revolution and be part of the future of content creation and monetization. The next block is just around the corner.
-
-#MemeEvolution #CreateToEarn #Web3Content
