@@ -37,7 +37,7 @@
 
 ### Technology Stack
 - Node.js
-- Redis Cache
+- Aerospike Cache
 - WebSocket
 
 ### Microservices
@@ -79,9 +79,8 @@
 ## 6. Data Management
 
 ### Storage Solutions
-- Redis(Metadata)
+- Aerospike (Metadata and Caching)
 - BSV (Content)
-- Redis (Cache)
 
 ### Data Flow
 - Content Pipeline
@@ -91,7 +90,7 @@
 
 ## Data Storage
 
-### Redis (Fast/Temporary)
+### Aerospike (Fast/Temporary)
 - Active sessions & auth tokens
 - Rate limiting
 - Message queues
@@ -106,9 +105,9 @@
 - Content signatures & proofs
 
 ### Storage Principles
-- Use Redis for anything requiring fast access or temporary storage
+- Use Aerospike for anything requiring fast access or temporary storage
 - Use BSV for permanent/immutable records
-- Cache frequent BSV data in Redis
+- Cache frequent BSV data in Aerospike
 - No additional databases needed for basic functionality
 
 ## 7. Security Architecture
