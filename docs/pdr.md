@@ -1,14 +1,29 @@
 # Product Design Requirements
 
+## Related Documentation
+- [Architecture Overview](./architecture.md) - For technical architecture
+- [Application Flow](./appflow.md) - For detailed user flows
+- [Frontend Implementation](./frontend.md) - For UI/UX implementation
+- [Backend Implementation](./backend.md) - For service implementation
+- [Technical Specifications](./specifications.md) - For detailed specifications
+- [Wallet Integration](./wallet_integration.md) - For wallet requirements
+- [Round System](./round_system.md) - For round requirements
+- [AITubo Integration](./aitubo_integration.md) - For AI requirements
+- [BSV Integration](./bsv_integration.md) - For blockchain requirements
+- [Error Handling](./error_handling.md) - For error handling requirements
+- [Testing Strategy](./testing_strategy.md) - For testing requirements
+- [API Versioning](./api_versioning.md) - For API requirements
+- [Deployment](./deployment.md) - For deployment requirements
+
 ## 1. Product Overview
-Memepool transforms static memes into 3D animations using AI, synchronized with Bitcoin's blockchain. Creators compete in 10-minute rounds for instant crypto rewards.
+Memepool transforms static memes into 3D animations using AI, synchronized with Bitcoin's blockchain. Creators compete in 10-minute rounds for instant crypto rewards through a standardized pay-per-second model.
 
 ### Core Features
-- AI-powered 3D meme transformation
-- BSV blockchain integration
-- 10-minute creation rounds (based on bitcoin rounds)
-- Instant monetization
-- Transparent rewards
+- AI-powered 3D meme transformation (see [AITubo Integration](./aitubo_integration.md))
+- BSV blockchain integration (see [BSV Integration](./bsv_integration.md))
+- 10-minute creation rounds (see [Round System](./round_system.md))
+- Standardized 1 sat/second viewing rate
+- Transparent reward distribution
 
 ### Target Metrics
 - Users: 100K in 3 months
@@ -21,15 +36,21 @@ Memepool transforms static memes into 3D animations using AI, synchronized with 
 
 ### Viewers
 - Browse and engage with memes
-- Pay-per-second viewing (1 sat/second)
-- Collect favorite memes
+- Pay 1 sat/second for viewing
 - Participate in rounds
+- Earn rewards as early viewers
 
 ### Creators
 - Submit memes through admin
-- Earn from views and trades
-- Track performance
+- Earn 10% of direct revenue
+- Track performance metrics
 - Build reputation
+
+### Owners
+- Hold meme ownership rights
+- Earn 90% of direct revenue
+- Trade on marketplace
+- Track performance
 
 ### Admins
 - Content moderation
@@ -47,15 +68,17 @@ Memepool transforms static memes into 3D animations using AI, synchronized with 
 
 ### Round System
 - 10-minute cycles
-- Real-time engagement
-- Automatic rewards
+- Real-time engagement tracking
+- Automated reward distribution
+  - 40-45% direct revenue
+  - 55-60% reward pool
 - Performance tracking
 
 ### Marketplace
 - Direct BSV transactions
+- 2% platform fee
 - Ownership tracking
 - Trading history
-- Creator royalties
 
 ## 4. Technical Requirements
 
@@ -96,3 +119,17 @@ Memepool transforms static memes into 3D animations using AI, synchronized with 
 - Advanced monitoring
 - System optimization
 - Additional integrations
+
+## 6. Implementation Guidelines
+
+### Documentation Standards
+- Follow documentation structure in [README.md](./README.md)
+- Maintain technical specifications
+- Update integration guides
+- Version control documentation
+
+### Development Practices
+- Follow testing strategy (see [Testing Strategy](./testing_strategy.md))
+- Implement error handling (see [Error Handling](./error_handling.md))
+- Follow deployment procedures (see [Deployment](./deployment.md))
+- Maintain API versioning (see [API Versioning](./api_versioning.md))

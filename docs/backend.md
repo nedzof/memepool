@@ -1,144 +1,273 @@
 # Backend Implementation
 
-## 1. Core Services
+## Related Documentation
+- [Architecture Overview](./architecture.md) - For system-level architecture
+- [BSV Integration](./bsv_integration.md) - For blockchain integration details
+- [AITubo Integration](./aitubo_integration.md) - For AI processing details
+- [Error Handling](./error_handling.md) - For error handling patterns
+- [Wallet Integration](./wallet_integration.md) - For wallet implementation details
 
-### Authentication Service
-- Wallet signature verification
-- Session management
-- Rate limiting
-- Access control
+## 1. Technical Stack
 
-### Content Service
-- Meme validation
-- AITubo integration
-- Storage management
-- Content delivery
+### Core Technologies
+1. **Runtime & Framework**
+   - Node.js v18+
+   - Express.js
+   - TypeScript 5
+   - WebSocket (Socket.io)
 
-### Round Service
-- Block synchronization
-- Submission management
-- Vote tracking
-- Reward calculation
+2. **Data Storage**
+   - Aerospike
+   - BSV Blockchain
+   - Redis Cache
+   - File System (temp)
 
-### Payment Service
-- Transaction processing
-- Balance tracking
-- Reward distribution
-- Fee management
+### Development Tools
+1. **Build & Development**
+   - TypeScript
+   - ESLint
+   - Prettier
+   - Nodemon
 
-## 2. Data Models
+2. **Testing & Quality**
+   - Jest
+   - Supertest
+   - K6
+   - Docker
 
-### User Model
-```typescript
-interface User {
-  id: string;
-  walletAddress: string;
-  role: 'viewer' | 'creator' | 'admin';
-  createdAt: Date;
-  stats: UserStats;
-}
-```
+## 2. Service Architecture
 
-```
+### Microservices
+1. **Core Services**
+   ```typescript
+   interface ServiceConfig {
+     name: string;
+     version: string;
+     dependencies: string[];
+     scaling: ScalingConfig;
+   }
+   ```
 
-### Round Model
-```typescript
-interface Round {
-  id: string;
-  blockHeight: number;
-  startTime: Date;
-  endTime: Date;
-  submissions: string[];
-}
-```
+2. **Service Communication**
+   ```typescript
+   interface ServiceMessage {
+     type: MessageType;
+     payload: unknown;
+     metadata: MessageMetadata;
+     timestamp: Date;
+   }
+   ```
 
-### Transaction Model
-```typescript
-interface Transaction {
-  id: string;
-  type: TransactionType;
-  amount: number;
-  sender: string;
-  recipient: string;
-  timestamp: Date;
-}
-```
+### Data Models
+1. **User Management**
+   ```typescript
+   interface User {
+     id: string;
+     walletAddress: string;
+     walletType: 'OKX' | 'Unisat' | 'Yours' | 'Memepool';
+     role: 'viewer' | 'creator' | 'admin';
+     createdAt: Date;
+     stats: UserStats;
+   }
+   ```
 
-## 3. API Endpoints
+2. **Wallet Management**
+   ```typescript
+   interface WalletState {
+     userId: string;
+     walletType: 'OKX' | 'Unisat' | 'Yours' | 'Memepool';
+     address: string;
+     balance: number;
+     lastActivity: Date;
+     status: ConnectionStatus;
+   }
+   ```
+
+2. **Content Management**
+   ```typescript
+   interface Content {
+     id: string;
+     creatorId: string;
+     status: ContentStatus;
+     originalHash: string;
+     transformedHash: string;
+     metadata: ContentMetadata;
+   }
+   ```
+
+3. **Round Management**
+   ```typescript
+   interface Round {
+     id: string;
+     blockHeight: number;
+     startTime: Date;
+     endTime: Date;
+     submissions: string[];
+     state: RoundState;
+   }
+   ```
+
+## 3. API Implementation
+
+### REST Endpoints
+1. **Authentication API**
+   ```typescript
+   interface AuthRoutes {
+     '/auth/verify': POST;
+     '/auth/session': POST & DELETE;
+     '/auth/refresh': POST;
+   }
+   ```
+
+2. **Content API**
+   ```typescript
+   interface ContentRoutes {
+     '/content': POST & GET;
+     '/content/:id': GET & PUT & DELETE;
+     '/content/:id/transform': POST;
+   }
+   ```
+
+3. **Round API**
+   ```typescript
+   interface RoundRoutes {
+     '/rounds/current': GET;
+     '/rounds/:id': GET;
+     '/rounds/:id/vote': POST;
+     '/rounds/:id/results': GET;
+   }
+   ```
+
+### WebSocket Events
+1. **Real-time Updates**
+   ```typescript
+   interface WebSocketEvents {
+     'round:update': RoundUpdate;
+     'content:status': ContentStatus;
+     'transaction:status': TransactionStatus;
+     'user:notification': UserNotification;
+   }
+   ```
+
+## 4. Data Management
+
+### Storage Strategy
+1. **Caching Layer**
+   ```typescript
+   interface CacheConfig {
+     provider: 'redis' | 'memory';
+     ttl: number;
+     maxSize: number;
+     invalidation: InvalidationStrategy;
+   }
+   ```
+
+2. **Persistence Layer**
+   ```typescript
+   interface StorageConfig {
+     temporary: 'aerospike';
+     permanent: 'bsv';
+     backup: 'filesystem';
+   }
+   ```
+
+### Data Flow
+1. **Write Pipeline**
+   ```
+   Validate → Cache → Process → Store → Confirm
+   ```
+
+2. **Read Pipeline**
+   ```
+   Cache Check → Fetch → Validate → Transform → Deliver
+   ```
+
+## 5. Integration Implementation
+
+### External Services
+1. **BSV Integration**
+   ```typescript
+   interface BSVConfig {
+     network: 'mainnet' | 'testnet';
+     nodes: string[];
+     apiKey: string;
+     fees: FeeStrategy;
+   }
+   ```
+
+2. **AITubo Integration**
+   ```typescript
+   interface AITuboConfig {
+     endpoint: string;
+     apiKey: string;
+     timeout: number;
+     retryStrategy: RetryConfig;
+   }
+   ```
+
+## 6. Security Implementation
 
 ### Authentication
-- POST /auth/verify
-- POST /auth/session
-- DELETE /auth/session
+1. **Wallet Authentication**
+   ```typescript
+   interface AuthStrategy {
+     type: 'wallet';
+     provider: WalletProvider;
+     chainId: string;
+     messageFormat: string;
+   }
+   ```
 
-### Content
-- POST /content/upload
-- GET /content/:id
-- PUT /content/:id
-- DELETE /content/:id
+2. **Service Authentication**
+   ```typescript
+   interface ServiceAuth {
+     type: 'jwt' | 'apiKey';
+     expiry: number;
+     rotation: RotationStrategy;
+     scope: string[];
+   }
+   ```
 
-### Rounds
-- GET /rounds/current
-- GET /rounds/:id
-- POST /rounds/:id/vote
-- GET /rounds/:id/results
+### Request Processing
+1. **Validation Pipeline**
+   ```
+   Rate Limit → Auth → Schema → Business Logic → Response
+   ```
 
-### Payments
-- GET /payments/balance
-- POST /payments/transfer
-- GET /payments/history
+2. **Security Headers**
+   ```typescript
+   interface SecurityHeaders {
+     'Content-Security-Policy': string;
+     'X-Frame-Options': string;
+     'X-Rate-Limit': string;
+     'X-API-Version': string;
+   }
+   ```
 
-## 4. Integration Points
+## 7. Testing Implementation
 
-### BSV Integration
-- WhatsOnChain API
-- Transaction broadcasting
-- Block monitoring
-- State verification
+### Automated Testing
+1. **Unit Tests**
+   - Service tests
+   - Model tests
+   - Utility tests
+   - Middleware tests
 
-### AITubo Integration
-- API authentication
-- Content processing
-- Quality validation
-- Error handling
+2. **Integration Tests**
+   - API endpoints
+   - Service communication
+   - External integrations
+   - Data consistency
 
+### Performance Testing
+1. **Load Testing**
+   - Endpoint performance
+   - Concurrent users
+   - Resource usage
+   - Response times
 
-## 5. Security Measures
-
-### Request Validation
-- Input sanitization
-- Schema validation
-- Rate limiting
-- CORS policy
-
-### Transaction Security
-- Signature verification
-- Double-spend prevention
-- Balance validation
-- Audit logging
-
-### Data Protection
-- Encryption at rest
-- Secure transmission
-- Access control
-- Backup strategy
-
-## 6. Performance
-
-### Optimization
-- Query optimization
-- Cache strategy
-- Connection pooling
-- Load balancing
-
-### Monitoring
-- Response times
-- Error rates
-- Resource usage
-- API metrics
-
-### Scaling
-- Horizontal scaling
-- Service isolation
-- Queue management
-- Cache distribution
+2. **Stress Testing**
+   - Service limits
+   - Recovery testing
+   - Failover testing
+   - Data integrity

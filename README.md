@@ -14,7 +14,11 @@ Memepool is a revolutionary platform that combines meme culture, AI technology, 
 
 - **Performance Pool**: The performance pool rewards the top creators of each round. The top creator receives 20% of the pool, with the rest being distributed among the top 100 based on their rank.
 
-For more details on the platform's mechanics, check out the [Application Flows](docs/appflow.md) documentation.
+For detailed documentation, check out:
+- [Application Flows](docs/appflow.md) - For detailed user flows
+- [Round System](docs/round_system.md) - For round mechanics
+- [AITubo Integration](docs/aitubo_integration.md) - For AI processing
+- [BSV Integration](docs/bsv_integration.md) - For blockchain details
 
 ## Who is it for?
 
@@ -26,7 +30,10 @@ Memepool caters to a wide audience:
 
 - **Collectors**: Unique 3D memes can be collected, traded, and monetized on the platform, opening up new opportunities for digital asset ownership.
 
-Learn more about the different user types and their roles in the [Product Design Requirements](docs/pdr.md) document.
+Learn more about:
+- [Product Design Requirements](docs/pdr.md) - For user roles and features
+- [Wallet Integration](docs/wallet_integration.md) - For supported wallets
+- [Technical Specifications](docs/specifications.md) - For detailed specifications
 
 ## Technical Architecture
 
@@ -38,6 +45,10 @@ Memepool is built on a robust technical foundation:
 - **AI**: Integrated with AITubo.ai for fast, high-quality 3D transformations.
 - **Storage**: BSV Storage for decentralized content storage, Redis and BSV for metadata management.
 
-Dive deeper into the technical stack and architecture in the [System Architecture](docs/architecture.md) overview.
-
-The detailed development plan and phases are outlined in the [Product Design Requirements](docs/pdr.md) document.
+For detailed documentation, check out:
+- [System Architecture](docs/architecture.md) - For system overview
+- [Frontend Implementation](docs/frontend.md) - For client details
+- [Backend Implementation](docs/backend.md) - For service details
+- [Error Handling](docs/error_handling.md) - For error patterns
+- [Testing Strategy](docs/testing_strategy.md) - For testing approach
+- [Deployment](docs/deployment.md) - For deployment details

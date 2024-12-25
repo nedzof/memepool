@@ -1,119 +1,230 @@
-# Frontend Components
+# Frontend Implementation
 
-## 1. Global Elements
-1.1 Navigation Bar
-  - Logo and main navigation (Home, Rounds, Marketplace)
-  - Search bar (unified search for memes, users, transactions)
-  - Wallet connection (supports OKX, Unisat, Phantom, Yours, or manual BSV wallet)
-  - User profile dropdown
+## Related Documentation
+- [Architecture Overview](./architecture.md) - For system-level architecture
+- [Application Flow](./appflow.md) - For user journeys and flows
+- [BSV Integration](./bsv_integration.md) - For blockchain integration details
+- [Error Handling](./error_handling.md) - For error handling patterns
+- [Wallet Integration](./wallet_integration.md) - For wallet implementation details
 
-1.2 Footer
-  - About, FAQ, Terms, Privacy links
-  - Social media links
+## 1. Technical Stack
 
-1.3 Wallet Integration
-  - Multiple wallet support (OKX, Unisat, Phantom, Yours)
-  - Manual wallet generation/import option
-  - Secure key management
-  - Transaction signing and verification
-  - Balance display and management
+### Core Technologies
+1. **Framework & State**
+   - React 18
+   - Redux Toolkit
+   - TypeScript 5
+   - TailwindCSS
 
-1.4 Global Notifications
-  - Toast notifications system
-  - Notification center with history
+2. **Real-time & Communication**
+   - WebSocket
+   - REST APIs
+   - Server-Sent Events
+   - Service Workers
 
-## 2. Home Page
-2.1 Hero Section
-  - Platform showcase video
-  - Value proposition
-  - "Compete" CTA
+### Development Tools
+1. **Build & Development**
+   - Vite
+   - ESLint
+   - Prettier
+   - Husky
 
-2.2 Content Display
-  - Featured memes pipeline
-  - Creator leaderboard
-  - Platform statistics
-  - How it works guide
+2. **Testing & Quality**
+   - Jest
+   - React Testing Library
+   - Cypress
+   - Lighthouse
 
-## 3. Round System
-3.1 Round Interface
-  - Block-synchronized countdown timer
-  - Current round status
-  - Submission gallery
-  - Real-time engagement metrics
+## 2. Component Architecture
 
-3.2 Engagement System
-  - Pay-per-second viewing (1 sat/second)
-  - Automatic micropayment processing
-  - Performance tracking
-  - Results and rewards distribution
+### Core Components
+1. **Layout Components**
+   - AppShell
+   - Navigation
+   - Notifications
+   - ErrorBoundary
 
-## 4. Marketplace
-4.1 Asset Management
-  - Meme listing grid
-  - Detailed asset views
-  - Ownership history
-  - Transaction system
+2. **Feature Components**
+   - WalletConnector (see [Wallet Integration](./wallet_integration.md))
+     - Wallet selection
+     - Connection management
+     - Balance display
+     - Transaction UI
+   - ContentViewer
+   - RoundManager
+   - TransactionHandler
 
-4.2 Trading Interface
-  - Direct purchase flow
-  - Bidding system
-  - BSV payment processing
-  - Transaction verification
+3. **Shared Components**
+   - Button System
+   - Form Controls
+   - Modal System
+   - Card System
 
-## 5. User Management
-5.1 Profile System
-  - User details and stats
-  - Content management
-  - Transaction history
-  - WhatsOnChain integration
+### State Management
+1. **Redux Structure**
+   - User state
+   - Round state
+   - Content state
+   - Transaction state
 
-5.2 Settings
-  - Wallet configuration
-  - Creator settings
-  - Payout management
-  - Security controls
+2. **Local State**
+   - Form state
+   - UI state
+   - Cache state
+   - Error state
 
-## 6. Admin Controls
-6.1 Content Management
-  - Meme upload interface
-  - AITubo integration
-  - Content moderation
-  - Round management
+## 3. Feature Implementation
 
-6.2 System Management
-  - User administration
-  - Performance monitoring
-  - Transaction oversight
-  - System configuration
+### Authentication
+1. **Wallet Integration**
+   ```typescript
+   interface WalletConfig {
+     provider: 'OKX' | 'Unisat' | 'Phantom' | 'Yours';
+     network: 'mainnet' | 'testnet';
+     autoConnect: boolean;
+   }
+   ```
 
-## 7. Technical Implementation
-7.1 UI/UX
-  - Responsive design system
-  - Animation framework
-  - Component library
-  - Accessibility standards
+2. **Session Management**
+   ```typescript
+   interface Session {
+     wallet: string;
+     signature: string;
+     expiry: number;
+     permissions: string[];
+   }
+   ```
 
-7.2 Integration Layer
-  - BSV blockchain connectivity
-  - WhatsOnChain API integration
-  - AITubo processing pipeline
-  - Real-time data synchronization
+### Content Management
+1. **Meme Display**
+   ```typescript
+   interface MemeContent {
+     id: string;
+     original: string;
+     transformed: string;
+     metadata: ContentMetadata;
+     status: ContentStatus;
+   }
+   ```
 
-## 8. Pending Features
-8.1 Enhanced Creator Tools
-  - Advanced analytics
-  - Batch processing
-  - Scheduled publishing
-  - Performance insights
+2. **Round Integration**
+   ```typescript
+   interface RoundState {
+     id: string;
+     status: RoundStatus;
+     timeRemaining: number;
+     participants: string[];
+   }
+   ```
 
-8.2 Advanced Integration
-  - Extended blockchain tools
-  - Enhanced AI capabilities
-  - Additional wallet support
-  - Advanced monitoring
+## 4. Integration Points
 
-8.3 Accessibility Enhancements
-  - Screen reader optimization
-  - Keyboard navigation
-  - Audio descriptions
-  - Accessibility compliance tools
+### API Integration
+1. **REST Endpoints**
+   - Authentication API
+   - Content API
+   - Round API
+   - Transaction API
+
+2. **WebSocket Events**
+   - Round updates
+   - Content status
+   - Transaction status
+   - User notifications
+
+### Blockchain Integration
+1. **Wallet Connections**
+   - Provider detection
+   - Network selection
+   - Balance monitoring
+   - Transaction signing
+
+2. **Transaction Handling**
+   - Payment processing
+   - Transaction monitoring
+   - Receipt verification
+   - Error recovery
+
+## 5. Performance Optimization
+
+### Loading Strategy
+1. **Content Loading**
+   - Lazy loading
+   - Progressive loading
+   - Prefetching
+   - Caching
+
+2. **State Management**
+   - Selective updates
+   - Batch processing
+   - Memory management
+   - Cache invalidation
+
+### Rendering Optimization
+1. **Component Optimization**
+   - Memoization
+   - Code splitting
+   - Virtual scrolling
+   - Worker delegation
+
+2. **Asset Optimization**
+   - Image optimization
+   - Font loading
+   - Bundle optimization
+   - Resource hints
+
+## 6. Error Handling
+
+### Client-Side Errors
+1. **UI Error Handling**
+   - Error boundaries
+   - Fallback UI
+   - Recovery options
+   - User feedback
+
+2. **State Recovery**
+   - State rollback
+   - Action retry
+   - Data reconciliation
+   - Session recovery
+
+### Network Errors
+1. **API Errors**
+   - Retry logic
+   - Timeout handling
+   - Fallback options
+   - Error reporting
+
+2. **Blockchain Errors**
+   - Transaction retry
+   - Network switching
+   - Provider fallback
+   - User notification
+
+## 7. Testing Strategy
+
+### Unit Testing
+1. **Component Testing**
+   - Render testing
+   - Event handling
+   - State updates
+   - Error cases
+
+2. **Integration Testing**
+   - Feature flows
+   - API integration
+   - State management
+   - Error handling
+
+### E2E Testing
+1. **User Flows**
+   - Authentication
+   - Content interaction
+   - Round participation
+   - Transaction processing
+
+2. **Performance Testing**
+   - Load testing
+   - Memory profiling
+   - Network simulation
+   - Animation performance

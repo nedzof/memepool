@@ -1,167 +1,192 @@
 # System Architecture
 
-## 1. Overview
+## Related Documentation
+- [Technical Specifications](./specifications.md) - For detailed specifications
+- [Product Requirements](./pdr.md) - For product overview
+- [BSV Integration](./bsv_integration.md) - For blockchain details
+- [AITubo Integration](./aitubo_integration.md) - For AI processing details
+- [Frontend Implementation](./frontend.md) - For client architecture
+- [Backend Implementation](./backend.md) - For service architecture
+- [Wallet Integration](./wallet_integration.md) - For wallet architecture
+- [Error Handling](./error_handling.md) - For error handling patterns
+- [Deployment](./deployment.md) - For deployment architecture
+- [Testing Strategy](./testing_strategy.md) - For testing architecture
+- [API Versioning](./api_versioning.md) - For API architecture
+- [Round System](./round_system.md) - For round architecture
+
+## 1. System Overview
 
 ### Core Components
-- Frontend (React/Redux)
-- Backend (Node.js)
-- Blockchain (BSV)
-- AI Processing (AITubo)
-- Data Storage (BSV)
-- MetaData Storage (BSV)
+1. **Frontend Layer**
+   - React/Redux application
+   - WebSocket integration
+   - Wallet connections
+   - Real-time updates
 
-### Key Features
-- 3D meme transformation
-- 10-minute rounds
-- Real-time transactions
-- Content moderation
-- Analytics system
+2. **Backend Services**
+   - Node.js microservices
+   - WebSocket server
+   - Transaction processor
+   - Round manager
 
-## 2. Frontend Architecture
+3. **Storage Layer**
+   - Aerospike (temporary data)
+   - BSV blockchain (permanent records)
+   - Redis (caching)
+   - File system (temporary files)
 
-### Technology Stack
-- React 18
-- Redux Toolkit
-- TypeScript
-- TailwindCSS
-- WebSocket
+4. **Integration Layer**
+   - WhatsOnChain API
+   - AITubo API
+   - Wallet providers
+   - Monitoring services
 
-### Key Components
-- Wallet Integration
-- Round Management
-- Content Display
-- User Dashboard
-- Admin Interface
+## 2. Data Flow
 
-## 3. Backend Architecture
+### Content Pipeline
+1. **Submission Flow**
+   ```
+   Admin Upload → Validation → AITubo Processing → Quality Check → Round Assignment
+   ```
 
-### Technology Stack
-- Node.js
-- Aerospike Cache
-- WebSocket
+2. **Viewing Flow**
+   ```
+   Content Request → Authorization → Payment Verification → Streaming → Revenue Distribution
+   ```
 
-### Microservices
-- Auth Service
-- Content Service
-- Round Service
-- Payment Service
-- Analytics Service
+### Transaction Flow
+1. **View Time Payments**
+   ```
+   Watch Start → 1 sat/sec Payment → Split (40-45% Direct, 55-60% Pool) → Distribution
+   ```
 
-## 4. Blockchain Integration
+2. **Market Transactions**
+   ```
+   Trade Request → 2% Fee Calculation → BSV Transaction → Ownership Update
+   ```
 
-### BSV Integration
-- WhatsOnChain API
-- Transaction Management
-- Smart Contracts
-- State Management
+## 3. Service Architecture
 
-### Wallet Support
-- OKX Integration
-- Unisat Support
-- Phantom Connection
-- Yours Implementation
-- Manual Generation
+### Core Services
+1. **Authentication Service**
+   - Wallet signature verification
+   - Session management
+   - Permission control
+   - Rate limiting
 
-## 5. AI Processing
+2. **Content Service**
+   - Meme validation
+   - AITubo integration
+   - Quality assurance
+   - Distribution management
 
-### AITubo Integration
-- API Connection
-- Queue Management
-- Error Handling
-- Quality Control
+3. **Round Service**
+   - Block synchronization
+   - State management
+   - Reward calculation
+   - Performance tracking
 
-### Processing Pipeline
-- Content Validation
-- 3D Transformation
-- Quality Verification
-- Result Storage
+4. **Payment Service**
+   - Transaction processing
+   - Revenue distribution
+   - Fee management
+   - Balance tracking
 
-## 6. Data Management
+## 4. Data Management
 
-### Storage Solutions
-- Aerospike (Metadata and Caching)
-- BSV (Content)
+### Storage Strategy
+1. **Temporary Storage**
+   - User sessions
+   - Round state
+   - Cache data
+   - Processing queue
 
-### Data Flow
-- Content Pipeline
-- User Data
-- Analytics
-- Backups
+2. **Permanent Storage**
+   - Transaction records
+   - Content metadata
+   - User profiles
+   - Performance metrics
 
-## Data Storage
+### State Management
+1. **Round State**
+   - Current participants
+   - Engagement metrics
+   - Revenue tracking
+   - Reward calculations
 
-### Aerospike (Fast/Temporary)
-- Active sessions & auth tokens
-- Rate limiting
-- Message queues
-- Recent message cache
-- Active user states
+2. **User State**
+   - Active sessions
+   - Balance tracking
+   - View history
+   - Earnings data
 
-### BSV (Permanent)
-- User profiles & public keys
-- All messages & content
-- Transactions & payments
-- Smart contract states
-- Content signatures & proofs
-
-### Storage Principles
-- Use Aerospike for anything requiring fast access or temporary storage
-- Use BSV for permanent/immutable records
-- Cache frequent BSV data in Aerospike
-- No additional databases needed for basic functionality
-
-## 7. Security Architecture
+## 5. Security Architecture
 
 ### Authentication
-- Wallet Signatures
-- JWT Tokens
-- Rate Limiting
-- IP Filtering
+1. **Wallet Integration**
+   - Signature verification
+   - Chain validation
+   - Balance checks
+   - Transaction signing
+
+2. **Service Security**
+   - API authentication
+   - Rate limiting
+   - DDOS protection
+   - Input validation
 
 ### Data Protection
-- Encryption
-- Access Control
-- Audit Logging
-- Compliance
+1. **Transaction Security**
+   - Double-spend prevention
+   - Fee validation
+   - Chain monitoring
+   - Error recovery
 
-## 8. Scalability
+2. **Content Security**
+   - Access control
+   - Content validation
+   - Ownership verification
+   - Version control
+
+## 6. Monitoring
+
+### System Metrics
+1. **Performance Monitoring**
+   - Response times
+   - Error rates
+   - Resource usage
+   - Transaction throughput
+
+2. **Business Metrics**
+   - Active users
+   - Transaction volume
+   - Revenue tracking
+   - User engagement
+
+### Health Checks
+1. **Service Health**
+   - API availability
+   - Database health
+   - Cache status
+   - Queue length
+
+2. **Integration Health**
+   - BSV node status
+   - AITubo availability
+   - Wallet connections
+   - External APIs
+
+## 7. Deployment
 
 ### Infrastructure
-- Load Balancing
-- Auto-scaling
-- CDN Integration
-- Cache Strategy
+1. **Production Environment**
+   - Load balancers
+   - Application servers
+   - Database clusters
+   - Cache servers
 
-### Performance
-- Response Time: <500ms
-- Concurrent Users: 100K+
-- Transaction Rate: 1K+/min
-- Uptime: 99.9%
-
-## 9. Monitoring
-
-### System Health
-- Server Metrics
-- API Performance
-- Error Tracking
-- Resource Usage
-
-### Business Metrics
-- User Activity
-- Transaction Volume
-- Content Growth
-- Platform Usage
-
-## 10. Deployment
-
-### Environment
-- Production
-- Staging
-- Development
-- Testing
-
-### CI/CD Pipeline
-- Automated Tests
-- Build Process
-- Deployment
-- Monitoring
+2. **Scaling Strategy**
+   - Horizontal scaling
+   - Auto-scaling rules
+   - Resource allocation
+   - Performance optimization
