@@ -2,10 +2,8 @@ import { showModal, hideModal, showError } from '../modal.js';
 import { generateNewWallet } from './walletGeneration.js';
 import { setWalletLoading } from './walletUIManager.js';
 import { SUPPORTED_WALLETS, detectAvailableWallets, initializeWallet } from './config.js';
-import { initializeImportSeed } from './modals/importSeedModal.js';
 import { setupPasswordValidation } from './passwordSetup.js';
-import { generateSecureMnemonic } from './mnemonic.js';
-import { initializeSeedPhraseModal } from './modals/seedPhraseModal.js';
+import { initializeSeedModal } from './modals/seedModal.js';
 
 // Helper function to display seed phrase
 function displaySeedPhrase(mnemonic) {
@@ -130,19 +128,16 @@ export async function handleConnectWalletClick() {
 
 // Modal navigation functions
 export function showCreateWalletModal() {
+    console.log('Starting create wallet flow...');
+    sessionStorage.setItem('wallet_flow', 'create'); // Set flow type first
     hideModal('walletSelectionModal');
     showModal('passwordSetupModal');
     
     // Setup password validation for create flow
-    setupPasswordValidation(async () => {
-        // Generate new mnemonic after password is set
-        const mnemonic = await generateSecureMnemonic();
-        console.log('Generated secure mnemonic');
-        sessionStorage.setItem('temp_mnemonic', mnemonic);
-        sessionStorage.setItem('wallet_flow', 'create'); // Mark this as create flow
-        
-        // Display the seed phrase
-        displaySeedPhrase(mnemonic);
+    setupPasswordValidation(() => {
+        console.log('Password setup complete, showing seed modal...');
+        showModal('seedModal');
+        initializeSeedModal();
     });
 }
 
@@ -159,16 +154,16 @@ export function showWalletSelection() {
 
 // Handle import wallet click
 window.handleImportWalletClick = function() {
-    console.log('Import wallet button clicked');
+    console.log('Starting import wallet flow...');
+    sessionStorage.setItem('wallet_flow', 'import'); // Set flow type first
     hideModal('walletSelectionModal');
     showModal('passwordSetupModal');
     
     // Setup password validation for import flow
     setupPasswordValidation(() => {
-        console.log('Password setup complete, showing import seed modal...');
-        sessionStorage.setItem('wallet_flow', 'import'); // Mark this as import flow
-        showModal('importSeedModal');
-        initializeImportSeed();
+        console.log('Password setup complete, showing seed modal...');
+        showModal('seedModal');
+        initializeSeedModal();
     });
 };
 

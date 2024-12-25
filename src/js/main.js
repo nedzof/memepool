@@ -1,17 +1,11 @@
-import { BitcoinWallet } from './wallet/bitcoin.js';
+import { showModal, hideModal, initializeModal, showError } from './modal.js';
+import { showWalletSelection, setupWalletSelectionEvents } from './wallet/walletSelection.js';
+import { detectAvailableWallets } from './wallet/config.js';
+import { initializeSeedModal } from './wallet/modals/seedModal.js';
+import { startWalletSetup } from './wallet/setup.js';
 import { initializeBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
-import { 
-    showModal, 
-    hideModal, 
-    showError,
-    initializeModal,
-    initializeWalletUI,
-    showWalletSelection,
-    showMainWallet 
-} from './walletUI.js';
-import { handleConnectWalletClick, setupWalletSelectionEvents } from './wallet/walletSelection.js';
-import { initializeWallet, detectAvailableWallets } from './wallet/config.js';
+import { initializeWalletUI } from './wallet/walletUIManager.js';
 
 // Expose wallet functions globally
 window.showWalletSelection = function() {
@@ -23,6 +17,9 @@ window.showWalletSelection = function() {
     }
     showModal('walletSelectionModal');
 };
+
+// Make wallet setup function available globally
+window.startWalletSetup = startWalletSetup;
 
 async function loadMainContent() {
     try {
@@ -53,11 +50,11 @@ async function loadMainContent() {
     }
 }
 
-async function loadIncludedContent(element) {
-    const includes = element.querySelectorAll('[data-include]');
+async function loadIncludedContent(parentElement) {
+    const includes = parentElement.querySelectorAll('[data-include]');
     console.log('Found includes:', includes.length);
-    console.log('Element:', element);
-    console.log('Element HTML:', element.innerHTML);
+    console.log('Element:', parentElement);
+    console.log('Element HTML:', parentElement.innerHTML);
     
     const includePromises = Array.from(includes).map(async include => {
         const path = include.getAttribute('data-include');
@@ -132,7 +129,7 @@ async function loadWalletModals() {
             });
 
             // Verify critical modals are loaded
-            const criticalModals = ['walletSelectionModal', 'passwordSetupModal', 'seedPhraseModal'];
+            const criticalModals = ['walletSelectionModal', 'passwordSetupModal', 'seedModal'];
             for (const modalId of criticalModals) {
                 const modal = document.getElementById(modalId);
                 if (!modal) {
@@ -195,14 +192,30 @@ async function initializeApp() {
         console.log('Initializing submissions...');
         initializeSubmissions();
 
-        // Initialize wallet UI without showing selection
+        // Initialize wallet UI
         console.log('Initializing wallet UI...');
         await initializeWalletUI();
 
+        // Initialize seed modal
+        const seedModal = document.getElementById('seedModal');
+        if (!seedModal) {
+            console.error('Seed modal not found after loading');
+            throw new Error('Critical modal seedModal not found');
+        }
+        console.log('Found seed modal, initializing...');
+        
+        // Initialize seed modal
+        initializeSeedModal();
+        console.log('Seed modal initialized');
 
+        // Show wallet selection
+        showWalletSelection();
+        
         console.log('App initialization complete');
+        
     } catch (error) {
         console.error('Error initializing app:', error);
+        showError('Failed to initialize app');
     }
 }
 
@@ -214,5 +227,11 @@ if (document.readyState === 'loading') {
 }
 
 // Initialize submissions refresh
-setInterval(initializeSubmissions, 60000);
+setInterval(() => {
+    try {
+        initializeSubmissions();
+    } catch (error) {
+        console.error('Error refreshing submissions:', error);
+    }
+}, 60000);
  

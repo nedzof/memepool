@@ -1,0 +1,74 @@
+<div id="seedModal" class="modal neon-theme">
+    <div class="modal-content max-w-4xl">
+        <!-- Back Button -->
+        <button class="modal-back absolute top-4 left-4 text-gray-400 hover:text-white transition-colors duration-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+        </button>
+
+        <!-- Create View -->
+        <div class="create-view hidden">
+            <h2 class="text-2xl font-bold mb-6 text-center">Your Seed Phrase</h2>
+            <p class="text-center mb-8 text-gray-400">
+                Write down these 12 words in order and keep them safe. You'll need them to recover your wallet.
+            </p>
+
+            <!-- Seed Phrase Grid -->
+            <div id="seedPhraseGrid" class="grid grid-cols-3 gap-4 mb-8 filter blur-lg">
+                <!-- Grid will be populated by JavaScript -->
+            </div>
+
+            <!-- Reveal Button -->
+            <button id="revealSeedPhraseBtn" class="w-full mb-4 py-3 px-6 bg-[#14F195]/20 hover:bg-[#14F195]/30 
+                text-[#14F195] rounded-lg transition-all duration-300 flex items-center justify-center space-x-2">
+                <span>Reveal Seed Phrase</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+            </button>
+
+            <!-- Copy Button -->
+            <button id="copySeedPhraseBtn" class="w-full mb-8 py-3 px-6 bg-[#14F195]/20 hover:bg-[#14F195]/30 
+                text-[#14F195] rounded-lg transition-all duration-300 flex items-center justify-center space-x-2">
+                <span>Copy to Clipboard</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+            </button>
+
+            <form id="createSeedForm" class="space-y-6">
+                <div class="error-message hidden text-red-500 text-center"></div>
+                <button type="submit" class="w-full py-3 px-6 bg-[#14F195] hover:bg-[#14F195]/90 
+                    text-black font-medium rounded-lg transition-all duration-300">
+                    I've Saved My Seed Phrase
+                </button>
+            </form>
+        </div>
+
+        <!-- Import View -->
+        <div class="import-view hidden">
+            <h2 class="text-2xl font-bold mb-6 text-center">Import Wallet</h2>
+            <p class="text-center mb-8 text-gray-400">
+                Enter your 12-word seed phrase to restore your wallet.
+            </p>
+
+            <form id="importSeedForm" class="space-y-6">
+                <div id="seedPhraseInputs" class="grid grid-cols-3 gap-4 mb-8">
+                    <!-- Input fields will be populated by JavaScript -->
+                </div>
+
+                <div class="error-message hidden text-red-500 text-center"></div>
+
+                <button type="submit" class="w-full py-3 px-6 bg-[#14F195] hover:bg-[#14F195]/90 
+                    text-black font-medium rounded-lg transition-all duration-300">
+                    Import Wallet
+                </button>
+            </form>
+        </div>
+    </div>
+</div> 
