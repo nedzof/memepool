@@ -1,5 +1,5 @@
 import { showModal, hideModal, showError } from '../../modal.js';
-import { BitcoinWallet } from '../bitcoin.js';
+import { initializeWallet } from '../setup.js';
 import { validateMnemonic, validateMnemonicRandomness, generateSecureMnemonic } from '../mnemonic.js';
 
 // Initialize create wallet flow
@@ -62,13 +62,16 @@ function initializeCreateFlow(modal) {
             const password = sessionStorage.getItem('temp_password');
             if (!password) throw new Error('Password not found');
 
-            // Create temporary wallet
-            const tempWallet = new BitcoinWallet();
-            await tempWallet.init(mnemonic, password);
+            // Initialize wallet with manual type
+            await initializeWallet(mnemonic, password, 'manual');
             
             // Show success animation
             hideModal('seedModal');
             showModal('walletCreatedModal');
+            
+            // Clear sensitive data
+            sessionStorage.removeItem('temp_password');
+            sessionStorage.removeItem('temp_mnemonic');
         } catch (error) {
             console.error('Error confirming seed phrase:', error);
             const errorDiv = createForm.querySelector('.error-message');
@@ -165,20 +168,20 @@ function initializeImportFlow(modal) {
             // Additional security check
             await validateMnemonicRandomness(seedPhrase);
 
-            // Get password
+            // Get password from session storage
             const password = sessionStorage.getItem('temp_password');
             if (!password) throw new Error('Password not found');
 
-            // Create temporary wallet
-            const tempWallet = new BitcoinWallet();
-            await tempWallet.init(seedPhrase, password);
-            
-            // Store seed phrase
-            sessionStorage.setItem('temp_mnemonic', seedPhrase);
+            // Initialize wallet with imported type
+            await initializeWallet(seedPhrase, password, 'imported');
             
             // Show success animation
             hideModal('seedModal');
             showModal('walletCreatedModal');
+            
+            // Clear sensitive data
+            sessionStorage.removeItem('temp_password');
+            
         } catch (error) {
             console.error('Error importing seed phrase:', error);
             if (errorDiv) {

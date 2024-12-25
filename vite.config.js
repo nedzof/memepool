@@ -31,7 +31,8 @@ export default defineConfig({
       '@unisat/wallet-sdk': '@unisat/wallet-sdk/dist/index.js',
       'crypto': 'crypto-browserify',
       'stream': 'stream-browserify',
-      'buffer': 'buffer'
+      'buffer': 'buffer',
+      'bip39': 'bip39'
     }
   },
   optimizeDeps: {
@@ -41,7 +42,8 @@ export default defineConfig({
     include: [
       'buffer',
       'crypto-browserify',
-      'stream-browserify'
+      'stream-browserify',
+      'bip39'
     ]
   },
   css: {
