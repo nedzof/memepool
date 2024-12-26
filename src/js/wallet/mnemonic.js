@@ -1,6 +1,22 @@
 import * as bip39 from 'bip39';
 import { Buffer } from 'buffer';
 
+// Convert mnemonic to seed
+export async function mnemonicToSeed(mnemonic, passphrase = '') {
+    try {
+        // Normalize the mnemonic and passphrase
+        const normalizedMnemonic = mnemonic.normalize('NFKD');
+        const normalizedPassphrase = passphrase.normalize('NFKD');
+        
+        // Use bip39 to generate seed
+        const seed = await bip39.mnemonicToSeed(normalizedMnemonic, normalizedPassphrase);
+        return Buffer.from(seed);
+    } catch (error) {
+        console.error('Error converting mnemonic to seed:', error);
+        throw new Error('Failed to convert mnemonic to seed');
+    }
+}
+
 // Generate secure mnemonic
 export function generateSecureMnemonic() {
     return bip39.generateMnemonic(128); // 12 words

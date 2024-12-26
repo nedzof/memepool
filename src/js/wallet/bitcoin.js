@@ -1,50 +1,8 @@
-import * as bitcoin from 'bitcoinjs-lib';
-import * as bip32 from 'bip32';
-import * as ecc from 'tiny-secp256k1';
-import * as bip39 from 'bip39';
-import ECPairFactory from 'ecpair';
-import { Buffer } from 'buffer';
-import { generateSecureMnemonic, validateMnemonic, encryptMnemonic, decryptMnemonic } from './mnemonic.js';
+import * as bsvLib from '@bsv/sdk';
+import { generateSecureMnemonic, validateMnemonic, encryptMnemonic, decryptMnemonic, mnemonicToSeed } from './mnemonic.js';
 import { showError } from '../modal.js';
 
-// Initialize bip32 with secp256k1
-const bip32Instance = bip32.BIP32Factory(ecc);
-
-// Initialize ECPair with secp256k1
-const ECPair = ECPairFactory(ecc);
-
-// Bitcoin Utilities
-export function publicKeyToLegacyAddress(publicKey) {
-    try {
-        // Remove '0x' prefix if present
-        const cleanPubKey = publicKey.startsWith('0x') ? publicKey.slice(2) : publicKey;
-        // Create public key buffer
-        const pubKeyBuffer = Buffer.from(cleanPubKey, 'hex');
-        // Create Bitcoin public key and convert to legacy address
-        const { address } = bitcoin.payments.p2pkh({ 
-            pubkey: pubKeyBuffer,
-            network: bitcoin.networks.bitcoin 
-        });
-        return address;
-    } catch (error) {
-        console.error('Error converting public key to legacy address:', error);
-        return null;
-    }
-}
-
-// Create script for OP_RETURN data
-export function createOpReturnScript(data) {
-    try {
-        const script = bitcoin.script.compile([
-            bitcoin.opcodes.OP_RETURN,
-            Buffer.from(data)
-        ]);
-        return script.toString('hex');
-    } catch (error) {
-        console.error('Error creating OP_RETURN script:', error);
-        return null;
-    }
-}
+const bsv = bsvLib;
 
 // Blockchain API Utilities
 const API_COOLDOWN = 2000; // 2 seconds between requests
@@ -122,33 +80,6 @@ export async function fetchBalanceFromWhatsOnChain(address) {
     }
 }
 
-// Check username availability on chain
-export async function checkUsernameAvailability(username) {
-    try {
-        const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
-        const script = createOpReturnScript(['MEMEPOOL_USERNAME', normalizedUsername]);
-        
-        if (!script) {
-            throw new Error('Failed to create script');
-        }
-
-        const response = await rateLimitedFetch(`https://api.whatsonchain.com/v1/bsv/main/script/search`, {
-            method: 'POST',
-            body: JSON.stringify({ script })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to check username availability');
-        }
-
-        const data = await response.json();
-        return data.length === 0;
-    } catch (error) {
-        console.error('Error checking username availability:', error);
-        return false;
-    }
-}
-
 // Create wallet from mnemonic
 export async function createWalletFromMnemonic(mnemonic) {
     try {
@@ -158,43 +89,40 @@ export async function createWalletFromMnemonic(mnemonic) {
             throw new Error('Invalid mnemonic provided');
         }
 
-        const seed = await bip39.mnemonicToSeed(mnemonic);
-        console.log('Generated seed from mnemonic');
+        // Convert mnemonic to seed
+        const seed = await mnemonicToSeed(mnemonic);
+        
+        // Create master HD private key from seed
+        const masterKey = bsv.HD.fromSeed(Buffer.from(seed));
+        
+        // Derive the BIP44 path for Bitcoin step by step
+        // m/44'/0'/0'/0/0
+        let derivedKey = masterKey;
+        derivedKey = derivedKey.deriveChild(44 + 0x80000000);  // 44' (hardened)
+        derivedKey = derivedKey.deriveChild(0 + 0x80000000);   // 0' (hardened)
+        derivedKey = derivedKey.deriveChild(0 + 0x80000000);   // 0' (hardened)
+        derivedKey = derivedKey.deriveChild(0);                // 0 (normal)
+        derivedKey = derivedKey.deriveChild(0);                // 0 (normal)
+        
+        // Convert XPRIV to WIF and get private key
+        const privateKey = derivedKey.privKey;
+        const privateKeyWIF = privateKey.toWif();
+        
+        // Convert to public key
+        const xpubKey = derivedKey.toPublic();
+        const publicKey = xpubKey.pubKey;
+        
+        // Get address from public key
+        const address = publicKey.toAddress();
 
-        const root = bip32Instance.fromSeed(Buffer.from(seed));
-        console.log('Created master node');
-
-        const path = "m/44'/0'/0'/0/0";
-        const child = root.derivePath(path);
-        console.log('Derived child key at path:', path);
-
-        const keyPair = ECPair.fromPrivateKey(child.privateKey, { compressed: true });
-        console.log('Created key pair');
-
-        // Convert the public key to a point object that bitcoinjs-lib expects
-        const publicKeyPoint = ecc.pointFromScalar(child.privateKey, true);
-        if (!publicKeyPoint) {
-            throw new Error('Failed to generate public key point');
-        }
-
-        // Create payment object with the public key point
-        const payment = bitcoin.payments.p2pkh({ 
-            pubkey: Buffer.from(publicKeyPoint),
-            network: bitcoin.networks.bitcoin 
-        });
-
-        if (!payment.address) {
-            throw new Error('Failed to generate address from public key');
-        }
-
-        console.log('Generated address:', payment.address);
+        console.log('Generated address:', address.toString());
 
         const walletData = {
-            address: payment.address,
-            legacyAddress: payment.address,
-            publicKey: '0x' + Buffer.from(keyPair.publicKey).toString('hex'),
-            privateKey: keyPair.privateKey.toString('hex'),
-            sign: (tx) => keyPair.sign(tx)
+            address: address.toString(),
+            legacyAddress: address.toString(),
+            publicKey: publicKey.toString(),
+            privateKey: privateKeyWIF,
+            sign: (tx) => tx.sign(privateKey)
         };
 
         // Log all properties that will be validated
@@ -219,6 +147,7 @@ export class BitcoinWallet {
         this.publicKey = null;
         this.balance = '0';
         this.isInitialized = false;
+        this._walletData = null;
     }
 
     async init(mnemonic, password) {
@@ -228,29 +157,21 @@ export class BitcoinWallet {
                 throw new Error('Mnemonic and password are required');
             }
 
-            // Generate seed from mnemonic
-            const seed = await bip39.mnemonicToSeed(mnemonic, password);
+            // Create wallet using our BSV implementation
+            this._walletData = await createWalletFromMnemonic(mnemonic);
             
-            // In a real implementation, we would:
-            // 1. Generate keypair from seed
-            // 2. Derive address from public key
-            // 3. Get balance from blockchain
-            
-            // For now, use placeholder values with legacy address format
-            // Ensure public key has 0x prefix like Unisat/OKX
-            const rawPublicKey = Buffer.from(seed.slice(0, 32)).toString('hex');
-            this.publicKey = `0x${rawPublicKey}`;
-            
-            // Use legacy address format (1... instead of bc1q...)
-            this.address = `1${rawPublicKey.slice(0, 33)}`;  // Legacy addresses start with '1'
+            // Set wallet properties
+            this.address = this._walletData.address;
+            this.publicKey = this._walletData.publicKey;
             this.balance = '0';
             this.isInitialized = true;
 
             console.log('Initialized wallet with:', {
                 address: this.address,
-                publicKey: this.publicKey
+                hasPublicKey: !!this.publicKey,
+                isInitialized: this.isInitialized
             });
-            return true;
+
         } catch (error) {
             console.error('Error initializing wallet:', error);
             throw error;
@@ -261,7 +182,6 @@ export class BitcoinWallet {
         if (!this.isInitialized) {
             throw new Error('Wallet not initialized');
         }
-
         return {
             address: this.address,
             publicKey: this.publicKey,
@@ -272,7 +192,4 @@ export class BitcoinWallet {
     isReady() {
         return this.isInitialized;
     }
-}
-
-// Export bitcoin libraries
-export { bitcoin }; 
+} 

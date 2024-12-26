@@ -27,7 +27,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@bsv/sdk': '@bsv/sdk/dist/index.js',
+      '@bsv/sdk': '@bsv/sdk',
       '@unisat/wallet-sdk': '@unisat/wallet-sdk/dist/index.js',
       'crypto': 'crypto-browserify',
       'stream': 'stream-browserify',
@@ -43,7 +43,8 @@ export default defineConfig({
       'buffer',
       'crypto-browserify',
       'stream-browserify',
-      'bip39'
+      'bip39',
+      '@bsv/sdk'
     ]
   },
   css: {
