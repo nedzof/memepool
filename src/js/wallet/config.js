@@ -55,19 +55,46 @@ async function initOKXWallet() {
 
 // Initialize Phantom wallet interface
 async function initPhantomWallet() {
-    if (!window.phantom?.solana) throw new Error('Phantom wallet not found');
+    if (!window.phantom?.solana) {
+        window.open('https://phantom.app', '_blank');
+        throw new Error('Phantom wallet not found. Please install Phantom wallet.');
+    }
 
     try {
+        // Request connection to Phantom
         const resp = await window.phantom.solana.connect();
         const address = resp.publicKey.toString();
         if (!address) throw new Error('No address found');
         
-        return {
+        // Create wallet interface
+        const wallet = {
             type: 'phantom',
+            address: address,
             getAddress: () => address,
             getPublicKey: () => address,
-            getBalance: () => getBalance(address)
+            getBalance: async () => {
+                try {
+                    const connection = new window.solana.Connection('https://api.mainnet-beta.solana.com');
+                    const balance = await connection.getBalance(new window.solana.PublicKey(address));
+                    return balance / 1e9; // Convert lamports to SOL
+                } catch (error) {
+                    console.error('Error getting Phantom wallet balance:', error);
+                    return 0;
+                }
+            },
+            disconnect: async () => {
+                try {
+                    await window.phantom.solana.disconnect();
+                } catch (error) {
+                    console.error('Error disconnecting Phantom wallet:', error);
+                }
+            }
         };
+
+        // Store wallet instance
+        window.wallet = wallet;
+        
+        return wallet;
     } catch (error) {
         console.error('Error initializing Phantom wallet:', error);
         throw error;
@@ -105,7 +132,7 @@ export const SUPPORTED_WALLETS = {
         checkAvailability: () => window.phantom?.solana !== undefined,
         initialize: initPhantomWallet,
         installUrl: 'https://phantom.app',
-        errorMessage: 'Failed to connect to Phantom Wallet',
+        errorMessage: 'Failed to connect to Phantom Wallet. Please make sure Phantom is installed and unlocked.',
         retryAttempts: 3,
         retryDelay: 1000
     }

@@ -188,23 +188,41 @@ export function setupWalletSelectionEvents(availableWallets) {
         }
         console.log('Found button for wallet:', key);
 
-        if (availableWallets[key]) {
-            setupWalletButton(button, async () => {
-                if (wallet.checkReady?.() === false) {
-                    window.open(wallet.installUrl, '_blank');
-                    throw new Error(`${wallet.name} wallet not ready`);
-                }
-                await initializeWallet(key);
-            }, {
-                hideModal: true,
-                showModal: 'mainWalletModal',
-                errorMessage: wallet.errorMessage
-            });
-        } else {
-            button.addEventListener('click', () => {
+        // Check if wallet is available or should redirect to install
+        const isAvailable = wallet.checkAvailability();
+        console.log(`Wallet ${key} availability:`, isAvailable);
+
+        setupWalletButton(button, async () => {
+            if (!isAvailable) {
+                console.log(`${key} wallet not available, redirecting to install`);
                 window.open(wallet.installUrl, '_blank');
-            });
-        }
+                throw new Error(`Please install ${wallet.name} wallet`);
+            }
+            
+            try {
+                console.log(`Initializing ${key} wallet...`);
+                const walletInstance = await wallet.initialize();
+                
+                if (!walletInstance) {
+                    throw new Error(`Failed to initialize ${wallet.name} wallet`);
+                }
+
+                // Store wallet type and initialized state
+                sessionStorage.setItem('wallet_type', key);
+                sessionStorage.setItem('wallet_initialized', 'true');
+                
+                // Hide selection modal and show main wallet modal
+                hideModal('walletSelectionModal');
+                showModal('mainWalletModal');
+                
+                return walletInstance;
+            } catch (error) {
+                console.error(`Error initializing ${key} wallet:`, error);
+                throw error;
+            }
+        }, {
+            errorMessage: wallet.errorMessage
+        });
     });
 
     // Setup create wallet button
