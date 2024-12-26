@@ -8,82 +8,70 @@
 ## 1. Monetization Model
 
 ### Revenue Distribution
-1. **Instant Revenue (40-45%)**
-   - Creator Share: 10% of instant revenue
-   - Owner Share: 90% of instant revenue
-   - Platform Fee: 2% on all transactions
+1. **Instant Revenue (50 %)**
+   - Creator Share: 10 % of instant revenue
+   - Owner Share: 90 % of instant revenue
 
-2. **Performance Pool (55-60%)**
-   - Top Creator: 20% of pool
-   - Top 100 Distribution: 80% of pool
-     - Rank-based allocation
-     - Higher ranks receive larger shares
-     - Minimum rank threshold for rewards
+2. **Reward Pool (48 %)**
+   - Top 3 Creators: 20 % of pool
+      - Top 1: 12 % of pool
+      - Top 2: 6 % of pool
+      - Top 3: 2 % of pool
+   - First Time Unique Viewers: 80 % of pool
+      - First 5 Viewers: 50 % equally distributed
+      - First 5-50 Viewers: 30 % equally distributed
+      - First 50-100 Viewers: 20 % equally distributed
+
+3. **Platform Fee (2 %)**
 
 ### Transaction Types
 1. **View Time Payments**
-   - Rate: 1 sat/second
-   - Minimum Watch Time: 3 seconds
-   - Maximum Session: 1 hour
-   - Platform Fee: 2%
-
+   - Rate: 10 sat/second
+   
 2. **Market Transactions**
-   - Trading Fee: 2%
-   - Inscription Fee: 2%
-   - Minimum Trade: 1000 sats
-   - Settlement: Immediate
+   - Trading Fee: 1 %
+   - Inscription Fee: 1 %
 
 ## 2. Content Guidelines
 
 ### Submission Requirements
-1. **Image Specifications**
-   - Format: PNG, JPG, GIF
+1. **Video Specifications**
+   - Format: MP4
    - Max Size: 10MB
-   - Resolution: 1080p minimum
-   - Aspect Ratio: 16:9, 4:3, 1:1
-
-2. **Content Restrictions**
-   - No adult content
-   - No hate speech
-   - No copyrighted material
-   - No personal information
-
-### Quality Standards
-1. **Transformation Quality**
-   - Resolution: 1080p
-   - Frame Rate: 30 FPS
-   - Animation Smoothness: ≥95%
-
-2. **Performance Requirements**
-   - Load Time: <2 seconds
-   - Playback Smoothness: 30 FPS
-   - Memory Usage: <200MB
-   - Network Usage: <20MB/minute
+   - Aspect Ratio: 1:1
 
 ## 3. Business Rules
 
 ### Round Participation
 1. **Creator Rules**
    - One submission per round
-   - Must be original content
-   - Subject to quality review
-   - Minimum engagement threshold
 
 2. **Viewer Rules**
    - Pay-per-second model
    - Early viewer bonuses
-   - Engagement tracking
-   - Report content violations
 
 ### Market Rules
-1. **Trading**
-   - 24/7 trading
-   - Instant settlement
-   - Transparent history
-   - Price discovery
-
-2. **Ownership**
+1. **Ownership**
    - Transferable rights
    - Revenue inheritance
-   - Clear provenance
-   - Dispute resolution 
+   
+## Transaction Fee Modeling
+### 1. Video inscription calculation (10MB)
+#### Base data
+- Size: 10MB = 10,000 KB
+- Fee rate: 15 sats/KB
+- BSV price: \$56
+- 1 BSV = 100,000,000 sats
+
+#### Calculation
+1. Total sats needed:
+   - 10,000 KB × 15 sats/KB = 150,000 sats
+
+2. Convert to BSV:
+   - 150,000 sats ÷ 100,000,000 = 0.0015 BSV
+
+3. Convert to USD:
+   - 0.0015 BSV × \$56 = \$0.084
+
+#### Result
+Inscribing 10MB on BSV would cost approximately \$0.084 (8.4 cents USD)

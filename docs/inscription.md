@@ -3,7 +3,6 @@
 ## Related Documentation
 - [BSV Integration](./bsv_integration.md) - For blockchain details
 - [Wallet Integration](./wallet_integration.md) - For wallet interactions
-- [Error Handling](./error_handling.md) - For error management
 
 ## 1. Inscription Format
 

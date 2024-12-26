@@ -1,200 +1,118 @@
-# Frontend Implementation
+# Frontend Components
 
-## Related Documentation
-- [Architecture](./architecture.md) - For system architecture overview
-- [Backend Implementation](./backend.md) - For API integration details
-- [Wallet Integration](./wallet_integration.md) - For wallet UI integration
+## 1. Global Elements
+1.1 Navigation Bar
+  - Logo
+  - Main bar:
+      - How it works
+      - Search bar (unified search for memes, users, transactions)
+      - Marketplace
+   - Wallet connection (supports OKX, Unisat, Phantom, Yours, or manual BSV wallet)
 
-## 1. Technical Stack
+1.2 Wallet Integration
+  - Multiple wallet support (OKX, Unisat, Phantom, Yours)
+  - Manual wallet generation/import option
+  - Secure key management
+  - Transaction signing and verification
+  - Balance display and management
 
-### Core Technologies
-1. **Framework**
-   - React 18+
-   - Redux Toolkit
-   - TypeScript 4.9+
-   - Vite
+1.3 Global Notifications
+  - Toast notifications:
+    - system for rewards
+    - transaction notifications
+  - Notification center with history
 
-2. **UI Components**
-   - Tailwind CSS
-   - Headless UI
-   - React Spring
-   - React Query
+## 2. Home Page
+### Meme Pipeline Layout
 
-### Development Tools
-1. **Build Tools**
-   - ESBuild
-   - PostCSS
-   - TypeScript
-   - Prettier
+#### Main Pipeline Display
 
-2. **Testing Tools**
-   - Jest
-   - React Testing Library
-   - Cypress
-   - Playwright
+##### Left Section | "Next Up 🔜"
+- Horizontal scrolling pipeline of upcoming memes
+- Shows as thumbnail blocks flowing to the right
+- Block contents:
+  * Dimmed preview thumbnail
+  * Countdown timer
+  * Creator name
+  * Preview stats
 
-## 2. Application Architecture
+##### Center Section | "Now Live 🔥"
+- Largest display area
+- Currently active meme
+- Features:
+  * Full-size meme display
+  * Large "COMPETE" button
+  * Live stats display:
+    - Active participants
+    - Time up
+    - Current ranking
+  * Animated border indicating active status
 
-### State Management
-1. **Redux Store**
-   - User state
-   - Round state
-   - Content state
-   - Wallet state
+##### Right Section | "Previous 📜"
+- Horizontal scrolling pipeline of past memes
+- Shows as thumbnail blocks flowing to the right
+- Block contents (when hovering):
+  * Faded preview thumbnail
+  * Final stats
+  * Winner indicators
 
-2. **Local State**
-   - Form state
-   - UI state
-   - Cache state
-   - Error state
+### Submissions Grid
 
-### Component Structure
-1. **Core Components**
-   - Layout components
-   - Navigation components
-   - Authentication components
-   - Content viewers
+#### Desktop View
 
-2. **Feature Components**
-   - Round components
-   - Creator components
-   - Viewer components
-   - Market components
+┌─────────┐ ┌─────────┐ ┌─────────┐
+│ Block 1 │ │ Block 2 │ │ Block 3 │
+└─────────┘ └─────────┘ └─────────┘
+- 3-column grid
+- Equal spacing
+- Consistent heights
+- Hover previews
 
-## 3. Mobile Implementation
+#### Mobile View
 
-### Responsive Design
-1. **Breakpoints**
-   - Mobile: 320px-480px
-   - Tablet: 481px-768px
-   - Desktop: 769px+
-   - Retina: 2x density
+┌─────────┐
+│ Block 1 │
+└─────────┘
+┌─────────┐
+│ Block 2 │
+└─────────┘
+- Single column
+- Full width blocks
+- Swipe navigation
+- Pull-to-refresh
 
-2. **Layout Adaptation**
-   - Fluid grids
-   - Flexible images
-   - Media queries
-   - Touch targets
+#### Block Components
+- Meme content
+- Creator details
+- Engagement stats
+- Time posted
+- Action buttons
 
-### Mobile Optimization
-1. **Performance**
-   - Initial Load: <3 seconds
-   - Memory Usage: <200MB
-   - Battery Impact: <5%/hour
-   - Offline Support: Basic viewing
+## 3. Round System
+  - Block-synchronized countup timer
+  - Current round status based on BSV block height
+  - Submission gallery
+  - Real-time engagement metrics
 
-2. **Network Handling**
-   - Offline Detection: <1 second
-   - Reconnection: Automatic
-   - Data Saving Mode: Optional
-   - Background Sync: Configurable
+## 4. Wallet Integration  
+   - Multi-wallet support
+   - Transaction signing
+   - Balance display
 
-### Mobile UI/UX
-1. **Touch Interactions**
-   - Touch Targets: ≥44px
-   - Swipe Actions
-   - Pinch Zoom
-   - Pull to Refresh
+## 5. Notifications
+   - Toast system
+   - Max 20/minute
+   - 3.5 s display time
 
-2. **Visual Adaptation**
-   - Font Sizes: 16-24px
-   - Contrast Ratios: 4.5:1
-   - Icon Sizing: 24-32px
-   - Button Heights: 44px
-
-## 4. Accessibility Implementation
-
-### WCAG 2.1 AA Compliance
-1. **Visual Requirements**
-   - Color Contrast: 4.5:1
-   - Text Scaling: 200%
-   - Focus Indicators: Visible
-   - Motion Control: Reducible
-
-2. **Interactive Elements**
-   - Focus Management
-   - Keyboard Navigation
-   - Touch Targets
-   - Error Identification
-
-### Assistive Technologies
-1. **Screen Readers**
-   - ARIA Labels
-   - Semantic HTML
-   - Live Regions
-   - Focus Order
-
-2. **Input Methods**
-   - Keyboard Navigation
-   - Voice Control
-   - Switch Devices
-   - Touch/Mouse
-
-### Content Accessibility
-1. **Media**
-   - Alt Text
-   - Captions
-   - Transcripts
-   - Audio Descriptions
-
-2. **Text**
-   - Readable Fonts
-   - Adjustable Size
-   - Line Spacing
-   - Text Contrast
-
-## 5. Performance Optimization
-
-### Loading Strategy
-1. **Code Splitting**
-   - Route-based
-   - Component-based
-   - Vendor splitting
-   - Dynamic imports
-
-2. **Asset Optimization**
-   - Image compression
-   - Lazy loading
-   - Preloading
-   - Caching
-
-### Runtime Performance
-1. **Rendering**
-   - Virtual DOM
-   - Memoization
-   - Lazy Components
-   - Windowing
-
-2. **State Updates**
-   - Batch updates
-   - Selective renders
-   - State normalization
-   - Computed properties
-
-## 6. Security Measures
-
-### Client Security
-1. **Input Validation**
-   - Form validation
-   - File validation
-   - Data sanitization
-   - XSS prevention
-
-2. **Authentication**
-   - Wallet connection
-   - Session management
-   - Token handling
-   - Secure storage
-
-### API Security
-1. **Request Security**
-   - CSRF protection
-   - Rate limiting
-   - Request signing
-   - Error handling
-
-2. **Response Security**
-   - Data encryption
-   - Response validation
-   - Error masking
-   - Secure headers
+## 6. Search Modal  T
+### Search Categories
+   - Creators (username, bio)
+   - Memes (title, tags)
+   - Transactions (TxID, block height)
+   - Rounds (round number, date)
+   
+### Quick Filters
+   - Top memes: 24h/7d/30d
+   - Trending creators
+   - Recent transactions
+   - Active rounds

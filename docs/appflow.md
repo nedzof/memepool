@@ -1,267 +1,100 @@
 # Application Flows
 
-## Related Documentation
-- [Frontend Implementation](./frontend.md) - For UI implementation details
-- [Backend Implementation](./backend.md) - For service implementation
-- [Round System](./round_system.md) - For round mechanics
+## 1. Content Pipeline
 
-## 1. User Journeys
+### Meme Pipeline
+1. Admin collects meme
+2. Assigns to upcoming round
 
-### Creator Journey
-1. **Content Creation**
-   ```
-   Connect Wallet → Upload Meme → Preview Transform → Submit
-   ```
-   - Wallet connection
-   - Content validation
-   - Quality preview
-   - Round assignment
+### AITubo Processing
+1. Send meme to AITubo.ai API
+2. Process 3D transformation
+3. Validate output quality
+4. Store processed content
 
-2. **Performance Tracking**
-   ```
-   View Dashboard → Track Metrics → Collect Revenue → Reinvest
-   ```
-   - Real-time stats
-   - Revenue tracking
-   - Performance analytics
-   - Historical data
+### Content Storage
+1. Store original meme (Aerospike)
+2. Store 3D version (BSV)
+3. Record metadata (Aerospike)
 
-### Viewer Journey
-1. **Content Discovery**
-   ```
-   Browse Trending → Connect Wallet → Watch Content → Support Creators
-   ```
-   - Content exploration
-   - Wallet integration
-   - View tracking
-   - Payment processing
+## 2. Round Management
 
-2. **Round Participation**
-   ```
-   Join Round → View Content → Earn Rewards → Share Content
-   ```
-   - Round selection
-   - Content interaction
-   - Reward earning
-   - Social sharing
+### Round Initialization
+1. Sync with Bitcoin block time
+2. Load queued submissions
+3. Initialize voting system
+4. Start engagement tracking
 
-## 2. Core Flows
+### Engagement Tracking
+1. Monitor view time
+2. Calculate sat/second rates
+3. Update creator earnings
+4. Record viewer spending
 
-### Authentication Flow
-1. **Wallet Connection**
-   ```
-   Select Wallet → Connect → Sign Message → Verify
-   ```
-   - Provider detection
-   - Network validation
-   - Signature verification
-   - Session creation
+### Round Completion
+1. Finalize vote tallies
+2. Calculate rewards
+3. Distribute BSV payments
+4. Update leaderboards
 
-2. **Session Management**
-   ```
-   Check Session → Refresh Token → Update State → Monitor Activity
-   ```
-   - Token validation
-   - State management
-   - Activity tracking
-   - Auto-reconnect
+## 3. Wallet Integration
 
-### Content Flow
-1. **Creation Process**
-   ```
-   Upload → Validate → Transform → Review → Submit
-   ```
-   - Format check
-   - Size validation
-   - AI processing
-   - Quality assurance
+### Supported Wallets
+- OKX: Primary integration
+- Unisat: Secondary option
+- Phantom: Alternative choice
+- Yours: Additional support
+- Manual generation/import
 
-2. **Viewing Process**
-   ```
-   Select Content → Start View → Process Payment → Track Time
-   ```
-   - Content loading
-   - Payment initiation
-   - View tracking
-   - Revenue distribution
+### Transaction Flow
+1. Validate wallet connection
+2. Check BSV balance
+3. Process transaction
+4. Update blockchain
+5. Confirm completion
 
-## 3. Transaction Flows
+### Security Measures
+1. Signature verification
+2. Rate limiting
+3. Balance validation
+4. Transaction monitoring
 
-### Payment Processing
-1. **View Payments**
-   ```
-   Start View → Initialize Payment → Stream Sats → Distribute
-   ```
-   - Balance check
-   - Rate: 1 sat/second
-   - Real-time tracking
-   - Split distribution
+## 4. Creator Management
 
-2. **Market Transactions**
-   ```
-   List Item → Set Price → Process Sale → Transfer Ownership
-   ```
-   - Price validation
-   - Fee calculation
-   - Ownership transfer
-   - History update
+### Profile Setup
+1. Verify wallet ownership
+2. Set creator details
+3. Configure preferences
+4. Enable notifications
 
-### Revenue Distribution
-1. **Direct Revenue**
-   ```
-   Collect Payment → Calculate Splits → Process Fees → Distribute
-   ```
-   - Creator: 10%
-   - Owner: 90%
-   - Platform: 2%
-   - Instant settlement
+### Performance Tracking
+1. Monitor engagement
+2. Calculate earnings
+3. Track popularity
+4. Generate analytics
 
-2. **Pool Distribution**
-   ```
-   Collect Pool → Calculate Ranks → Apply Formula → Distribute
-   ```
-   - Performance ranking
-   - Score calculation
-   - Reward allocation
-   - Batch processing
+### Reward Distribution
+1. Calculate shares
+2. Process payments
+3. Update balances
+4. Generate reports
 
-## 4. Round Flows
+## 5. System Integration
 
-### Round Lifecycle
-1. **Round Start**
-   ```
-   Block Event → Initialize → Assign Content → Open Viewing
-   ```
-   - Time synchronization
-   - State initialization
-   - Content selection
-   - Participant notification
+### AITubo Integration
+1. API authentication
+2. Request processing
+3. Response handling
+4. Error management
 
-2. **Round Completion**
-   ```
-   Time Complete → Lock State → Calculate Results → Distribute Rewards
-   ```
-   - State finalization
-   - Score calculation
-   - Reward distribution
-   - History update
+### Blockchain Operations
+1. Transaction creation
+2. Block confirmation
+3. Data verification
+4. State updates
 
-### Participation Flow
-1. **Creator Participation**
-   ```
-   Submit Content → Quality Check → Round Assignment → Track Performance
-   ```
-   - Content validation
-   - Quality assessment
-   - Round placement
-   - Performance monitoring
-
-2. **Viewer Participation**
-   ```
-   Join Round → View Content → Support Creators → Earn Rewards
-   ```
-   - Round selection
-   - Content interaction
-   - Payment processing
-   - Reward earning
-
-## 5. Error Flows
-
-### Recovery Flows
-1. **Transaction Recovery**
-   ```
-   Detect Error → Retry Logic → State Recovery → User Notification
-   ```
-   - Error detection
-   - Retry strategy
-   - State restoration
-   - User communication
-
-2. **Session Recovery**
-   ```
-   Connection Loss → Auto Reconnect → State Sync → Resume Activity
-   ```
-   - Connection monitoring
-   - Reconnection logic
-   - State synchronization
-   - Activity resumption
-
-### Error Handling
-1. **User Errors**
-   ```
-   Validate Input → Show Feedback → Suggest Fix → Track Resolution
-   ```
-   - Input validation
-   - Error messages
-   - Recovery options
-   - Error tracking
-
-2. **System Errors**
-   ```
-   Detect Issue → Apply Fallback → Log Error → Notify Support
-   ```
-   - Error detection
-   - Fallback options
-   - Error logging
-   - Support notification
-
-## 6. Integration Flows
-
-### Wallet Integration
-1. **Connection Flow**
-   ```
-   Select Provider → Initialize → Connect → Verify
-   ```
-   - Provider selection
-   - Connection setup
-   - Network validation
-   - State management
-
-2. **Transaction Flow**
-   ```
-   Build Transaction → Sign → Broadcast → Confirm
-   ```
-   - Transaction creation
-   - Signature request
-   - Network broadcast
-   - Status monitoring
-
-### AI Integration
-1. **Processing Flow**
-   ```
-   Prepare Content → Queue Job → Monitor Progress → Deliver Result
-   ```
-   - Content preparation
-   - Job management
-   - Progress tracking
-   - Result handling
-
-2. **Quality Flow**
-   ```
-   Analyze Input → Apply Rules → Generate Score → Provide Feedback
-   ```
-   - Quality analysis
-   - Rule application
-   - Score generation
-   - User feedback
-
-## 7. Monitoring Flows
-
-### System Monitoring
-1. **Performance Tracking**
-   ```
-   Collect Metrics → Analyze Patterns → Generate Alerts → Take Action
-   ```
-   - Metric collection
-   - Pattern analysis
-   - Alert generation
-   - Action triggers
-
-2. **Health Monitoring**
-   ```
-   Check Services → Validate State → Report Status → Handle Issues
-   ```
-   - Service checks
-   - State validation
-   - Status reporting
-   - Issue handling
+### Data Management
+1. Content indexing
+2. Cache optimization
+3. Backup procedures
+4. Recovery protocols

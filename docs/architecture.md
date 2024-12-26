@@ -1,183 +1,168 @@
 # System Architecture
 
-## Related Documentation
-- [Backend Implementation](./backend.md) - For service implementation details
-- [Frontend Implementation](./frontend.md) - For client implementation details
-- [Deployment](./deployment.md) - For deployment architecture
-
-## 1. System Overview
+## 1. Overview
 
 ### Core Components
-1. **Frontend Layer**
-   - React/Redux SPA
-   - WebSocket client
-   - Wallet connectors
-   - Real-time state management
+- Frontend (React/Redux)
+- Backend (Node.js)
+- Blockchain (BSV)
+- AI Processing (AITubo)
+- Data Storage (BSV)
+- MetaData Storage (BSV)
 
-2. **Backend Services**
-   - Node.js microservices
-   - WebSocket server
-   - Transaction processor
-   - Round manager
+### Key Features
+- 3D meme transformation
+- 10-minute rounds
+- Real-time transactions
+- Content moderation
+- Analytics system
 
-3. **Storage Layer**
-   - Aerospike (temporary data)
-   - BSV blockchain (permanent records)
-   - Redis (caching)
-   - File system (temporary files)
+## 2. Frontend Architecture
 
-4. **Integration Layer**
-   - WhatsOnChain API
-   - AITubo API
-   - Wallet providers
-   - Monitoring services
+### Technology Stack
+- React 18
+- Redux Toolkit
+- TypeScript
+- TailwindCSS
+- WebSocket
 
-## 2. System Boundaries
+### Key Components
+- Wallet Integration
+- Round Management
+- Content Display
+- User Dashboard
+- Admin Interface
 
-### Technical Limits
-1. **Frontend Boundaries**
-   - Max Concurrent Connections: 10K/node
-   - WebSocket Messages: 100/second
-   - API Requests: 1000/minute
-   - Cache Size: 1GB/session
-   - Memory Usage: <200MB/client
-   - Initial Load: <3 seconds
+## 3. Backend Architecture
 
-2. **Backend Boundaries**
-   - Request Rate: 10K/second
-   - Batch Size: 1000 items
-   - Response Time: <500ms
-   - Payload Size: <10MB
-   - WebSocket Connections: 50K/node
-   - Background Jobs: 1K/minute
+### Technology Stack
+- Node.js
+- Aerospike Cache
+- WebSocket
 
-### Resource Allocation
-1. **Processing Resources**
-   - CPU: 4 cores/instance
-   - Memory: 8GB/instance
-   - Storage: 100GB/instance
-   - Network: 1Gbps
-   - IOPS: 3K/second
-   - Background Workers: 10/instance
+### Microservices
+- Auth Service
+- Content Service
+- Round Service
+- Payment Service
+- Analytics Service
 
-2. **Scaling Thresholds**
-   - CPU Usage: >70%
-   - Memory Usage: >80%
-   - Request Queue: >1000
-   - Error Rate: >1%
-   - Response Time: >800ms
-   - Connection Count: >8K/node
+## 4. Blockchain Integration
 
-## 3. Data Architecture
+### BSV Integration
+- WhatsOnChain API
+- Transaction Management
+- Smart Contracts
+- State Management
+
+### Wallet Support
+- OKX Integration
+- Unisat Support
+- Phantom Connection
+- Yours Implementation
+- Manual Generation
+
+## 5. AI Processing
+
+### AITubo Integration
+- API Connection
+- Queue Management
+- Error Handling
+- Quality Control
+
+### Processing Pipeline
+- Content Validation
+- 3D Transformation
+- Quality Verification
+- Result Storage
+
+## 6. Data Management
+
+### Storage Solutions
+- Redis(Metadata)
+- BSV (Content)
+- Redis (Cache)
 
 ### Data Flow
-1. **Content Pipeline**
-   ```
-   Admin Upload → Validation → AITubo Processing → Quality Check → Round Assignment
-   ```
+- Content Pipeline
+- User Data
+- Analytics
+- Backups
 
-2. **Transaction Pipeline**
-   ```
-   User Action → Auth Check → Rate Limit → Process → Blockchain → Confirmation
-   ```
+## Data Storage
 
-### State Management
-1. **Application State**
-   - User sessions
-   - Round state
-   - Market data
-   - Content metadata
+### Redis (Fast/Temporary)
+- Active sessions & auth tokens
+- Rate limiting
+- Message queues
+- Recent message cache
+- Active user states
 
-2. **Blockchain State**
-   - Transactions
-   - Ownership records
-   - Revenue distribution
-   - Historical data
+### BSV (Permanent)
+- User profiles & public keys
+- All messages & content
+- Transactions & payments
+- Smart contract states
+- Content signatures & proofs
 
-## 4. Security Architecture
+### Storage Principles
+- Use Redis for anything requiring fast access or temporary storage
+- Use BSV for permanent/immutable records
+- Cache frequent BSV data in Redis
+- No additional databases needed for basic functionality
+
+## 7. Security Architecture
 
 ### Authentication
-1. **Wallet Integration**
-   - Signature verification
-   - Chain validation
-   - Balance checks
-   - Transaction signing
-
-2. **Service Security**
-   - API authentication
-   - Rate limiting
-   - DDOS protection
-   - Input validation
+- Wallet Signatures
+- JWT Tokens
+- Rate Limiting
+- IP Filtering
 
 ### Data Protection
-1. **Transaction Security**
-   - Double-spend prevention
-   - Fee validation
-   - Chain monitoring
-   - Error recovery
+- Encryption
+- Access Control
+- Audit Logging
+- Compliance
 
-2. **Content Security**
-   - Access control
-   - Content validation
-   - Ownership verification
-   - Version control
+## 8. Scalability
 
-## 5. High Availability
+### Infrastructure
+- Load Balancing
+- Auto-scaling
+- CDN Integration
+- Cache Strategy
 
-### Redundancy
-1. **Service Redundancy**
-   - Multiple regions
-   - Load balancing
-   - Failover systems
-   - Data replication
+### Performance
+- Response Time: <500ms
+- Concurrent Users: 100K+
+- Transaction Rate: 1K+/min
+- Uptime: 99.9%
 
-2. **Recovery Targets**
-   - RPO (Recovery Point Objective): 5 minutes
-   - RTO (Recovery Time Objective): 15 minutes
-   - Failover Time: <30 seconds
-   - Data Sync Time: <10 minutes
+## 9. Monitoring
 
-### Monitoring
-1. **System Metrics**
-   - Response times
-   - Error rates
-   - Resource usage
-   - Transaction throughput
-   - Node health
-   - Integration status
+### System Health
+- Server Metrics
+- API Performance
+- Error Tracking
+- Resource Usage
 
-2. **Business Metrics**
-   - Active users
-   - Transaction volume
-   - Round participation
-   - Content engagement
-   - Revenue tracking
-   - Market activity
+### Business Metrics
+- User Activity
+- Transaction Volume
+- Content Growth
+- Platform Usage
 
-## 6. Network Architecture
+## 10. Deployment
 
-### Communication
-1. **Internal Communication**
-   - Service mesh
-   - Message queues
-   - Event bus
-   - Cache layer
+### Environment
+- Production
+- Staging
+- Development
+- Testing
 
-2. **External Communication**
-   - API gateway
-   - CDN
-   - Load balancers
-   - WebSocket clusters
-
-### Protocol Details
-1. **API Protocols**
-   - REST (main API)
-   - WebSocket (real-time)
-   - gRPC (services)
-   - GraphQL (queries)
-
-2. **Network Security**
-   - TLS 1.3
-   - Rate limiting
-   - IP filtering
-   - DDoS protection
+### CI/CD Pipeline
+- Automated Tests
+- Build Process
+- Deployment
+- Monitoring

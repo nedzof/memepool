@@ -5,23 +5,13 @@
 ### Core Documentation
 - `pdr.md` - Product requirements and vision
 - `specifications.md` - Core business rules and monetization
-- `architecture.md` - System design and technical architecture
+- `architecture.md` - System architecture and technical overview
 
 ### Implementation Guides
 - `frontend.md` - Frontend implementation and UI/UX guidelines
-- `backend.md` - Backend services and API implementation
-- `blockchain_integration.md` - BSV blockchain and wallet integration
-- `aitubo_integration.md` - AI processing integration
 
 ### System Design
 - `appflow.md` - User journeys and system flows
-- `round_system.md` - Competition mechanics and implementation
-- `error_handling.md` - Error management and recovery
-
-### Operations
-- `deployment.md` - Deployment procedures and environments
-- `testing_strategy.md` - Testing approach and requirements
-- `api_versioning.md` - API versioning and management
 
 ## Documentation Standards
 

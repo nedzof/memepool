@@ -14,18 +14,11 @@ Memepool transforms static memes into 3D animations using AI, creating a competi
 - Competitive creative environment
 - Community-driven content curation
 
-### Success Metrics
-- Users: 100K in 3 months
-- Daily Active: 50K in 6 months
-- Creators: 1K in first month
-- Transactions: 10K in first quarter
-- Volume: $100K in 6 months
-
 ## 2. User Stories
 
 ### Creator Stories
 1. **Content Creation**
-   - As a creator, I want to submit memes for transformation
+   - As a creator, I want to inscribe 3D memes and make money
    - As a creator, I want to preview my transformed content
    - As a creator, I want to track my content performance
    - As a creator, I want to understand my earnings
@@ -34,7 +27,6 @@ Memepool transforms static memes into 3D animations using AI, creating a competi
    - As a creator, I want to see my ranking in each round
    - As a creator, I want to understand voting patterns
    - As a creator, I want to improve my creation strategy
-   - As a creator, I want to build a following
 
 ### Viewer Stories
 1. **Content Discovery**
@@ -46,7 +38,6 @@ Memepool transforms static memes into 3D animations using AI, creating a competi
 2. **Engagement**
    - As a viewer, I want to support creators I like
    - As a viewer, I want to track my viewing history
-   - As a viewer, I want to report inappropriate content
    - As a viewer, I want to share interesting memes
 
 ### Owner Stories
@@ -67,12 +58,11 @@ Memepool transforms static memes into 3D animations using AI, creating a competi
 ### Core Features
 1. **Meme Transformation**
    - AI-powered 3D conversion
-   - Quality assurance system
    - Preview capabilities
    - Edit options
 
 2. **Round System**
-   - 10-minute synchronized rounds
+   - Block synchronized rounds
    - Real-time engagement tracking
    - Transparent scoring
    - Instant rewards
@@ -90,28 +80,122 @@ Memepool transforms static memes into 3D animations using AI, creating a competi
    - Search functionality
    - Content filters
 
-2. **Engagement Tools**
-   - One-click payments
-   - Social sharing
-   - Content reporting
-   - Performance analytics
+## 4. Toast Notification Requirements
 
-## 4. Development Priorities
+1. Content Categories & Rules
 
-### Phase 1: MVP (Month 1)
-- Basic meme transformation
-- Simple round system
-- Essential wallet integration
-- Core UI components
+Display Rules:
+- Maximum 20 notifications per minute
+- Each toast shows for exactly 3.5 seconds
+- Maximum 2 toasts visible simultaneously
+- Position: Bottom right corner
+- Size: Maximum 300px width
 
-### Phase 2: Enhancement (Month 2-3)
-- Advanced creator tools
-- Improved discovery
-- Market features
-- Analytics dashboard
+Language Style Requirements:
+Must Include:
+- "fr fr", "no cap", "bussin"
+- References to "ratio", "based", "chad"
+- Mock corporate/formal language
+- Platform references (LinkedIn, Excel, Facebook)
+- Emojis: 💀 🔥 ⚡ 🚨 👑 ⏰ ⚠️
 
-### Phase 3: Scale (Month 4-6)
-- Performance optimization
-- Additional features
-- Enhanced security
-- Community tools
+Never Use:
+- Formal business language
+- Complete sentences
+- Professional terms
+- Traditional punctuation
+- More than 15 words per toast
+
+Tone Requirements:
+- Sarcastic towards corporate culture
+- Dismissive of traditional technology
+- Celebrates fast/chaotic decisions
+- Mocks careful planning/thinking
+- Emphasizes speed over process
+
+Format Rules:
+- Start with emoji when mocking (💀 or 🚨)
+- Use brackets [X] for dynamic numbers
+- Use quotation marks for user/creator names
+- Use ALL CAPS for urgent notifications
+- Use "..." for suspense in FOMO notifications
+
+2. Required Notification Types / Examples
+
+FOMO Notifications:
+- "[X] boomers failed to understand your meme"
+- "Your meme is making millennials feel ancient rn"
+- "[Creator] is speed-running past your meme score"
+
+Achievement Notifications:
+- "Certified No-Boomer-Energy Award 🏆"
+- "You've crashed [X] Excel spreadsheets with this meme"
+- "Made [X] LinkedIn users question their existence"
+
+Competition Notifications:
+- "Only 2 gigachads ahead in meme race"
+- "Your meme processing speed > [Boomer name]'s dial-up brain"
+- "Out-meming 99% of Facebook users"
+
+Social Proof Notifications:
+- "[X] people canceled LinkedIn Premium to view your meme"
+- "[Creator] says your meme isn't giving email signature energy"
+- "Your meme caused [X] boomers to rage-quit"
+
+Urgency Notifications:
+- "Quick! Before boomers learn what [trend] means"
+- "Only [X] mins before this becomes Facebook-tier"
+- "⚡ Ratio potential detected: Act fast"
+
+3. Required Dynamic Variables
+- User counts [X]
+- Creator names
+- Time remaining
+- Trend names
+- Platform references (Facebook, LinkedIn, Excel etc)
+- Achievement metrics
+
+4. Notification Logic
+- Randomize selection within categories
+- Do not repeat same notification within 10 minutes
+- Scale frequency based on user activity
+- Prioritize notifications based on real-time events
+
+## 5. Comments
+### Sample Prompt for Toast Notification
+Here's the improved prompt with a sharper focus on meme culture and generational humor:
+Act as a Gen Z cultural psychology expert specializing in viral meme engagement. Design toast notifications that blend addictive engagement with generational humor for a meme platform. Focus on these categories:
+
+FOMO Triggers:
+1. "💀 [X] boomers just failed to understand your meme"
+2. "🔥 Your meme is making millennials feel ancient rn"
+3. "⚡ [Creator] is speed-running past your meme score"
+
+Achievement Recognition:
+1. "Certified No-Boomer-Energy Award 🏆"
+2. "You've crashed [X] Excel spreadsheets with this meme"
+3. "Achievement: Made [X] LinkedIn users question their existence"
+
+Competition Triggers:
+1. "Only 2 gigachads ahead of you in the meme race"
+2. "Your meme processing speed > [Boomer name]'s dial-up brain"
+3. "You're out-meming 99% of Facebook users (low difficulty)"
+
+Social Proof:
+1. "⚠️ [X] people canceled their LinkedIn Premium to view your meme"
+2. "[Creator] says your meme isn't giving email signature energy"
+3. "Your meme caused [X] boomers to rage-quit"
+
+Urgency Triggers:
+1. "Quick! Before the boomers learn what [trend] means"
+2. "Trend alert: Only [X] mins before this becomes Facebook-tier"
+3. "⚡ Ratio potential detected: Act fast"
+
+Rules:
+- Max 20 notifications/minute
+- Each notification roasts corporate/boomer culture
+- Notifications get spicier with user engagement
+- Dynamic cringe detection algorithm
+- Auto-detects and mocks corporate speech patterns
+
+Analyze /docs for platform specifics and optimize for maximum generational humor impact.
