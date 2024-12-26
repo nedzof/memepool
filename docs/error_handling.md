@@ -1,148 +1,194 @@
-# Error Handling
+# Error Handling and Recovery Procedures
 
 ## Related Documentation
-- [BSV Integration](./bsv_integration.md) - For blockchain-specific errors (3xxx series)
-- [Round System](./round_system.md) - For round-specific errors (4xxx series)
-- [AITubo Integration](./aitubo_integration.md) - For processing-specific errors (2xxx series)
-- [Testing Strategy](./testing_strategy.md) - For error testing requirements
-- [Wallet Integration](./wallet_integration.md) - For wallet-specific errors (5xxx series)
-- [API Versioning](./api_versioning.md) - For API compatibility errors
-- [Deployment](./deployment.md) - For deployment-related errors
-- [Architecture Overview](./architecture.md) - For system-wide error handling patterns
+- [Architecture](./architecture.md) - For system architecture context
+- [Frontend Implementation](./frontend.md) - For client-side error handling
+- [Backend Implementation](./backend.md) - For service-level error handling
 
 ## 1. Error Classification
 
-### System Error Codes
-- 1xxx: Authentication & Authorization
-  - 1000: Invalid wallet signature
-  - 1001: Session expired
-  - 1002: Insufficient permissions
-  - 1003: Rate limit exceeded
+### System Errors
+1. **Infrastructure Errors**
+   - Network failures
+   - Service outages
+   - Resource exhaustion
+   - Hardware failures
 
-- 2xxx: Content Processing
-  - 2000: Invalid content format
-  - 2001: AITubo processing failed
-  - 2002: Content storage failed
-  - 2003: Content validation failed
+2. **Application Errors**
+   - Runtime exceptions
+   - Logic errors
+   - State inconsistencies
+   - Integration failures
 
-- 3xxx: Blockchain Operations
-  - 3000: Transaction failed
-  - 3001: Insufficient balance
-  - 3002: Network congestion
-  - 3003: Block confirmation timeout
+### Business Errors
+1. **Transaction Errors**
+   - Insufficient funds
+   - Double spending
+   - Invalid operations
+   - Timeout errors
 
-- 4xxx: Round Management
-  - 4000: Round initialization failed
-  - 4001: Vote processing error
-  - 4002: Reward distribution failed
-  - 4003: Round synchronization error
+2. **Content Errors**
+   - Processing failures
+   - Quality issues
+   - Format problems
+   - Storage errors
 
-## 2. Error Handling Strategy
+## 2. Recovery Procedures
 
-### Client-Side Handling
-1. **Retry Logic**
-   - Exponential backoff for network errors
-   - Maximum 3 retries for transient errors
-   - Immediate failure for validation errors
+### Disaster Recovery
+1. **Data Recovery**
+   - RPO (Recovery Point Objective): 5 minutes
+   - RTO (Recovery Time Objective): 15 minutes
+   - Backup Frequency: Every 5 minutes
+   - Retention Period: 30 days
+   - Recovery Steps:
+     1. Identify affected data
+     2. Load latest backup
+     3. Verify data integrity
+     4. Resume operations
 
-2. **User Feedback**
-   - Clear error messages in UI
-   - Suggested actions for resolution
-   - Status updates during retries
+2. **Service Recovery**
+   - Primary Failover: <30 seconds
+   - Secondary Failover: <5 minutes
+   - Data Sync Time: <10 minutes
+   - Full Recovery: <30 minutes
+   - Recovery Steps:
+     1. Detect failure
+     2. Activate failover
+     3. Verify services
+     4. Restore traffic
 
-3. **State Management**
-   - Consistent error state handling
-   - Automatic recovery where possible
-   - Session management during errors
+### State Recovery
+1. **Round State**
+   - Checkpoint Frequency: Every block
+   - State Verification: Every 10 blocks
+   - Recovery Priority: High
+   - Maximum Loss: 1 round
+   - Recovery Steps:
+     1. Load last checkpoint
+     2. Replay transactions
+     3. Verify state
+     4. Resume round
 
-### Server-Side Handling
-1. **Error Logging**
-   - Error context capture
-   - Stack trace preservation
-   - User session information
-   - System state at error time
+2. **User State**
+   - Session Recovery: Immediate
+   - Balance Recovery: <5 minutes
+   - History Recovery: <30 minutes
+   - Profile Recovery: <5 minutes
+   - Recovery Steps:
+     1. Validate wallet state
+     2. Sync transactions
+     3. Update balances
+     4. Restore preferences
 
-2. **Fallback Mechanisms**
-   - Secondary processing pipeline
-   - Alternative storage solutions
-   - Backup notification systems
+## 3. Error Handling Patterns
 
-3. **Circuit Breaking**
-   - Service health monitoring
-   - Automatic failover
+### Frontend Handling
+1. **UI Error Boundaries**
+   - Component isolation
+   - Fallback rendering
+   - State preservation
+   - Recovery options
+
+2. **Network Error Handling**
+   - Retry strategies
+   - Offline detection
+   - Cache fallback
+   - User feedback
+
+### Backend Handling
+1. **Service Errors**
+   - Circuit breaking
+   - Rate limiting
+   - Request queuing
    - Graceful degradation
 
-## 3. Recovery Procedures
+2. **Database Errors**
+   - Connection pooling
+   - Query timeouts
+   - Deadlock handling
+   - Consistency checks
 
-### Transaction Recovery
-1. Monitor unconfirmed transactions
-2. Implement double-spend protection
-3. Automatic transaction rebroadcast
-4. Manual intervention triggers
+## 4. Monitoring and Alerting
 
-### Content Processing Recovery
-1. AITubo processing retry queue
-2. Alternative processing paths
-3. Content validation bypass options
-4. Manual content review triggers
+### Error Monitoring
+1. **Real-time Monitoring**
+   - Error rates
+   - Response times
+   - Resource usage
+   - System health
 
-### Round Management Recovery
-1. Block synchronization recovery
-2. Vote tallying verification
-3. Reward recalculation
-4. Round state restoration
+2. **Error Analytics**
+   - Error patterns
+   - Impact analysis
+   - Root cause tracking
+   - Resolution time
 
-## 4. Monitoring & Alerting
+### Alert Management
+1. **Alert Levels**
+   - Critical (P0): 15min response
+   - High (P1): 1hr response
+   - Medium (P2): 4hr response
+   - Low (P3): 24hr response
 
-### Error Thresholds
-- Critical: Immediate action required
-  - Authentication system failure
-  - Blockchain network issues
-  - Database corruption
-  
-- High: Action required within 15 minutes
-  - Content processing delays
-  - Transaction delays
-  - API performance degradation
-  
-- Medium: Action required within 1 hour
-  - Non-critical service issues
-  - Performance degradation
-  - Minor functionality issues
+2. **Alert Routing**
+   - Team assignment
+   - Escalation paths
+   - On-call rotation
+   - Status tracking
 
-### Alert Channels
-1. Primary: PagerDuty
-2. Secondary: Email
-3. Tertiary: Slack
-4. Emergency: SMS
+## 5. Prevention Strategies
 
-## 5. Documentation Requirements
+### Proactive Measures
+1. **System Hardening**
+   - Load testing
+   - Chaos engineering
+   - Security scanning
+   - Performance monitoring
 
-### Error Reporting
-- Include error code
-- Timestamp
-- User context
-- System state
-- Action attempted
-- Stack trace
+2. **Data Protection**
+   - Regular backups
+   - Data validation
+   - Access control
+   - Encryption
 
-### Resolution Documentation
-- Root cause analysis
-- Resolution steps taken
-- Prevention measures
-- System improvements
-- Documentation updates
+### Resilience Patterns
+1. **Circuit Breakers**
+   - Failure thresholds
+   - Recovery time
+   - Partial availability
+   - Graceful degradation
 
-## 6. Testing Requirements
+2. **Bulkheading**
+   - Resource isolation
+   - Failure containment
+   - Service separation
+   - Load partitioning
 
-### Error Simulation
-- Regular chaos testing
-- Network failure simulation
-- Service degradation testing
-- Load testing
+## 6. User Communication
 
-### Recovery Testing
-- Failover testing
-- Backup restoration
-- State recovery
-- Data consistency checks 
+### Error Messages
+1. **User Facing**
+   - Clear language
+   - Action items
+   - Status updates
+   - Help resources
+
+2. **Technical Details**
+   - Error codes
+   - Stack traces
+   - System state
+   - Debug information
+
+### Recovery Communication
+1. **Status Updates**
+   - Incident status
+   - ETA updates
+   - Recovery progress
+   - Resolution confirmation
+
+2. **User Instructions**
+   - Recovery steps
+   - Alternative paths
+   - Support contacts
+   - Prevention tips 

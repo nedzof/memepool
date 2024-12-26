@@ -1,244 +1,196 @@
 # AITubo Integration
 
 ## Related Documentation
-- [Technical Specifications](./specifications.md) - For detailed specifications
-- [Architecture Overview](./architecture.md) - For system architecture
-- [Application Flow](./appflow.md) - For detailed flows
-- [Round System](./round_system.md) - For round management
-- [Error Handling](./error_handling.md) - For error handling patterns
-- [Testing Strategy](./testing_strategy.md) - For testing requirements
-- [BSV Integration](./bsv_integration.md) - For blockchain storage
-- [Deployment](./deployment.md) - For deployment procedures
+- [Architecture](./architecture.md) - For system architecture context
+- [Error Handling](./error_handling.md) - For AI processing error recovery
+- [Specifications](./specifications.md) - For content requirements
 
-## 1. Processing Pipeline
+## 1. Integration Overview
 
-### Input Processing
-1. **Content Validation**
+### Core Services
+1. **AITubo API**
+   - Content transformation
+   - Quality assessment
+   - Performance metrics
+   - Status monitoring
+
+2. **Processing Pipeline**
+   - Content validation
+   - Transformation queue
+   - Quality control
+   - Result delivery
+
+## 2. Content Processing
+
+### Transformation Flow
+1. **Input Processing**
    ```
-   Admin Upload → Format Check → Size Verification → Queue Assignment
-   ```
-   - Format: PNG, JPG, GIF
-   - Max Size: 10MB
-   - Resolution: 1080p minimum
-   - Aspect Ratio: 16:9, 4:3, 1:1
-
-2. **Preprocessing**
-   ```typescript
-   interface ProcessingRequest {
-     contentId: string;
-     sourceUrl: string;
-     format: ImageFormat;
-     resolution: Resolution;
-     metadata: ContentMetadata;
-   }
+   Validate → Queue → Transform → Validate → Deliver
    ```
 
-### Transformation Pipeline
-1. **3D Conversion**
-   ```
-   Input → AI Processing → Quality Check → Output
-   ```
-   - Resolution: 1080p
-   - Frame Rate: 30 FPS
-   - Animation Smoothness: ≥95%
-   - Quality Verification
+2. **Quality Control**
+   - Resolution check
+   - Animation smoothness
+   - Frame rate validation
+   - Performance metrics
 
-2. **Performance Requirements**
-   - Processing Time: <60 seconds
-   - Memory Usage: <200MB
-   - Network Usage: <20MB/minute
-   - Load Time: <2 seconds
+### Processing Parameters
+```typescript
+interface TransformationConfig {
+  resolution: "1080p" | "720p";
+  frameRate: 30 | 60;
+  quality: "high" | "medium" | "low";
+  style: TransformationStyle;
+  options: {
+    smoothing: number;
+    enhancement: boolean;
+    stabilization: boolean;
+  };
+}
 
-## 2. Quality Standards
+interface TransformationStyle {
+  type: "realistic" | "artistic" | "cartoon";
+  intensity: number;
+  parameters: Record<string, number>;
+}
+```
 
-### Image Quality
-1. **Resolution Standards**
-   - Input: 1080p minimum
-   - Output: 1080p standard
-   - Aspect Ratio: Original
-   - Color Depth: 24-bit
+## 3. API Integration
 
-2. **Animation Quality**
-   - Frame Rate: 30 FPS
-   - Smoothness: ≥95%
-   - Transition Quality
-   - Motion Stability
+### Endpoints
+1. **Core Endpoints**
+   - POST /transform
+   - GET /status/{jobId}
+   - GET /result/{jobId}
+   - POST /validate
 
-### Performance Standards
-1. **Processing Metrics**
-   - Success Rate: >99%
-   - Error Rate: <1%
-   - Retry Rate: <5%
-   - Quality Score: >90%
+2. **Management Endpoints**
+   - GET /quota
+   - GET /metrics
+   - POST /callback
+   - GET /health
 
-2. **Resource Usage**
-   - CPU Usage: <70%
-   - Memory: <200MB
-   - Network: <20MB/minute
-   - Storage: Optimized
+### Authentication
+1. **API Security**
+   - API key management
+   - Rate limiting
+   - IP whitelisting
+   - Request signing
 
-## 3. Error Handling
+2. **Access Control**
+   - Permission levels
+   - Usage quotas
+   - Feature access
+   - API versioning
 
-### Processing Errors
-1. **Input Errors**
-   - Format Invalid
-   - Size Exceeded
-   - Resolution Low
-   - Content Corrupt
+## 4. Quality Assurance
 
-2. **Transformation Errors**
-   - Processing Failed
-   - Quality Low
-   - Resource Exceeded
-   - Network Error
+### Quality Metrics
+1. **Visual Quality**
+   - Resolution accuracy
+   - Color fidelity
+   - Animation smoothness
+   - Frame consistency
+
+2. **Performance Metrics**
+   - Processing time
+   - Resource usage
+   - Success rate
+   - Error rate
+
+### Validation Rules
+1. **Input Validation**
+   - File format
+   - Image dimensions
+   - File size
+   - Content type
+
+2. **Output Validation**
+   - Quality thresholds
+   - Performance targets
+   - Format compliance
+   - Size limits
+
+## 5. Error Handling
+
+### Error Types
+1. **Processing Errors**
+   - Input validation
+   - Transformation failure
+   - Resource exhaustion
+   - Timeout issues
+
+2. **Service Errors**
+   - API unavailable
+   - Rate limit exceeded
+   - Authentication failed
+   - Network issues
 
 ### Recovery Procedures
 1. **Error Recovery**
-   - Automatic Retry
-   - Format Conversion
-   - Resolution Adjustment
-   - Manual Review
+   - Retry strategy
+   - Fallback options
+   - Manual review
+   - User notification
 
-2. **Fallback Options**
-   - Alternative Processing
-   - Quality Reduction
-   - Manual Intervention
-   - User Notification
+2. **Prevention**
+   - Pre-validation
+   - Resource monitoring
+   - Load balancing
+   - Circuit breaking
 
-## 4. Integration Points
+## 6. Performance Optimization
 
-### API Integration
-1. **Endpoint Configuration**
-   ```typescript
-   interface AITuboConfig {
-     apiEndpoint: string;
-     apiKey: string;
-     version: string;
-     timeout: number;
-   }
-   ```
-
-2. **Request Structure**
-   ```typescript
-   interface TransformRequest {
-     contentId: string;
-     input: {
-       url: string;
-       format: string;
-       resolution: Resolution;
-     };
-     options: {
-       quality: number;
-       frameRate: number;
-       optimization: string;
-     };
-   }
-   ```
-
-### Response Handling
-1. **Success Response**
-   ```typescript
-   interface TransformResponse {
-     status: 'success';
-     output: {
-       url: string;
-       format: string;
-       quality: number;
-       metrics: ProcessingMetrics;
-     };
-   }
-   ```
-
-2. **Error Response**
-   ```typescript
-   interface ErrorResponse {
-     status: 'error';
-     code: string;
-     message: string;
-     retryable: boolean;
-   }
-   ```
-
-## 5. Performance Optimization
-
-### Resource Management
+### Processing Strategy
 1. **Queue Management**
-   - Priority Queue
-   - Rate Limiting
-   - Resource Allocation
-   - Load Balancing
+   - Priority levels
+   - Batch processing
+   - Load distribution
+   - Resource allocation
 
 2. **Caching Strategy**
-   - Result Caching
-   - Metadata Cache
-   - Status Cache
-   - Error Cache
+   - Result caching
+   - Parameter caching
+   - Status caching
+   - Config caching
 
-### Processing Optimization
-1. **Batch Processing**
-   - Queue Aggregation
-   - Parallel Processing
-   - Resource Sharing
-   - Status Tracking
+### Resource Management
+1. **Capacity Planning**
+   - CPU allocation
+   - Memory limits
+   - Storage quotas
+   - Network bandwidth
 
-2. **Quality Optimization**
-   - Adaptive Quality
-   - Size Optimization
-   - Format Selection
-   - Performance Tuning
+2. **Scaling Rules**
+   - Auto-scaling
+   - Load thresholds
+   - Resource limits
+   - Performance targets
 
-## 6. Monitoring
+## 7. Monitoring
 
-### System Metrics
+### Service Monitoring
+1. **Health Checks**
+   - API availability
+   - Processing status
+   - Queue health
+   - Resource usage
+
+2. **Performance Tracking**
+   - Response times
+   - Success rates
+   - Error rates
+   - Resource efficiency
+
+### Usage Analytics
 1. **Processing Metrics**
-   - Success Rate
-   - Error Rate
-   - Processing Time
-   - Quality Score
+   - Daily usage
+   - Success rate
+   - Error patterns
+   - Quality scores
 
 2. **Resource Metrics**
-   - CPU Usage
-   - Memory Usage
-   - Network Usage
-   - Queue Length
-
-### Health Checks
-1. **Service Health**
-   - API Status
-   - Queue Status
-   - Error Rates
-   - Response Times
-
-2. **Quality Checks**
-   - Output Quality
-   - Performance
-   - Resource Usage
-   - User Feedback
-
-## 7. Security
-
-### API Security
-1. **Authentication**
-   - API Key Management
-   - Request Signing
-   - Rate Limiting
-   - IP Whitelisting
-
-2. **Data Protection**
-   - Content Encryption
-   - Secure Transfer
-   - Access Control
-   - Audit Logging
-
-### Content Security
-1. **Input Validation**
-   - Format Verification
-   - Size Validation
-   - Content Check
-   - Metadata Validation
-
-2. **Output Protection**
-   - Result Verification
-   - Access Control
-   - Distribution Rules
-   - Usage Tracking 
+   - CPU utilization
+   - Memory usage
+   - Queue length
+   - Network usage 

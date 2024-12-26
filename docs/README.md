@@ -1,157 +1,77 @@
-# Memepool Documentation
+# Documentation Guide
 
-## Overview
-Memepool is a platform that transforms static memes into 3D animations using AI, synchronized with Bitcoin's blockchain. The platform operates on a standardized 1 sat/second viewing model with transparent reward distribution.
+## Documentation Structure
 
-## Core Documentation
+### Core Documentation
+- `pdr.md` - Product requirements and vision
+- `specifications.md` - Core business rules and monetization
+- `architecture.md` - System design and technical architecture
 
-### Product & Architecture
-1. [Product Design Requirements](./pdr.md)
-   - Core features and requirements
-   - User types and interactions
-   - Development phases
-   - Implementation guidelines
+### Implementation Guides
+- `frontend.md` - Frontend implementation and UI/UX guidelines
+- `backend.md` - Backend services and API implementation
+- `blockchain_integration.md` - BSV blockchain and wallet integration
+- `aitubo_integration.md` - AI processing integration
 
-2. [Technical Specifications](./specifications.md)
-   - Monetization model
-   - Content guidelines
-   - System limitations
-   - Performance requirements
+### System Design
+- `appflow.md` - User journeys and system flows
+- `round_system.md` - Competition mechanics and implementation
+- `error_handling.md` - Error management and recovery
 
-3. [Architecture Overview](./architecture.md)
-   - System components
-   - Data flow
-   - Service architecture
-   - Security measures
+### Operations
+- `deployment.md` - Deployment procedures and environments
+- `testing_strategy.md` - Testing approach and requirements
+- `api_versioning.md` - API versioning and management
 
-### Implementation Details
-1. [Frontend Implementation](./frontend.md)
-   - Technical stack
-   - Component architecture
-   - Feature implementation
-   - Performance optimization
+## Documentation Standards
 
-2. [Backend Implementation](./backend.md)
-   - Service architecture
-   - API implementation
-   - Data management
-   - Integration points
+### Document Structure
+Each document should include:
+1. **Related Documentation** section with relevant links
+2. **Overview** section explaining the document's purpose
+3. **Clear section headers** with consistent numbering
+4. **Code examples** where applicable
+5. **Version history** for tracking changes
 
-3. [Application Flow](./appflow.md)
-   - Content pipeline
-   - Round management
-   - Wallet integration
-   - System integration
+### Cross-Referencing
+- Link to related documents using relative paths
+- Avoid duplicating content from other documents
+- Use the "Related Documentation" section to guide readers
+- Keep links up to date when moving or renaming files
 
-### Core Systems
-1. [BSV Integration](./bsv_integration.md)
-   - Transaction management
-   - Block synchronization
-   - Revenue distribution
-   - Security measures
+### Maintenance Guidelines
+1. **Single Source of Truth**
+   - Each concept should be documented in one place
+   - Use references instead of duplicating information
+   - Keep technical specifications in domain-specific documents
 
-2. [Round System](./round_system.md)
-   - Round mechanics
-   - Revenue distribution
-   - State management
-   - Error handling
+2. **Version Control**
+   - Update related documents when making changes
+   - Maintain a version history section
+   - Document breaking changes clearly
 
-3. [AITubo Integration](./aitubo_integration.md)
-   - Processing pipeline
-   - Quality standards
-   - Error handling
-   - Performance optimization
+3. **Review Process**
+   - Technical review for accuracy
+   - Cross-reference check for broken links
+   - Regular updates for outdated content
 
-### Platform Features
-1. [Wallet Integration](./wallet_integration.md)
-   - Supported wallets (OKX, Yours, Unisat, Native)
-   - Authentication flows
-   - Transaction handling
-   - Balance management
+## Contributing to Documentation
 
-2. [Inscription Mechanism](./inscription.md)
-   - Content inscription
-   - Ownership management
-   - Transfer system
-   - Security measures
+### Adding New Documentation
+1. Follow the existing structure and standards
+2. Include all required sections
+3. Add appropriate cross-references
+4. Update this guide if adding new categories
 
-### Operations & Development
-1. [Error Handling](./error_handling.md)
-   - Error classification
-   - Recovery procedures
-   - Monitoring
-   - User communication
+### Updating Existing Documentation
+1. Maintain consistent formatting
+2. Update related documents if needed
+3. Verify all cross-references
+4. Add version history entry
 
-2. [Testing Strategy](./testing_strategy.md)
-   - Testing levels
-   - Test coverage
-   - Performance testing
-   - Integration testing
-
-3. [Deployment](./deployment.md)
-   - Environment setup
-   - Deployment procedures
-   - Monitoring
-   - Recovery procedures
-
-4. [API Versioning](./api_versioning.md)
-   - Version management
-   - Compatibility
-   - Documentation
-   - Migration guides
-
-## Quick References
-
-### Revenue Model
-- View Time: 1 sat/second
-- Platform Fee: 2% on all transactions
-- Direct Revenue Split:
-  - Creator: 10%
-  - Owner: 90%
-- Reward Pool Split (55-60%):
-  - Top 3 Memes: 95%
-  - Fast Viewers: 5%
-
-### Supported Wallets
-- OKX Wallet
-- Yours Wallet
-- Unisat Wallet
-- Native Memepool Wallet
-
-### System Requirements
-- Resolution: 1080p standard
-- Frame Rate: 30 FPS
-- Processing Time: <60 seconds
-- Response Time: <500ms
-
-### Key Metrics
-- Block Time: ~10 minutes
-- Concurrent Users: >100K
-- Transaction Rate: >1K/minute
-- Uptime: 99.9%
-
-## Development Guidelines
-
-### Code Standards
-- TypeScript for all new code
-- React/Redux for frontend
-- Node.js for backend
-- BSV for blockchain
-
-### Testing Requirements
-- Unit Test Coverage: >80%
-- Integration Test Coverage: >70%
-- E2E Test Coverage: >50%
-- Performance Test Baseline: <500ms
-
-### Security Requirements
-- Wallet Authentication
-- Rate Limiting
-- Input Validation
-- Error Handling
-
-### Documentation Standards
-- Keep documentation up-to-date
-- Include code examples
-- Maintain cross-references
-- Version documentation with code 
+### Documentation Best Practices
+1. Keep content concise and clear
+2. Use consistent terminology
+3. Include practical examples
+4. Maintain up-to-date diagrams
+5. Regular review and updates 

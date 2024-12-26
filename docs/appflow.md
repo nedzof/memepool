@@ -1,195 +1,267 @@
-# Application Flow
+# Application Flows
 
 ## Related Documentation
-- [Technical Specifications](./specifications.md) - For detailed specifications
-- [Architecture Overview](./architecture.md) - For system architecture
-- [BSV Integration](./bsv_integration.md) - For blockchain details
-- [Round System](./round_system.md) - For round management details
-- [Frontend Implementation](./frontend.md) - For client-side flows
-- [Backend Implementation](./backend.md) - For service flows
-- [Wallet Integration](./wallet_integration.md) - For wallet flows
-- [Error Handling](./error_handling.md) - For error handling flows
-- [AITubo Integration](./aitubo_integration.md) - For content processing flows
-- [Testing Strategy](./testing_strategy.md) - For flow testing
-- [API Versioning](./api_versioning.md) - For API flows
-- [Deployment](./deployment.md) - For deployment flows
+- [Frontend Implementation](./frontend.md) - For UI implementation details
+- [Backend Implementation](./backend.md) - For service implementation
+- [Round System](./round_system.md) - For round mechanics
 
-## 1. Content Pipeline
+## 1. User Journeys
 
-### Submission Process
-1. **Admin Upload**
+### Creator Journey
+1. **Content Creation**
    ```
-   Admin → Content Validation → Metadata Check → Queue Assignment
+   Connect Wallet → Upload Meme → Preview Transform → Submit
    ```
-   - Format validation
-   - Size verification
-   - Content moderation
-   - Metadata assignment
+   - Wallet connection
+   - Content validation
+   - Quality preview
+   - Round assignment
 
-2. **AITubo Processing**
+2. **Performance Tracking**
    ```
-   Queue → AITubo Transform → Quality Check → Storage
+   View Dashboard → Track Metrics → Collect Revenue → Reinvest
    ```
-   - 3D transformation
-   - Quality verification
-   - Performance optimization
-   - Content storage
+   - Real-time stats
+   - Revenue tracking
+   - Performance analytics
+   - Historical data
 
-3. **Round Assignment**
+### Viewer Journey
+1. **Content Discovery**
    ```
-   Storage → Round Selection → State Update → Availability
+   Browse Trending → Connect Wallet → Watch Content → Support Creators
    ```
-   - Round timing
-   - Content distribution
+   - Content exploration
+   - Wallet integration
+   - View tracking
+   - Payment processing
+
+2. **Round Participation**
+   ```
+   Join Round → View Content → Earn Rewards → Share Content
+   ```
+   - Round selection
+   - Content interaction
+   - Reward earning
+   - Social sharing
+
+## 2. Core Flows
+
+### Authentication Flow
+1. **Wallet Connection**
+   ```
+   Select Wallet → Connect → Sign Message → Verify
+   ```
+   - Provider detection
+   - Network validation
+   - Signature verification
+   - Session creation
+
+2. **Session Management**
+   ```
+   Check Session → Refresh Token → Update State → Monitor Activity
+   ```
+   - Token validation
    - State management
-   - Availability check
+   - Activity tracking
+   - Auto-reconnect
 
-## 2. Round Management
+### Content Flow
+1. **Creation Process**
+   ```
+   Upload → Validate → Transform → Review → Submit
+   ```
+   - Format check
+   - Size validation
+   - AI processing
+   - Quality assurance
 
-### Round Initialization
-1. **Block Synchronization**
+2. **Viewing Process**
    ```
-   Block Event → Round Start → State Reset → Content Assignment
+   Select Content → Start View → Process Payment → Track Time
    ```
-   - Block height tracking
-   - Round state initialization
-   - Content selection
-   - Participant reset
+   - Content loading
+   - Payment initiation
+   - View tracking
+   - Revenue distribution
 
-2. **Engagement Tracking**
-   ```
-   User Action → State Update → Revenue Calculation → Pool Update
-   ```
-   - View time tracking
-   - Revenue accumulation
-   - Pool distribution
-   - Performance metrics
+## 3. Transaction Flows
 
-3. **Round Completion**
+### Payment Processing
+1. **View Payments**
    ```
-   Block End → Revenue Distribution → State Update → History Update
+   Start View → Initialize Payment → Stream Sats → Distribute
    ```
-   - Instant revenue (25%)
-     - Creator: 10%
-     - Owner: 90%
-   - Performance pool (75%)
-     - Top creator: 20%
-     - Top 100: 80%
-
-## 3. Wallet Integration
-
-### Transaction Flow
-1. **View Time Payments**
-   ```
-   Watch Start → 1 sat/sec Payment → Revenue Split → Distribution
-   ```
+   - Balance check
    - Rate: 1 sat/second
-   - Platform fee: 2%
-   - Instant split: 25%
-   - Pool contribution: 75%
+   - Real-time tracking
+   - Split distribution
 
 2. **Market Transactions**
    ```
-   Trade Request → Fee Calculation → BSV Transaction → Ownership Update
+   List Item → Set Price → Process Sale → Transfer Ownership
    ```
-   - Platform fee: 2%
+   - Price validation
+   - Fee calculation
    - Ownership transfer
-   - Balance updates
-   - History tracking
+   - History update
 
-### Security Measures
-1. **Transaction Validation**
-   - Signature verification
-   - Balance checks
-   - Rate limiting
-   - Double-spend prevention
+### Revenue Distribution
+1. **Direct Revenue**
+   ```
+   Collect Payment → Calculate Splits → Process Fees → Distribute
+   ```
+   - Creator: 10%
+   - Owner: 90%
+   - Platform: 2%
+   - Instant settlement
 
-2. **Error Handling**
-   - Transaction retry
-   - State recovery
-   - Balance reconciliation
-   - User notification
+2. **Pool Distribution**
+   ```
+   Collect Pool → Calculate Ranks → Apply Formula → Distribute
+   ```
+   - Performance ranking
+   - Score calculation
+   - Reward allocation
+   - Batch processing
 
-## 4. Creator Management
+## 4. Round Flows
 
-### Profile Management
-1. **Account Setup**
-   - Wallet connection
-   - Profile verification
-   - Permission assignment
-   - Analytics setup
+### Round Lifecycle
+1. **Round Start**
+   ```
+   Block Event → Initialize → Assign Content → Open Viewing
+   ```
+   - Time synchronization
+   - State initialization
+   - Content selection
+   - Participant notification
 
-2. **Performance Tracking**
-   - View statistics
-   - Revenue tracking
-   - Round performance
-   - Market activity
+2. **Round Completion**
+   ```
+   Time Complete → Lock State → Calculate Results → Distribute Rewards
+   ```
+   - State finalization
+   - Score calculation
+   - Reward distribution
+   - History update
 
-### Content Management
-1. **Submission Controls**
-   - Quality guidelines
-   - Content moderation
-   - Version control
-   - Round assignment
+### Participation Flow
+1. **Creator Participation**
+   ```
+   Submit Content → Quality Check → Round Assignment → Track Performance
+   ```
+   - Content validation
+   - Quality assessment
+   - Round placement
+   - Performance monitoring
 
-2. **Performance Analytics**
-   - View metrics
-   - Revenue analysis
-   - User engagement
-   - Market activity
+2. **Viewer Participation**
+   ```
+   Join Round → View Content → Support Creators → Earn Rewards
+   ```
+   - Round selection
+   - Content interaction
+   - Payment processing
+   - Reward earning
 
-## 5. System Integration
+## 5. Error Flows
 
-### State Management
-1. **Round State**
-   - Block synchronization
-   - Participant tracking
-   - Revenue accumulation
-   - Reward calculation
-
-2. **User State**
-   - Session management
-   - Balance tracking
-   - History recording
-   - Performance metrics
-
-### Error Recovery
+### Recovery Flows
 1. **Transaction Recovery**
-   - Payment verification
-   - State reconciliation
-   - Balance adjustment
-   - History correction
+   ```
+   Detect Error → Retry Logic → State Recovery → User Notification
+   ```
+   - Error detection
+   - Retry strategy
+   - State restoration
+   - User communication
 
-2. **System Recovery**
-   - Service restoration
-   - State verification
-   - Data consistency
-   - User notification
+2. **Session Recovery**
+   ```
+   Connection Loss → Auto Reconnect → State Sync → Resume Activity
+   ```
+   - Connection monitoring
+   - Reconnection logic
+   - State synchronization
+   - Activity resumption
 
-## 6. Performance Monitoring
+### Error Handling
+1. **User Errors**
+   ```
+   Validate Input → Show Feedback → Suggest Fix → Track Resolution
+   ```
+   - Input validation
+   - Error messages
+   - Recovery options
+   - Error tracking
 
-### System Metrics
-1. **Technical Metrics**
-   - Response times
-   - Error rates
-   - Resource usage
-   - Network performance
+2. **System Errors**
+   ```
+   Detect Issue → Apply Fallback → Log Error → Notify Support
+   ```
+   - Error detection
+   - Fallback options
+   - Error logging
+   - Support notification
 
-2. **Business Metrics**
-   - Active users
-   - Transaction volume
-   - Revenue tracking
-   - User engagement
+## 6. Integration Flows
 
-### Health Monitoring
-1. **Service Health**
-   - API availability
-   - Processing status
-   - Queue length
-   - Error rates
+### Wallet Integration
+1. **Connection Flow**
+   ```
+   Select Provider → Initialize → Connect → Verify
+   ```
+   - Provider selection
+   - Connection setup
+   - Network validation
+   - State management
 
-2. **Integration Health**
-   - BSV node status
-   - AITubo availability
-   - Wallet connections
-   - External services
+2. **Transaction Flow**
+   ```
+   Build Transaction → Sign → Broadcast → Confirm
+   ```
+   - Transaction creation
+   - Signature request
+   - Network broadcast
+   - Status monitoring
+
+### AI Integration
+1. **Processing Flow**
+   ```
+   Prepare Content → Queue Job → Monitor Progress → Deliver Result
+   ```
+   - Content preparation
+   - Job management
+   - Progress tracking
+   - Result handling
+
+2. **Quality Flow**
+   ```
+   Analyze Input → Apply Rules → Generate Score → Provide Feedback
+   ```
+   - Quality analysis
+   - Rule application
+   - Score generation
+   - User feedback
+
+## 7. Monitoring Flows
+
+### System Monitoring
+1. **Performance Tracking**
+   ```
+   Collect Metrics → Analyze Patterns → Generate Alerts → Take Action
+   ```
+   - Metric collection
+   - Pattern analysis
+   - Alert generation
+   - Action triggers
+
+2. **Health Monitoring**
+   ```
+   Check Services → Validate State → Report Status → Handle Issues
+   ```
+   - Service checks
+   - State validation
+   - Status reporting
+   - Issue handling

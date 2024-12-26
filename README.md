@@ -1,54 +1,90 @@
 # Memepool: Evolving Memes on the Blockchain
 
+Transform your static memes into engaging 3D animations and earn crypto rewards through real-time creative battles.
+
+![Memepool Platform](docs/assets/platform-preview.png)
+
 ## What is Memepool?
 
-Memepool is a revolutionary platform that combines meme culture, AI technology, and blockchain to create a new paradigm for content creation and monetization. It allows creators to transform static memes into engaging 3D animations and compete in real-time creative battles for crypto rewards.
+Memepool revolutionizes meme creation and monetization by combining:
+- 🎨 AI-powered 2D to 3D meme transformation
+- 💰 Real-time crypto earnings for creators and viewers
+- 🏆 Competitive rounds with instant rewards
+- ⛓️ BSV blockchain for transparent transactions
 
-## How does it work?
+### How It Works
 
-- **10-Minute Rounds**: Memepool operates on a unique 10-minute cycle, synchronized with Bitcoin's block time. Each new block triggers a fresh round of meme creation and competition.
+1. **Submit Your Meme**
+   - Upload any popular meme format
+   - Our AI transforms it into a 3D animation
+   - Preview and customize the result
 
-- **AI-Powered Creation**: Creators use Memepool's AI tools to transform 2D memes into 3D animations without needing technical expertise. The AI handles the complex aspects while creators focus on the artistic vision.
+2. **Join Live Rounds**
+   - Rounds start every 10 minutes
+   - Your meme competes with others
+   - Viewers vote by watching time
 
-- **Real-Time Rewards**: Viewers engage with the created memes and their interactions directly translate into real-time earnings for creators. 25% of the rewards are instant, while 75% goes into a performance pool.
+3. **Earn Rewards**
+   - Get paid per second of view time
+   - Earn bonus rewards for top performance
+   - Withdraw instantly to your wallet
 
-- **Performance Pool**: The performance pool rewards the top creators of each round. The top creator receives 20% of the pool, with the rest being distributed among the top 100 based on their rank.
+## Getting Started
 
-For detailed documentation, check out:
-- [Application Flows](docs/appflow.md) - For detailed user flows
-- [Round System](docs/round_system.md) - For round mechanics
-- [AITubo Integration](docs/aitubo_integration.md) - For AI processing
-- [BSV Integration](docs/bsv_integration.md) - For blockchain details
+### 1. Prerequisites
+- Modern web browser
+- BSV wallet (OKX, Yours, Unisat, or our built-in wallet)
+- Some BSV for transactions (~$1 worth is plenty to start)
 
-## Who is it for?
+### 2. Installation
+```bash
+git clone https://github.com/your-org/memepool.git
+cd memepool
+npm install
+cp .env.example .env  # Configure your environment
+npm run dev
+```
 
-Memepool caters to a wide audience:
+### 3. Quick Start Guide
+1. Visit [memepool.example.com](https://memepool.example.com)
+2. Connect your BSV wallet (or create one with us)
+3. Upload your first meme
+4. Wait for the next round (max 10 minutes)
+5. Share and earn!
 
-- **Creators**: Anyone with a passion for memes and creativity can participate. No technical skills are required, just a desire to create and compete.
+## Key Features
 
-- **Viewers**: Meme enthusiasts can discover, engage with, and support the best content. Their interactions directly influence the success of creators.
+### For Creators
+- **AI Transformation**: Turn any meme into a 3D masterpiece
+- **Instant Earnings**: Get paid for every second your meme is viewed
+- **Fair Competition**: New rounds every 10 minutes
+- **Performance Analytics**: Track your meme's performance
+- **Built-in Wallet**: Optional native wallet for seamless experience
 
-- **Collectors**: Unique 3D memes can be collected, traded, and monetized on the platform, opening up new opportunities for digital asset ownership.
+### For Viewers
+- **Engaging Content**: Discover fresh 3D meme content
+- **Voting Power**: Support creators by watching
+- **Community**: Join the meme evolution
+- **Zero Fees**: No platform fees for viewing
 
-Learn more about:
-- [Product Design Requirements](docs/pdr.md) - For user roles and features
-- [Wallet Integration](docs/wallet_integration.md) - For supported wallets
-- [Technical Specifications](docs/specifications.md) - For detailed specifications
+## Platform Economics
 
-## Technical Architecture
+- **View Time**: 1 sat/second per viewer
+- **Round Rewards**: Additional rewards for top performers
+- **Creator Share**: 90% to creator, 10% to platform
+- **Instant Payouts**: No minimum withdrawal amount
 
-Memepool is built on a robust technical foundation:
+## Support & Community
 
-- **Frontend**: React/Redux SPA with real-time updates and seamless wallet integration.
-- **Backend**: Node.js services for content management, round tracking, and blockchain interaction.
-- **Blockchain**: Built on Bitcoin SV (BSV) for scalability, security, and instant microtransactions.
-- **AI**: Integrated with AITubo.ai for fast, high-quality 3D transformations.
-- **Storage**: BSV Storage for decentralized content storage, Redis and BSV for metadata management.
+- 📖 [Full Documentation](docs/README.md)
+- 💬 [Discord Community](https://discord.gg/memepool)
+- 🐦 [Twitter Updates](https://twitter.com/memepool)
+- 📧 [Support Email](mailto:support@memepool.example.com)
 
-For detailed documentation, check out:
-- [System Architecture](docs/architecture.md) - For system overview
-- [Frontend Implementation](docs/frontend.md) - For client details
-- [Backend Implementation](docs/backend.md) - For service details
-- [Error Handling](docs/error_handling.md) - For error patterns
-- [Testing Strategy](docs/testing_strategy.md) - For testing approach
-- [Deployment](docs/deployment.md) - For deployment details
+## Contributing
+
+We welcome contributions! Please check our [Contributing Guidelines](CONTRIBUTING.md).
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

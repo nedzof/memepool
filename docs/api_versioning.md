@@ -1,202 +1,191 @@
-# API Versioning Strategy
+# API Versioning
 
 ## Related Documentation
-- [BSV Integration](./bsv_integration.md) - For blockchain versioning requirements
-- [Error Handling](./error_handling.md) - For version-related error codes
-- [Testing Strategy](./testing_strategy.md) - For API version testing requirements
-- [Deployment](./deployment.md) - For version deployment procedures
-- [Frontend Implementation](./frontend.md) - For client-side versioning
-- [Backend Implementation](./backend.md) - For service versioning
-- [Wallet Integration](./wallet_integration.md) - For wallet API versioning
-- [AITubo Integration](./aitubo_integration.md) - For AI service versioning
-- [Architecture Overview](./architecture.md) - For system-wide versioning patterns
+- [Backend Implementation](./backend.md) - For service implementation details
+- [Frontend Implementation](./frontend.md) - For client integration
+- [Error Handling](./error_handling.md) - For API error handling
 
-## 1. Version Control
+## 1. Versioning Strategy
 
 ### Version Format
-1. **Semantic Versioning**
-   - Format: `v{major}.{minor}.{patch}`
-   - Example: `v1.2.3`
-   - Major: Breaking changes
-   - Minor: New features, backward compatible
-   - Patch: Bug fixes, backward compatible
+- Format: `v{major}.{minor}`
+  ```
+  Example: v1.0, v1.1, v2.0
+  ```
+- Major version: Breaking changes
+- Minor version: Backward compatible changes
 
-2. **API URL Structure**
-   ```
-   https://api.memepool.com/v1/resource
-   https://api.memepool.com/v2/resource
-   ```
+### Version Lifecycle
+1. **Development**
+   - Alpha: Internal testing
+   - Beta: Limited release
+   - Release: General availability
 
-3. **Header Versioning**
-   ```
-   Accept: application/json; version=1.0
-   X-API-Version: 1.0
-   ```
+2. **Support Policy**
+   - Active: Latest version
+   - Maintained: Previous major version
+   - Deprecated: Older versions
+   - EOL: End of life
 
-## 2. Compatibility Guidelines
+## 2. API Structure
 
-### Backward Compatibility
-1. **Breaking Changes**
-   - Removing fields
-   - Changing field types
-   - Modifying authentication
-   - Changing error responses
+### Endpoint Format
+```
+/{version}/{resource}/{action}
+Example: /v1/content/transform
+```
 
-2. **Non-Breaking Changes**
-   - Adding new endpoints
-   - Adding optional fields
-   - Extending enums
-   - Adding query parameters
+### Version Headers
+```
+Accept: application/json; version=1.0
+X-API-Version: 1.0
+```
 
-### Forward Compatibility
-1. **Response Handling**
+### Response Format
+```json
+{
+  "version": "1.0",
+  "status": "success",
+  "data": {}
+}
+```
+
+## 3. Version Management
+
+### Breaking Changes
+1. **Major Version Bump**
+   - Response structure changes
+   - Required parameter changes
+   - Resource removal
+   - Authentication changes
+
+2. **Minor Version Bump**
+   - New optional parameters
+   - Additional response fields
+   - Performance improvements
+   - Bug fixes
+
+### Migration Support
+1. **Version Coexistence**
+   - Multiple active versions
+   - Load balancing
+   - Feature flags
+   - Gradual rollout
+
+2. **Deprecation Process**
+   - Announcement period
+   - Migration documentation
+   - Transition support
+   - EOL timeline
+
+## 4. Client Integration
+
+### Version Selection
+1. **Default Version**
+   - Latest stable version
+   - Fallback mechanism
+   - Version negotiation
+   - Client detection
+
+2. **Version Override**
+   - Header-based selection
+   - Query parameter option
+   - SDK configuration
+   - Environment settings
+
+### Compatibility
+1. **Forward Compatibility**
    - Ignore unknown fields
-   - Default values for missing fields
-   - Flexible data parsing
+   - Default values
+   - Feature detection
    - Graceful degradation
 
-2. **Request Processing**
-   - Validate required fields
-   - Accept additional fields
-   - Version-specific validation
-   - Flexible content types
+2. **Backward Compatibility**
+   - Field preservation
+   - Default behaviors
+   - Legacy support
+   - Error handling
 
-## 3. Version Lifecycle
+## 5. Documentation
 
-### Active Versions
-1. **Current Version (v1)**
-   - Full support
-   - Regular updates
-   - Bug fixes
-   - New features
-
-2. **Beta Version (v2-beta)**
-   - Preview features
-   - Limited support
-   - Subject to changes
-   - Developer feedback
-
-### Deprecation Policy
-1. **Timeline**
-   - 6 months notice
-   - 3 months grace period
-   - 1 month emergency support
-   - Version sunset
-
-2. **Communication**
-   - Email notifications
-   - API response headers
-   - Documentation updates
+### Version Documentation
+1. **API Reference**
+   - Version-specific docs
+   - Changelog
    - Migration guides
+   - Examples
 
-## 4. Migration Support
-
-### Documentation
-1. **Version Differences**
+2. **SDK Documentation**
+   - Version mapping
    - Breaking changes
-   - New features
-   - Deprecated features
-   - Migration steps
+   - Upgrade guides
+   - Best practices
 
-2. **Migration Guides**
-   - Step-by-step instructions
+### Change Communication
+1. **Announcement Process**
+   - Release notes
+   - Breaking changes
+   - Timeline
+   - Support channels
+
+2. **Migration Support**
+   - Step-by-step guides
    - Code examples
    - Testing guidelines
-   - Rollback procedures
+   - Support contacts
 
-### Support Tools
-1. **Version Checker**
-   - API compatibility test
-   - Breaking change detection
-   - Version validation
-   - Migration readiness
-
-2. **Migration Scripts**
-   - Data transformation
-   - Schema updates
-   - Configuration changes
-   - Validation tools
-
-## 5. Testing Requirements
+## 6. Testing Strategy
 
 ### Version Testing
-1. **Compatibility Tests**
-   - Cross-version requests
-   - Data format validation
-   - Error handling
+1. **Compatibility Testing**
+   - Cross-version tests
+   - Client libraries
+   - Integration tests
    - Performance impact
 
-2. **Migration Tests**
+2. **Migration Testing**
    - Upgrade paths
-   - Downgrade scenarios
-   - Data integrity
-   - Performance metrics
+   - Rollback procedures
+   - Data compatibility
+   - Error scenarios
 
-### Integration Testing
-1. **Client Libraries**
-   - Version support
-   - Compatibility modes
+### Quality Assurance
+1. **Version Validation**
+   - Schema validation
+   - Contract testing
+   - Performance benchmarks
+   - Security review
+
+2. **Client Testing**
+   - SDK compatibility
+   - Integration testing
    - Error handling
-   - Migration helpers
+   - Edge cases
 
-2. **Third-Party Integration**
-   - Version detection
-   - Fallback handling
-   - Error reporting
-   - Support documentation
+## 7. Monitoring
 
-## 6. Monitoring & Metrics
-
-### Usage Tracking
-1. **Version Analytics**
-   - Active versions
-   - Request volume
+### Version Metrics
+1. **Usage Tracking**
+   - Version adoption
    - Error rates
+   - Performance metrics
    - Client distribution
 
-2. **Deprecation Metrics**
-   - Usage trends
-   - Migration progress
-   - Error patterns
-   - Client adoption
-
-### Health Monitoring
-1. **Version Health**
+2. **Health Monitoring**
+   - Version availability
    - Response times
-   - Error rates
-   - Resource usage
-   - Client satisfaction
+   - Error patterns
+   - Client issues
 
-2. **Migration Health**
-   - Success rates
-   - Rollback frequency
-   - Support tickets
-   - Client feedback
+### Alerts
+1. **Version Alerts**
+   - Deprecation warnings
+   - Error spikes
+   - Performance degradation
+   - Client issues
 
-## 7. BSV Blockchain Integration
-
-### Version Compatibility
-1. **Smart Contract Versions**
-   - Contract compatibility
-   - State migrations
-   - Transaction formats
-   - Script versions
-
-2. **Blockchain Features**
-   - Protocol updates
-   - Network upgrades
-   - Feature activation
-   - Consensus rules
-
-### Transaction Versioning
-1. **Format Evolution**
-   - Transaction structure
-   - Script requirements
-   - Signature schemes
-   - Data protocols
-
-2. **Compatibility Layer**
-   - Version detection
-   - Format translation
-   - Fallback handling
-   - Upgrade paths 
+2. **Migration Alerts**
+   - Version conflicts
+   - Compatibility issues
+   - Client errors
+   - Support requests 

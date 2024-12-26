@@ -1,27 +1,18 @@
 # System Architecture
 
 ## Related Documentation
-- [Technical Specifications](./specifications.md) - For detailed specifications
-- [Product Requirements](./pdr.md) - For product overview
-- [BSV Integration](./bsv_integration.md) - For blockchain details
-- [AITubo Integration](./aitubo_integration.md) - For AI processing details
-- [Frontend Implementation](./frontend.md) - For client architecture
-- [Backend Implementation](./backend.md) - For service architecture
-- [Wallet Integration](./wallet_integration.md) - For wallet architecture
-- [Error Handling](./error_handling.md) - For error handling patterns
+- [Backend Implementation](./backend.md) - For service implementation details
+- [Frontend Implementation](./frontend.md) - For client implementation details
 - [Deployment](./deployment.md) - For deployment architecture
-- [Testing Strategy](./testing_strategy.md) - For testing architecture
-- [API Versioning](./api_versioning.md) - For API architecture
-- [Round System](./round_system.md) - For round architecture
 
 ## 1. System Overview
 
 ### Core Components
 1. **Frontend Layer**
-   - React/Redux application
-   - WebSocket integration
-   - Wallet connections
-   - Real-time updates
+   - React/Redux SPA
+   - WebSocket client
+   - Wallet connectors
+   - Real-time state management
 
 2. **Backend Services**
    - Node.js microservices
@@ -41,86 +32,69 @@
    - Wallet providers
    - Monitoring services
 
-## 2. Data Flow
+## 2. System Boundaries
 
-### Content Pipeline
-1. **Submission Flow**
+### Technical Limits
+1. **Frontend Boundaries**
+   - Max Concurrent Connections: 10K/node
+   - WebSocket Messages: 100/second
+   - API Requests: 1000/minute
+   - Cache Size: 1GB/session
+   - Memory Usage: <200MB/client
+   - Initial Load: <3 seconds
+
+2. **Backend Boundaries**
+   - Request Rate: 10K/second
+   - Batch Size: 1000 items
+   - Response Time: <500ms
+   - Payload Size: <10MB
+   - WebSocket Connections: 50K/node
+   - Background Jobs: 1K/minute
+
+### Resource Allocation
+1. **Processing Resources**
+   - CPU: 4 cores/instance
+   - Memory: 8GB/instance
+   - Storage: 100GB/instance
+   - Network: 1Gbps
+   - IOPS: 3K/second
+   - Background Workers: 10/instance
+
+2. **Scaling Thresholds**
+   - CPU Usage: >70%
+   - Memory Usage: >80%
+   - Request Queue: >1000
+   - Error Rate: >1%
+   - Response Time: >800ms
+   - Connection Count: >8K/node
+
+## 3. Data Architecture
+
+### Data Flow
+1. **Content Pipeline**
    ```
    Admin Upload → Validation → AITubo Processing → Quality Check → Round Assignment
    ```
 
-2. **Viewing Flow**
+2. **Transaction Pipeline**
    ```
-   Content Request → Authorization → Payment Verification → Streaming → Revenue Distribution
+   User Action → Auth Check → Rate Limit → Process → Blockchain → Confirmation
    ```
-
-### Transaction Flow
-1. **View Time Payments**
-   ```
-   Watch Start → 1 sat/sec Payment → Split (40-45% Direct, 55-60% Pool) → Distribution
-   ```
-
-2. **Market Transactions**
-   ```
-   Trade Request → 2% Fee Calculation → BSV Transaction → Ownership Update
-   ```
-
-## 3. Service Architecture
-
-### Core Services
-1. **Authentication Service**
-   - Wallet signature verification
-   - Session management
-   - Permission control
-   - Rate limiting
-
-2. **Content Service**
-   - Meme validation
-   - AITubo integration
-   - Quality assurance
-   - Distribution management
-
-3. **Round Service**
-   - Block synchronization
-   - State management
-   - Reward calculation
-   - Performance tracking
-
-4. **Payment Service**
-   - Transaction processing
-   - Revenue distribution
-   - Fee management
-   - Balance tracking
-
-## 4. Data Management
-
-### Storage Strategy
-1. **Temporary Storage**
-   - User sessions
-   - Round state
-   - Cache data
-   - Processing queue
-
-2. **Permanent Storage**
-   - Transaction records
-   - Content metadata
-   - User profiles
-   - Performance metrics
 
 ### State Management
-1. **Round State**
-   - Current participants
-   - Engagement metrics
-   - Revenue tracking
-   - Reward calculations
+1. **Application State**
+   - User sessions
+   - Round state
+   - Market data
+   - Content metadata
 
-2. **User State**
-   - Active sessions
-   - Balance tracking
-   - View history
-   - Earnings data
+2. **Blockchain State**
+   - Transactions
+   - Ownership records
+   - Revenue distribution
+   - Historical data
 
-## 5. Security Architecture
+## 4. Security Architecture
 
 ### Authentication
 1. **Wallet Integration**
@@ -148,45 +122,62 @@
    - Ownership verification
    - Version control
 
-## 6. Monitoring
+## 5. High Availability
 
-### System Metrics
-1. **Performance Monitoring**
+### Redundancy
+1. **Service Redundancy**
+   - Multiple regions
+   - Load balancing
+   - Failover systems
+   - Data replication
+
+2. **Recovery Targets**
+   - RPO (Recovery Point Objective): 5 minutes
+   - RTO (Recovery Time Objective): 15 minutes
+   - Failover Time: <30 seconds
+   - Data Sync Time: <10 minutes
+
+### Monitoring
+1. **System Metrics**
    - Response times
    - Error rates
    - Resource usage
    - Transaction throughput
+   - Node health
+   - Integration status
 
 2. **Business Metrics**
    - Active users
    - Transaction volume
+   - Round participation
+   - Content engagement
    - Revenue tracking
-   - User engagement
+   - Market activity
 
-### Health Checks
-1. **Service Health**
-   - API availability
-   - Database health
-   - Cache status
-   - Queue length
+## 6. Network Architecture
 
-2. **Integration Health**
-   - BSV node status
-   - AITubo availability
-   - Wallet connections
-   - External APIs
+### Communication
+1. **Internal Communication**
+   - Service mesh
+   - Message queues
+   - Event bus
+   - Cache layer
 
-## 7. Deployment
-
-### Infrastructure
-1. **Production Environment**
+2. **External Communication**
+   - API gateway
+   - CDN
    - Load balancers
-   - Application servers
-   - Database clusters
-   - Cache servers
+   - WebSocket clusters
 
-2. **Scaling Strategy**
-   - Horizontal scaling
-   - Auto-scaling rules
-   - Resource allocation
-   - Performance optimization
+### Protocol Details
+1. **API Protocols**
+   - REST (main API)
+   - WebSocket (real-time)
+   - gRPC (services)
+   - GraphQL (queries)
+
+2. **Network Security**
+   - TLS 1.3
+   - Rate limiting
+   - IP filtering
+   - DDoS protection

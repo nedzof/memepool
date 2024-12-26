@@ -1,188 +1,216 @@
-# Round System
+# Round System Implementation
 
 ## Related Documentation
-- [Technical Specifications](./specifications.md) - For detailed specifications
-- [Architecture Overview](./architecture.md) - For system architecture
-- [BSV Integration](./bsv_integration.md) - For blockchain details
-- [Application Flow](./appflow.md) - For detailed flows
-- [Wallet Integration](./wallet_integration.md) - For wallet implementation
-- [Error Handling](./error_handling.md) - For error handling patterns
-- [Testing Strategy](./testing_strategy.md) - For testing requirements
-- [AITubo Integration](./aitubo_integration.md) - For content processing
+- [Architecture](./architecture.md) - For system architecture context
+- [BSV Integration](./bsv_integration.md) - For blockchain synchronization
+- [Error Handling](./error_handling.md) - For round error recovery
 
-## 1. Round Overview
+## 1. Round Mechanics
 
-### Core Concepts
-1. **Round Structure**
-   - Duration: 10 minutes (1 BSV block)
-   - Synchronization: Block-based
-   - Content: Multiple memes
-   - Participants: Unlimited
+### Round Structure
+1. **Timing**
+   - Duration: 10 minutes
+   - Synchronization: BSV block time
+   - Grace period: 30 seconds
+   - Overlap prevention: 5 seconds
 
-2. **Revenue Model**
-   - Instant Revenue: 25%
-     - Creator: 10%
-     - Owner: 90%
-   - Performance Pool: 75%
-     - Top Creator: 20%
-     - Top 100 Distribution: 80%
-       - Rank-based distribution
-       - Higher ranks get larger shares
-
-## 2. Round Mechanics
-
-### Round Initialization
-1. **Block Synchronization**
+2. **State Machine**
+   ```typescript
+   enum RoundState {
+     PENDING = 'pending',     // Waiting for next block
+     ACTIVE = 'active',       // Round in progress
+     CALCULATING = 'calc',    // Processing results
+     COMPLETED = 'completed'  // Results distributed
+   }
    ```
-   New Block → Round Start → Content Selection → State Reset
-   ```
-   - Block height tracking
-   - Round state initialization
-   - Content assignment
-   - Participant reset
 
-2. **Content Selection**
-   - Quality verification
-   - Performance check
-   - Distribution planning
-   - Availability confirmation
+### Round Lifecycle
+1. **Round Initialization**
+   ```
+   Block Event → State Reset → Content Assignment → Round Start
+   ```
 
-### Round Execution
-1. **View Time Tracking**
+2. **Round Completion**
    ```
-   Watch Start → 1 sat/sec Payment → Revenue Split → Pool Update
+   Time Complete → State Lock → Result Calculation → Reward Distribution
    ```
-   - Rate: 1 sat/second
+
+## 2. Content Management
+
+### Content Selection
+1. **Selection Criteria**
+   - Quality score
+   - Creator reputation
+   - Content freshness
+   - Diversity rules
+
+2. **Assignment Rules**
+   - Maximum entries: 100
+   - Minimum quality: 0.8
+   - Unique creators
+   - Fair distribution
+
+### Content State
+```typescript
+interface RoundContent {
+  id: string;
+  creatorId: string;
+  submissionTime: number;
+  qualityScore: number;
+  status: ContentStatus;
+  metrics: {
+    views: number;
+    engagement: number;
+    revenue: number;
+  };
+}
+```
+
+## 3. Reward System
+
+### Revenue Distribution
+1. **Direct Revenue**
+   - Creator share: 10%
+   - Owner share: 90%
    - Platform fee: 2%
-   - Real-time tracking
-   - State updates
+   - Instant settlement
 
-2. **Engagement Metrics**
-   - View duration
-   - Viewer count
-   - Revenue generation
-   - Performance ranking
+2. **Performance Pool**
+   - Pool allocation: 55-60%
+   - Top creator: 20%
+   - Distribution curve: Logarithmic
+   - Minimum threshold: 100 sats
 
-## 3. Revenue Distribution
-
-### Direct Revenue
-1. **Creator Share (10%)**
+### Calculation Rules
+1. **Scoring Formula**
+   ```typescript
+   interface ScoreFactors {
+     viewTime: number;      // Total view seconds
+     uniqueViewers: number; // Unique viewers count
+     engagement: number;    // Interaction score
+     quality: number;       // Content quality score
+   }
    ```
-   Revenue → Platform Fee → Creator Split → Wallet
+
+2. **Distribution Logic**
+   ```typescript
+   interface RewardDistribution {
+     creatorId: string;
+     amount: number;
+     rank: number;
+     metrics: ScoreFactors;
+     timestamp: number;
+   }
    ```
-   - Real-time calculation
-   - Immediate distribution
-   - Transaction verification
-   - Balance update
 
-2. **Owner Share (90%)**
-   ```
-   Revenue → Platform Fee → Owner Split → Wallet
-   ```
-   - Ownership verification
-   - Revenue calculation
-   - Transaction processing
-   - Balance tracking
+## 4. Synchronization
 
-### Reward Pool
-1. **Top Performers (95%)**
-   ```
-   Pool → Rank Calculation → Split Distribution → Wallets
-   ```
-   - Performance ranking
-   - Revenue calculation
-   - Split distribution
-   - Transaction processing
-
-2. **Fast Viewers (5%)**
-   ```
-   Pool → First 100 → Equal Split → Wallets
-   ```
-   - Viewer tracking
-   - Eligibility check
-   - Revenue split
-   - Distribution
-
-## 4. State Management
-
-### Round State
-1. **Active State**
-   - Current participants
-   - Revenue tracking
-   - Performance metrics
-   - Time remaining
-
-2. **Historical State**
-   - Past performance
-   - Revenue history
-   - Participant data
-   - Analytics data
-
-### Transaction State
-1. **Payment Tracking**
-   - View time payments
-   - Revenue splits
-   - Pool contributions
-   - Transaction history
-
-2. **Balance Management**
-   - Creator balances
-   - Owner balances
-   - Viewer balances
-   - Pool balance
-
-## 5. Error Handling
-
-### Transaction Recovery
-1. **Payment Issues**
-   - Transaction retry
+### Block Synchronization
+1. **Block Monitoring**
+   - Height tracking
+   - Hash verification
+   - Reorg handling
    - State recovery
+
+2. **Time Management**
+   - Block time estimation
+   - Round scheduling
+   - Grace period handling
+   - Overlap prevention
+
+### State Synchronization
+1. **Node Coordination**
+   - Leader election
+   - State replication
+   - Conflict resolution
+   - Failover handling
+
+2. **Data Consistency**
+   - State checkpoints
+   - Transaction verification
    - Balance reconciliation
-   - User notification
+   - History tracking
 
-2. **State Issues**
-   - State verification
-   - Data recovery
-   - History correction
-   - System notification
+## 5. Performance Optimization
 
-### System Recovery
+### Processing Pipeline
+1. **Real-time Processing**
+   - View counting
+   - Revenue tracking
+   - State updates
+   - Event broadcasting
+
+2. **Batch Processing**
+   - Score calculation
+   - Reward distribution
+   - State aggregation
+   - History archival
+
+### Caching Strategy
+1. **Active Round**
+   - Content state
+   - View metrics
+   - User interactions
+   - Partial results
+
+2. **Historical Data**
+   - Round results
+   - Distribution records
+   - Performance metrics
+   - User statistics
+
+## 6. Error Handling
+
+### Recovery Procedures
 1. **Round Recovery**
    - State restoration
-   - Revenue recalculation
-   - Distribution verification
-   - History update
-
-2. **Service Recovery**
-   - Service restart
-   - State verification
-   - Data consistency
+   - Transaction recovery
+   - Balance correction
    - User notification
 
-## 6. Performance Monitoring
+2. **Block Issues**
+   - Reorg handling
+   - Missed blocks
+   - Time drift
+   - Network splits
+
+### Failure Modes
+1. **Graceful Degradation**
+   - Partial results
+   - Delayed processing
+   - Manual intervention
+   - User communication
+
+2. **Prevention Measures**
+   - State validation
+   - Double-entry accounting
+   - Audit trails
+   - Monitoring alerts
+
+## 7. Monitoring
 
 ### System Metrics
-1. **Technical Metrics**
-   - Response times
-   - Error rates
-   - Resource usage
-   - Network performance
-
-2. **Business Metrics**
+1. **Round Metrics**
    - Active participants
-   - Revenue generation
-   - Distribution success
-   - User engagement
+   - Transaction volume
+   - Processing time
+   - Error rates
 
-### Health Checks
-1. **Service Health**
-   - Round synchronization
-   - Payment processing
-   - State management
-   - Error handling
+2. **Performance Metrics**
+   - Response times
+   - Resource usage
+   - Cache efficiency
+   - Network latency
 
-2. **Integration Health**
-   - BSV node status
-   - Wallet connections
-   - External services
-   - API availability 
+### Business Metrics
+1. **Engagement Metrics**
+   - View distribution
+   - Creator earnings
+   - User retention
+   - Round popularity
+
+2. **Quality Metrics**
+   - Content scores
+   - User satisfaction
+   - System reliability
+   - Revenue growth 

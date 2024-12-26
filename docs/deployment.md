@@ -1,222 +1,245 @@
-# Deployment Documentation
+# Deployment Procedures
 
 ## Related Documentation
-- [Testing Strategy](./testing_strategy.md) - For deployment testing requirements
-- [Error Handling](./error_handling.md) - For deployment-related error handling
-- [API Versioning](./api_versioning.md) - For version deployment procedures
-- [BSV Integration](./bsv_integration.md) - For blockchain node deployment
-- [AITubo Integration](./aitubo_integration.md) - For AI service deployment
-- [Frontend Implementation](./frontend.md) - For client deployment
-- [Backend Implementation](./backend.md) - For service deployment
-- [Wallet Integration](./wallet_integration.md) - For wallet service deployment
-- [Architecture Overview](./architecture.md) - For system architecture
-- [Round System](./round_system.md) - For round system deployment
+- [Architecture](./architecture.md) - For system architecture context
+- [Error Handling](./error_handling.md) - For recovery procedures
+- [Testing Strategy](./testing_strategy.md) - For deployment testing
 
-## 1. Environment Setup
+## 1. Deployment Environments
 
-### Development Environment
-1. **Prerequisites**
-   - Node.js v18+
-   - Docker v24+
-   - Git
-   - BSV node
-   - AITubo API access
+### Environment Setup
+1. **Development**
+   - Local development
+   - Feature testing
+   - Integration testing
+   - Hot reloading
 
-2. **Local Setup**
-   ```bash
-   git clone <repository>
-   cd memepool
-   npm install
-   cp .env.example .env
-   # Configure environment variables
-   npm run dev
+2. **Staging**
+   - Production mirror
+   - Release testing
+   - Performance testing
+   - Integration validation
+
+3. **Production**
+   - High availability
+   - Load balanced
+   - Auto-scaled
+   - Monitored
+
+### Configuration Management
+1. **Environment Variables**
+   ```yaml
+   # Base Configuration
+   NODE_ENV=production
+   LOG_LEVEL=info
+   
+   # Service Endpoints
+   API_ENDPOINT=https://api.memepool.com
+   WS_ENDPOINT=wss://ws.memepool.com
+   
+   # Integration Keys
+   AITUBO_API_KEY=${AITUBO_KEY}
+   BSV_NODE_URL=${BSV_NODE}
+   
+   # Resource Limits
+   MAX_CONNECTIONS=10000
+   RATE_LIMIT=1000
    ```
 
-3. **Configuration**
-   - API keys
-   - Wallet configuration
-   - Database credentials
-   - Service endpoints
+2. **Secrets Management**
+   - Vault integration
+   - Key rotation
+   - Access control
+   - Audit logging
 
-### Staging Environment
-1. **Infrastructure**
-   - AWS ECS clusters
-   - RDS for Aerospike
-   - CloudFront CDN
-   - Route 53 DNS
+## 2. Infrastructure Setup
 
-2. **Deployment Process**
-   - CI/CD pipeline
-   - Docker image builds
-   - Environment validation
-   - Smoke tests
-
-### Production Environment
-1. **Infrastructure**
-   - Multi-region setup
+### Cloud Resources
+1. **Compute Resources**
+   - Application servers
+   - Database clusters
+   - Cache servers
    - Load balancers
-   - Auto-scaling groups
-   - Monitoring systems
 
-2. **Security**
-   - SSL/TLS configuration
-   - Network security groups
-   - IAM roles and policies
-   - Key management
+2. **Network Resources**
+   - VPC configuration
+   - Security groups
+   - CDN setup
+   - DNS management
 
-## 2. Deployment Procedures
+### Container Configuration
+1. **Docker Setup**
+   ```dockerfile
+   FROM node:16-alpine
+   
+   WORKDIR /app
+   COPY package*.json ./
+   RUN npm ci --only=production
+   
+   COPY . .
+   RUN npm run build
+   
+   EXPOSE 3000
+   CMD ["npm", "start"]
+   ```
 
-### Pre-Deployment
-1. **Validation**
-   - Code review completed
-   - Tests passing
-   - Security scan clear
-   - Dependencies updated
+2. **Kubernetes Config**
+   ```yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: memepool-api
+   spec:
+     replicas: 3
+     selector:
+       matchLabels:
+         app: memepool-api
+     template:
+       spec:
+         containers:
+         - name: api
+           image: memepool/api:latest
+           resources:
+             limits:
+               cpu: "2"
+               memory: "4Gi"
+   ```
 
-2. **Documentation**
-   - Change log updated
-   - API documentation current
-   - Deployment plan reviewed
-   - Rollback plan prepared
+## 3. Deployment Process
 
-3. **Notifications**
-   - Team communication
-   - Stakeholder updates
-   - User notifications
-   - Support team briefing
+### Release Pipeline
+1. **Build Process**
+   ```
+   Code → Lint → Test → Build → Package → Deploy
+   ```
 
-### Deployment Process
-1. **Database Updates**
-   - Schema migrations
-   - Data backups
-   - Index updates
-   - Cache warming
+2. **Validation Steps**
+   - Code review
+   - Automated tests
+   - Security scan
+   - Performance check
 
-2. **Service Deployment**
-   - Blue-green deployment
-   - Health checks
-   - Log verification
-   - Performance monitoring
+### Deployment Strategy
+1. **Rolling Updates**
+   - Zero downtime
+   - Gradual rollout
+   - Health monitoring
+   - Automatic rollback
 
-3. **Post-Deployment**
-   - Smoke tests
-   - Integration validation
-   - Performance validation
-   - Security verification
+2. **Canary Deployment**
+   - Traffic splitting
+   - Feature flags
+   - Metrics monitoring
+   - Progressive rollout
 
-## 3. Rollback Procedures
+## 4. Monitoring Setup
 
-### Trigger Conditions
-- Critical bugs
-- Performance degradation
-- Security vulnerabilities
-- Data integrity issues
-
-### Rollback Steps
-1. **Immediate Actions**
-   - Stop incoming traffic
-   - Alert relevant teams
-   - Begin rollback
-   - Monitor systems
-
-2. **Recovery Process**
-   - Restore previous version
-   - Verify data integrity
-   - Resume traffic
-   - Update documentation
-
-3. **Post-Mortem**
-   - Incident analysis
-   - Prevention measures
-   - Documentation updates
-   - Team training
-
-## 4. Monitoring & Alerts
-
-### System Monitoring
-1. **Infrastructure**
-   - CPU utilization
+### Infrastructure Monitoring
+1. **System Metrics**
+   - CPU usage
    - Memory usage
-   - Disk space
+   - Disk I/O
    - Network traffic
 
-2. **Application**
+2. **Application Metrics**
+   - Request rates
    - Error rates
    - Response times
-   - Transaction volume
-   - User activity
-
-3. **Security**
-   - Access logs
-   - Security events
-   - Compliance metrics
-   - Threat detection
+   - Queue lengths
 
 ### Alert Configuration
-1. **Critical Alerts**
-   - Service downtime
-   - Data loss
-   - Security breach
-   - Payment failures
+1. **Alert Rules**
+   - Resource thresholds
+   - Error thresholds
+   - Performance SLAs
+   - Business metrics
 
-2. **Warning Alerts**
-   - High latency
-   - Resource usage
-   - Error threshold
-   - API degradation
+2. **Alert Routing**
+   - On-call schedule
+   - Escalation paths
+   - Notification channels
+   - Incident tracking
 
-## 5. Backup & Recovery
+## 5. Backup Procedures
 
-### Backup Strategy
-1. **Data Backups**
-   - Full daily backups
-   - Incremental hourly
+### Data Backup
+1. **Backup Strategy**
+   - Daily snapshots
    - Transaction logs
-   - Configuration backups
+   - Configuration backup
+   - State backup
 
 2. **Retention Policy**
-   - 30 days full backups
-   - 7 days incremental
-   - 24 hours transaction logs
-   - Compliance archives
+   - Retention periods
+   - Backup rotation
+   - Archive strategy
+   - Compliance requirements
 
 ### Recovery Procedures
-1. **Data Recovery**
-   - Backup validation
-   - Restore process
-   - Integrity checks
-   - Performance validation
+1. **Disaster Recovery**
+   - Recovery playbooks
+   - Failover procedures
+   - Data restoration
+   - Service recovery
 
-2. **System Recovery**
-   - Infrastructure rebuild
-   - Configuration restore
-   - Service validation
-   - Documentation update
+2. **Business Continuity**
+   - RPO/RTO targets
+   - Failover testing
+   - Recovery validation
+   - Documentation
 
-## 6. Compliance & Documentation
+## 6. Security Measures
+
+### Access Control
+1. **Authentication**
+   - IAM policies
+   - Role-based access
+   - MFA enforcement
+   - Session management
+
+2. **Network Security**
+   - Firewall rules
+   - VPC peering
+   - SSL/TLS config
+   - DDoS protection
 
 ### Compliance
-1. **Requirements**
+1. **Security Standards**
+   - SOC 2 compliance
+   - GDPR requirements
    - Data protection
-   - Privacy regulations
-   - Industry standards
-   - Security policies
+   - Audit logging
 
-2. **Auditing**
-   - Access logs
-   - Change tracking
-   - Security scans
-   - Compliance reports
+2. **Security Scanning**
+   - Vulnerability scan
+   - Dependency check
+   - Container scan
+   - Code analysis
 
-### Documentation
-1. **System Documentation**
-   - Architecture diagrams
-   - Network topology
-   - Security measures
-   - Recovery procedures
+## 7. Maintenance Procedures
 
-2. **Process Documentation**
-   - Deployment guides
-   - Troubleshooting
-   - Best practices
-   - Team training 
+### Regular Maintenance
+1. **System Updates**
+   - Security patches
+   - Dependency updates
+   - Version upgrades
+   - Configuration updates
+
+2. **Health Checks**
+   - Service health
+   - Resource usage
+   - Performance metrics
+   - Security status
+
+### Incident Response
+1. **Response Process**
+   - Issue detection
+   - Impact assessment
+   - Resolution steps
+   - Post-mortem
+
+2. **Documentation**
+   - Incident logs
+   - Resolution steps
+   - Lessons learned
+   - Process improvements 

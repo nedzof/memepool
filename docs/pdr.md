@@ -1,135 +1,117 @@
 # Product Design Requirements
 
 ## Related Documentation
-- [Architecture Overview](./architecture.md) - For technical architecture
-- [Application Flow](./appflow.md) - For detailed user flows
+- [Specifications](./specifications.md) - For business rules and monetization
 - [Frontend Implementation](./frontend.md) - For UI/UX implementation
-- [Backend Implementation](./backend.md) - For service implementation
-- [Technical Specifications](./specifications.md) - For detailed specifications
-- [Wallet Integration](./wallet_integration.md) - For wallet requirements
-- [Round System](./round_system.md) - For round requirements
-- [AITubo Integration](./aitubo_integration.md) - For AI requirements
-- [BSV Integration](./bsv_integration.md) - For blockchain requirements
-- [Error Handling](./error_handling.md) - For error handling requirements
-- [Testing Strategy](./testing_strategy.md) - For testing requirements
-- [API Versioning](./api_versioning.md) - For API requirements
-- [Deployment](./deployment.md) - For deployment requirements
+- [Round System](./round_system.md) - For round mechanics
 
-## 1. Product Overview
-Memepool transforms static memes into 3D animations using AI, synchronized with Bitcoin's blockchain. Creators compete in 10-minute rounds for instant crypto rewards through a standardized pay-per-second model.
+## 1. Product Vision
+Memepool transforms static memes into 3D animations using AI, creating a competitive creative platform where creators and viewers participate in synchronized rounds for crypto rewards.
 
-### Core Features
-- AI-powered 3D meme transformation (see [AITubo Integration](./aitubo_integration.md))
-- BSV blockchain integration (see [BSV Integration](./bsv_integration.md))
-- 10-minute creation rounds (see [Round System](./round_system.md))
-- Standardized 1 sat/second viewing rate
-- Transparent reward distribution
+### Value Proposition
+- Instant monetization of meme content
+- Fair reward distribution system
+- Competitive creative environment
+- Community-driven content curation
 
-### Target Metrics
+### Success Metrics
 - Users: 100K in 3 months
 - Daily Active: 50K in 6 months
 - Creators: 1K in first month
 - Transactions: 10K in first quarter
 - Volume: $100K in 6 months
 
-## 2. User Types
+## 2. User Stories
 
-### Viewers
-- Browse and engage with memes
-- Pay 1 sat/second for viewing
-- Participate in rounds
-- Earn rewards as early viewers
+### Creator Stories
+1. **Content Creation**
+   - As a creator, I want to submit memes for transformation
+   - As a creator, I want to preview my transformed content
+   - As a creator, I want to track my content performance
+   - As a creator, I want to understand my earnings
 
-### Creators
-- Submit memes through admin
-- Earn 10% of direct revenue
-- Track performance metrics
-- Build reputation
+2. **Competition**
+   - As a creator, I want to see my ranking in each round
+   - As a creator, I want to understand voting patterns
+   - As a creator, I want to improve my creation strategy
+   - As a creator, I want to build a following
 
-### Owners
-- Hold meme ownership rights
-- Earn 90% of direct revenue
-- Trade on marketplace
-- Track performance
+### Viewer Stories
+1. **Content Discovery**
+   - As a viewer, I want to browse trending memes
+   - As a viewer, I want to find specific creators
+   - As a viewer, I want to participate in rounds
+   - As a viewer, I want to earn early viewer rewards
 
-### Admins
-- Content moderation
-- Round management
-- System configuration
-- Performance monitoring
+2. **Engagement**
+   - As a viewer, I want to support creators I like
+   - As a viewer, I want to track my viewing history
+   - As a viewer, I want to report inappropriate content
+   - As a viewer, I want to share interesting memes
 
-## 3. Core Flows
+### Owner Stories
+1. **Asset Management**
+   - As an owner, I want to track my meme portfolio
+   - As an owner, I want to monitor revenue streams
+   - As an owner, I want to trade my meme assets
+   - As an owner, I want to verify ownership history
 
-### Content Pipeline
-- Admin-only uploads
-- AITubo processing
-- Quality verification
-- Round assignment
+2. **Market Participation**
+   - As an owner, I want to list memes for sale
+   - As an owner, I want to see market trends
+   - As an owner, I want to manage multiple assets
+   - As an owner, I want to receive instant payments
 
-### Round System
-- 10-minute cycles
-- Real-time engagement tracking
-- Automated reward distribution
-  - 40-45% direct revenue
-  - 55-60% reward pool
-- Performance tracking
+## 3. Feature Requirements
 
-### Marketplace
-- Direct BSV transactions
-- 2% platform fee
-- Ownership tracking
-- Trading history
+### Core Features
+1. **Meme Transformation**
+   - AI-powered 3D conversion
+   - Quality assurance system
+   - Preview capabilities
+   - Edit options
 
-## 4. Technical Requirements
+2. **Round System**
+   - 10-minute synchronized rounds
+   - Real-time engagement tracking
+   - Transparent scoring
+   - Instant rewards
 
-### Performance
-- Latency: <500ms end-to-end
-- Capacity: >100K concurrent users
-- Processing: >1K tx/minute
-- Uptime: 99.9%
+3. **Marketplace**
+   - Direct P2P trading
+   - Price discovery mechanism
+   - Ownership tracking
+   - Transaction history
 
-### Security
-- Wallet authentication
-- Transaction validation
-- Content moderation
-- Rate limiting
+### User Experience
+1. **Content Discovery**
+   - Trending section
+   - Creator profiles
+   - Search functionality
+   - Content filters
 
-### Integration
-- BSV blockchain
-- WhatsOnChain API
-- AITubo.ai
-- Multiple wallets
+2. **Engagement Tools**
+   - One-click payments
+   - Social sharing
+   - Content reporting
+   - Performance analytics
 
-## 5. Development Phases
+## 4. Development Priorities
 
-### Phase 1: Core Platform
-- Basic meme pipeline
-- Round system
-- Wallet integration
-- Essential UI
+### Phase 1: MVP (Month 1)
+- Basic meme transformation
+- Simple round system
+- Essential wallet integration
+- Core UI components
 
-### Phase 2: Enhanced Features
-- Advanced analytics
-- Creator tools
-- Additional wallets
+### Phase 2: Enhancement (Month 2-3)
+- Advanced creator tools
+- Improved discovery
+- Market features
+- Analytics dashboard
+
+### Phase 3: Scale (Month 4-6)
 - Performance optimization
-
-### Phase 3: Scale & Optimize
-- Enhanced AI features
-- Advanced monitoring
-- System optimization
-- Additional integrations
-
-## 6. Implementation Guidelines
-
-### Documentation Standards
-- Follow documentation structure in [README.md](./README.md)
-- Maintain technical specifications
-- Update integration guides
-- Version control documentation
-
-### Development Practices
-- Follow testing strategy (see [Testing Strategy](./testing_strategy.md))
-- Implement error handling (see [Error Handling](./error_handling.md))
-- Follow deployment procedures (see [Deployment](./deployment.md))
-- Maintain API versioning (see [API Versioning](./api_versioning.md))
+- Additional features
+- Enhanced security
+- Community tools

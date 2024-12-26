@@ -1,259 +1,281 @@
-# Inscription Mechanism
+# Inscription Standards
 
 ## Related Documentation
-- [Technical Specifications](./specifications.md) - For detailed specifications
 - [BSV Integration](./bsv_integration.md) - For blockchain details
-- [Content Pipeline](./appflow.md) - For content flow
-- [Wallet Integration](./wallet_integration.md) - For wallet details
+- [Wallet Integration](./wallet_integration.md) - For wallet interactions
+- [Error Handling](./error_handling.md) - For error management
 
-## 1. Inscription Overview
+## 1. Inscription Format
 
-### Core Concepts
-1. **Inscription Structure**
-   ```typescript
-   interface Inscription {
-     id: string;
-     contentType: string;
-     content: string;
-     metadata: InscriptionMetadata;
-     owner: string;
-   }
-   ```
+### Data Structure
+```json
+{
+  "type": "memepool",
+  "version": "1.0",
+  "content": {
+    "id": "unique_content_id",
+    "title": "Content Title",
+    "creator": "creator_address",
+    "timestamp": "ISO8601_timestamp",
+    "metadata": {
+      "format": "image/jpeg|video/mp4",
+      "size": "bytes",
+      "duration": "seconds",
+      "dimensions": "width x height"
+    }
+  }
+}
+```
 
-2. **Content Types**
-   - Meme content
-   - Transformation data
-   - Ownership records
-   - Transaction history
+### Content Types
+1. **Supported Formats**
+   - Images: JPEG, PNG, GIF
+   - Videos: MP4, WebM
+   - Maximum size: 100MB
+   - Resolution: Up to 4K
+
+2. **Metadata Requirements**
+   - Content hash
+   - Creation timestamp
+   - Creator signature
+   - Format details
 
 ## 2. Inscription Process
 
 ### Content Preparation
-1. **Data Structure**
+1. **Content Validation**
    ```
-   Content → Metadata → Chunking → Inscription
+   Validate Format → Check Size → Generate Hash → Prepare Metadata
    ```
-   - Content validation
-   - Metadata generation
-   - Size optimization
    - Format verification
+   - Size constraints
+   - Hash generation
+   - Metadata compilation
 
-2. **Metadata Format**
-   ```typescript
-   interface InscriptionMetadata {
-     title: string;
-     creator: string;
-     timestamp: number;
-     contentHash: string;
-     transformData: TransformData;
-   }
+2. **Data Formatting**
    ```
-
-### Inscription Creation
-1. **Transaction Flow**
+   Structure Data → Add Metadata → Sign Content → Prepare Transaction
    ```
-   Prepare Data → Fee Calculation → BSV Transaction → Confirmation
+   - JSON formatting
+   - Metadata inclusion
+   - Digital signing
+   - Transaction preparation
+
+### Transaction Creation
+1. **Inscription Transaction**
    ```
-   - Data preparation
-   - Fee: 2% platform fee
-   - Transaction creation
-   - Chain confirmation
-
-2. **Transaction Structure**
-   ```typescript
-   interface InscriptionTransaction {
-     type: 'inscription';
-     content: InscriptionContent;
-     fee: number;
-     timestamp: number;
-     owner: string;
-   }
+   Create Input → Add Data → Calculate Fee → Sign Transaction
    ```
+   - UTXO selection
+   - Data embedding
+   - Fee calculation
+   - Transaction signing
 
-## 3. Content Management
+2. **Verification Process**
+   ```
+   Verify Format → Check Signature → Validate Size → Confirm Data
+   ```
+   - Format check
+   - Signature validation
+   - Size verification
+   - Data confirmation
 
-### Storage Strategy
-1. **On-Chain Storage**
-   - Content addressing
-   - Data chunking
-   - Size optimization
+## 3. Storage Standards
+
+### Content Storage
+1. **On-chain Data**
+   ```
+   Content Hash → Metadata → Creator Info → Timestamp
+   ```
+   - Permanent storage
+   - Immutable record
+   - Public access
+   - Verifiable data
+
+2. **Off-chain Storage**
+   ```
+   Original Content → Transformed Version → Preview → Thumbnails
+   ```
+   - Content CDN
+   - Version control
    - Access control
+   - Backup strategy
 
-2. **Content Retrieval**
-   ```typescript
-   interface ContentRequest {
-     inscriptionId: string;
-     requesterId: string;
-     timestamp: number;
-     accessType: AccessType;
-   }
+### Data Management
+1. **Version Control**
    ```
-
-### Version Control
-1. **Content Versioning**
+   Original → Processed → Published → Archived
+   ```
    - Version tracking
-   - Update history
    - State management
-   - Access logs
-
-2. **Update Process**
-   ```typescript
-   interface ContentUpdate {
-     inscriptionId: string;
-     updateType: UpdateType;
-     changes: ContentChanges;
-     timestamp: number;
-   }
-   ```
-
-## 4. Ownership Management
-
-### Ownership Transfer
-1. **Transfer Flow**
-   ```
-   Transfer Request → Fee Calculation → Ownership Update → Confirmation
-   ```
-   - Ownership verification
-   - Platform fee: 2%
-   - Transfer processing
-   - State update
-
-2. **Transfer Structure**
-   ```typescript
-   interface OwnershipTransfer {
-     inscriptionId: string;
-     fromOwner: string;
-     toOwner: string;
-     amount: number;
-     fee: number;
-   }
-   ```
-
-### Access Control
-1. **Permission System**
-   ```typescript
-   interface AccessControl {
-     owner: string;
-     permissions: Permission[];
-     delegates: string[];
-     restrictions: Restriction[];
-   }
-   ```
-
-2. **Access Verification**
-   - Owner verification
-   - Permission check
    - Access logging
-   - State tracking
+   - Archive policy
+
+2. **Access Control**
+   ```
+   Public Access → Creator Rights → Owner Rights → Admin Access
+   ```
+   - Permission levels
+   - Access tokens
+   - Rate limiting
+   - Usage tracking
+
+## 4. Verification Process
+
+### Content Verification
+1. **Hash Verification**
+   ```
+   Calculate Hash → Compare Chain → Verify Metadata → Confirm Status
+   ```
+   - Hash matching
+   - Chain verification
+   - Metadata validation
+   - Status confirmation
+
+2. **Ownership Verification**
+   ```
+   Check Signature → Verify Chain → Confirm Rights → Update Status
+   ```
+   - Signature check
+   - Chain analysis
+   - Rights verification
+   - Status update
+
+### Quality Control
+1. **Content Standards**
+   ```
+   Check Format → Verify Quality → Validate Rules → Approve Content
+   ```
+   - Format standards
+   - Quality metrics
+   - Rule compliance
+   - Content approval
+
+2. **Technical Standards**
+   ```
+   Performance Check → Size Validation → Format Check → Technical Approval
+   ```
+   - Performance metrics
+   - Size requirements
+   - Format validation
+   - Technical verification
 
 ## 5. Error Handling
 
-### Inscription Errors
-1. **Creation Errors**
-   - Invalid content
-   - Size exceeded
-   - Fee insufficient
-   - Network error
+### Transaction Errors
+1. **Network Issues**
+   ```
+   Detect Error → Retry Logic → Fallback Options → User Notification
+   ```
+   - Error detection
+   - Retry strategy
+   - Fallback plan
+   - User communication
 
-2. **Recovery Procedures**
-   - Content retry
-   - Fee adjustment
-   - Alternative route
-   - Manual review
+2. **Validation Errors**
+   ```
+   Identify Issue → Provide Feedback → Suggest Fix → Track Resolution
+   ```
+   - Issue identification
+   - User feedback
+   - Fix suggestions
+   - Resolution tracking
 
-### Transfer Errors
-1. **Transfer Issues**
-   - Ownership invalid
-   - Balance insufficient
-   - Permission denied
-   - Network congestion
+### Recovery Process
+1. **Transaction Recovery**
+   ```
+   Monitor Status → Detect Issues → Apply Fix → Verify Resolution
+   ```
+   - Status monitoring
+   - Issue detection
+   - Fix application
+   - Resolution verification
 
-2. **Recovery Steps**
-   - Transaction retry
-   - State verification
-   - Balance check
-   - Support escalation
+2. **Data Recovery**
+   ```
+   Backup Check → Restore Data → Verify Integrity → Confirm Recovery
+   ```
+   - Backup validation
+   - Data restoration
+   - Integrity check
+   - Recovery confirmation
 
 ## 6. Performance Optimization
 
-### Processing Optimization
-1. **Content Processing**
-   - Size optimization
-   - Format conversion
+### Transaction Optimization
+1. **Fee Optimization**
+   ```
+   Calculate Size → Estimate Fee → Optimize Input → Confirm Rate
+   ```
+   - Size calculation
+   - Fee estimation
+   - Input optimization
+   - Rate confirmation
+
+2. **Data Optimization**
+   ```
+   Compress Data → Optimize Format → Reduce Size → Verify Quality
+   ```
+   - Data compression
+   - Format optimization
+   - Size reduction
+   - Quality verification
+
+### System Performance
+1. **Processing Pipeline**
+   ```
+   Queue Management → Parallel Processing → Batch Operations → Status Tracking
+   ```
+   - Queue handling
+   - Parallel execution
    - Batch processing
-   - Queue management
+   - Status monitoring
 
-2. **Transaction Optimization**
-   - Fee optimization
-   - Batch inscriptions
-   - State caching
-   - Quick retrieval
+2. **Resource Management**
+   ```
+   Monitor Usage → Optimize Resources → Balance Load → Track Performance
+   ```
+   - Usage monitoring
+   - Resource optimization
+   - Load balancing
+   - Performance tracking
 
-### Caching Strategy
-1. **Content Cache**
-   - Metadata cache
-   - Content cache
-   - Access cache
-   - State cache
+## 7. Monitoring
 
-2. **Cache Management**
-   - Cache invalidation
-   - Update propagation
-   - Size management
-   - Performance monitoring
+### Transaction Monitoring
+1. **Status Tracking**
+   ```
+   Monitor Chain → Track Status → Update State → Notify Users
+   ```
+   - Chain monitoring
+   - Status updates
+   - State management
+   - User notifications
 
-## 7. Security Measures
+2. **Performance Metrics**
+   ```
+   Track Speed → Measure Success → Monitor Errors → Generate Reports
+   ```
+   - Speed tracking
+   - Success rates
+   - Error monitoring
+   - Report generation
 
-### Content Security
-1. **Content Validation**
-   - Format check
-   - Size verification
-   - Content scanning
-   - Metadata validation
+### System Monitoring
+1. **Health Checks**
+   ```
+   Check Services → Verify State → Monitor Performance → Alert Issues
+   ```
+   - Service monitoring
+   - State verification
+   - Performance tracking
+   - Issue alerting
 
-2. **Access Security**
-   - Permission check
-   - Rate limiting
-   - Access logging
-   - Abuse prevention
-
-### Transaction Security
-1. **Transfer Security**
-   - Signature verification
-   - Balance validation
-   - State consistency
-   - Double-spend prevention
-
-2. **Error Prevention**
-   - Pre-validation
-   - State checks
-   - Rate limiting
-   - Monitoring alerts
-
-## 8. Monitoring
-
-### System Metrics
-1. **Performance Metrics**
-   - Processing time
-   - Success rate
-   - Error rate
-   - Resource usage
-
-2. **Business Metrics**
-   - Inscription volume
-   - Transfer volume
-   - Fee revenue
-   - User activity
-
-### Health Checks
-1. **Service Health**
-   - API status
-   - Processing status
-   - Queue length
-   - Error rates
-
-2. **Integration Health**
-   - BSV node status
-   - Storage status
-   - Cache status
-   - Network status 
+2. **Usage Analytics**
+   ```
+   Track Volume → Monitor Patterns → Analyze Trends → Generate Insights
+   ```
+   - Volume tracking
+   - Pattern monitoring
+   - Trend analysis
+   - Insight generation 

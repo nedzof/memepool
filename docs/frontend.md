@@ -1,71 +1,46 @@
 # Frontend Implementation
 
 ## Related Documentation
-- [Architecture Overview](./architecture.md) - For system-level architecture
-- [Application Flow](./appflow.md) - For user journeys and flows
-- [BSV Integration](./bsv_integration.md) - For blockchain integration details
-- [Error Handling](./error_handling.md) - For error handling patterns
-- [Wallet Integration](./wallet_integration.md) - For wallet implementation details
+- [Architecture](./architecture.md) - For system architecture overview
+- [Backend Implementation](./backend.md) - For API integration details
+- [Wallet Integration](./wallet_integration.md) - For wallet UI integration
 
 ## 1. Technical Stack
 
 ### Core Technologies
-1. **Framework & State**
-   - React 18
+1. **Framework**
+   - React 18+
    - Redux Toolkit
-   - TypeScript 5
-   - TailwindCSS
+   - TypeScript 4.9+
+   - Vite
 
-2. **Real-time & Communication**
-   - WebSocket
-   - REST APIs
-   - Server-Sent Events
-   - Service Workers
+2. **UI Components**
+   - Tailwind CSS
+   - Headless UI
+   - React Spring
+   - React Query
 
 ### Development Tools
-1. **Build & Development**
-   - Vite
-   - ESLint
+1. **Build Tools**
+   - ESBuild
+   - PostCSS
+   - TypeScript
    - Prettier
-   - Husky
 
-2. **Testing & Quality**
+2. **Testing Tools**
    - Jest
    - React Testing Library
    - Cypress
-   - Lighthouse
+   - Playwright
 
-## 2. Component Architecture
-
-### Core Components
-1. **Layout Components**
-   - AppShell
-   - Navigation
-   - Notifications
-   - ErrorBoundary
-
-2. **Feature Components**
-   - WalletConnector (see [Wallet Integration](./wallet_integration.md))
-     - Wallet selection
-     - Connection management
-     - Balance display
-     - Transaction UI
-   - ContentViewer
-   - RoundManager
-   - TransactionHandler
-
-3. **Shared Components**
-   - Button System
-   - Form Controls
-   - Modal System
-   - Card System
+## 2. Application Architecture
 
 ### State Management
-1. **Redux Structure**
+1. **Redux Store**
    - User state
    - Round state
    - Content state
-   - Transaction state
+   - Wallet state
 
 2. **Local State**
    - Form state
@@ -73,158 +48,153 @@
    - Cache state
    - Error state
 
-## 3. Feature Implementation
+### Component Structure
+1. **Core Components**
+   - Layout components
+   - Navigation components
+   - Authentication components
+   - Content viewers
 
-### Authentication
-1. **Wallet Integration**
-   ```typescript
-   interface WalletConfig {
-     provider: 'OKX' | 'Unisat' | 'Phantom' | 'Yours';
-     network: 'mainnet' | 'testnet';
-     autoConnect: boolean;
-   }
-   ```
+2. **Feature Components**
+   - Round components
+   - Creator components
+   - Viewer components
+   - Market components
 
-2. **Session Management**
-   ```typescript
-   interface Session {
-     wallet: string;
-     signature: string;
-     expiry: number;
-     permissions: string[];
-   }
-   ```
+## 3. Mobile Implementation
 
-### Content Management
-1. **Meme Display**
-   ```typescript
-   interface MemeContent {
-     id: string;
-     original: string;
-     transformed: string;
-     metadata: ContentMetadata;
-     status: ContentStatus;
-   }
-   ```
+### Responsive Design
+1. **Breakpoints**
+   - Mobile: 320px-480px
+   - Tablet: 481px-768px
+   - Desktop: 769px+
+   - Retina: 2x density
 
-2. **Round Integration**
-   ```typescript
-   interface RoundState {
-     id: string;
-     status: RoundStatus;
-     timeRemaining: number;
-     participants: string[];
-   }
-   ```
+2. **Layout Adaptation**
+   - Fluid grids
+   - Flexible images
+   - Media queries
+   - Touch targets
 
-## 4. Integration Points
+### Mobile Optimization
+1. **Performance**
+   - Initial Load: <3 seconds
+   - Memory Usage: <200MB
+   - Battery Impact: <5%/hour
+   - Offline Support: Basic viewing
 
-### API Integration
-1. **REST Endpoints**
-   - Authentication API
-   - Content API
-   - Round API
-   - Transaction API
+2. **Network Handling**
+   - Offline Detection: <1 second
+   - Reconnection: Automatic
+   - Data Saving Mode: Optional
+   - Background Sync: Configurable
 
-2. **WebSocket Events**
-   - Round updates
-   - Content status
-   - Transaction status
-   - User notifications
+### Mobile UI/UX
+1. **Touch Interactions**
+   - Touch Targets: ≥44px
+   - Swipe Actions
+   - Pinch Zoom
+   - Pull to Refresh
 
-### Blockchain Integration
-1. **Wallet Connections**
-   - Provider detection
-   - Network selection
-   - Balance monitoring
-   - Transaction signing
+2. **Visual Adaptation**
+   - Font Sizes: 16-24px
+   - Contrast Ratios: 4.5:1
+   - Icon Sizing: 24-32px
+   - Button Heights: 44px
 
-2. **Transaction Handling**
-   - Payment processing
-   - Transaction monitoring
-   - Receipt verification
-   - Error recovery
+## 4. Accessibility Implementation
+
+### WCAG 2.1 AA Compliance
+1. **Visual Requirements**
+   - Color Contrast: 4.5:1
+   - Text Scaling: 200%
+   - Focus Indicators: Visible
+   - Motion Control: Reducible
+
+2. **Interactive Elements**
+   - Focus Management
+   - Keyboard Navigation
+   - Touch Targets
+   - Error Identification
+
+### Assistive Technologies
+1. **Screen Readers**
+   - ARIA Labels
+   - Semantic HTML
+   - Live Regions
+   - Focus Order
+
+2. **Input Methods**
+   - Keyboard Navigation
+   - Voice Control
+   - Switch Devices
+   - Touch/Mouse
+
+### Content Accessibility
+1. **Media**
+   - Alt Text
+   - Captions
+   - Transcripts
+   - Audio Descriptions
+
+2. **Text**
+   - Readable Fonts
+   - Adjustable Size
+   - Line Spacing
+   - Text Contrast
 
 ## 5. Performance Optimization
 
 ### Loading Strategy
-1. **Content Loading**
-   - Lazy loading
-   - Progressive loading
-   - Prefetching
-   - Caching
-
-2. **State Management**
-   - Selective updates
-   - Batch processing
-   - Memory management
-   - Cache invalidation
-
-### Rendering Optimization
-1. **Component Optimization**
-   - Memoization
-   - Code splitting
-   - Virtual scrolling
-   - Worker delegation
+1. **Code Splitting**
+   - Route-based
+   - Component-based
+   - Vendor splitting
+   - Dynamic imports
 
 2. **Asset Optimization**
-   - Image optimization
-   - Font loading
-   - Bundle optimization
-   - Resource hints
+   - Image compression
+   - Lazy loading
+   - Preloading
+   - Caching
 
-## 6. Error Handling
+### Runtime Performance
+1. **Rendering**
+   - Virtual DOM
+   - Memoization
+   - Lazy Components
+   - Windowing
 
-### Client-Side Errors
-1. **UI Error Handling**
-   - Error boundaries
-   - Fallback UI
-   - Recovery options
-   - User feedback
+2. **State Updates**
+   - Batch updates
+   - Selective renders
+   - State normalization
+   - Computed properties
 
-2. **State Recovery**
-   - State rollback
-   - Action retry
-   - Data reconciliation
-   - Session recovery
+## 6. Security Measures
 
-### Network Errors
-1. **API Errors**
-   - Retry logic
-   - Timeout handling
-   - Fallback options
-   - Error reporting
+### Client Security
+1. **Input Validation**
+   - Form validation
+   - File validation
+   - Data sanitization
+   - XSS prevention
 
-2. **Blockchain Errors**
-   - Transaction retry
-   - Network switching
-   - Provider fallback
-   - User notification
+2. **Authentication**
+   - Wallet connection
+   - Session management
+   - Token handling
+   - Secure storage
 
-## 7. Testing Strategy
-
-### Unit Testing
-1. **Component Testing**
-   - Render testing
-   - Event handling
-   - State updates
-   - Error cases
-
-2. **Integration Testing**
-   - Feature flows
-   - API integration
-   - State management
+### API Security
+1. **Request Security**
+   - CSRF protection
+   - Rate limiting
+   - Request signing
    - Error handling
 
-### E2E Testing
-1. **User Flows**
-   - Authentication
-   - Content interaction
-   - Round participation
-   - Transaction processing
-
-2. **Performance Testing**
-   - Load testing
-   - Memory profiling
-   - Network simulation
-   - Animation performance
+2. **Response Security**
+   - Data encryption
+   - Response validation
+   - Error masking
+   - Secure headers

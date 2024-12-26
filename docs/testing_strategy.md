@@ -1,194 +1,243 @@
 # Testing Strategy
 
 ## Related Documentation
-- [Error Handling](./error_handling.md) - For error scenarios to test
-- [BSV Integration](./bsv_integration.md) - For blockchain testing requirements
-- [Round System](./round_system.md) - For round-specific test cases
-- [AITubo Integration](./aitubo_integration.md) - For processing test requirements
-- [Deployment](./deployment.md) - For test environment setup
-- [Wallet Integration](./wallet_integration.md) - For wallet testing requirements
-- [API Versioning](./api_versioning.md) - For API compatibility testing
-- [Frontend Implementation](./frontend.md) - For UI testing requirements
-- [Backend Implementation](./backend.md) - For service testing requirements
-- [Architecture Overview](./architecture.md) - For system-wide testing patterns
+- [Architecture](./architecture.md) - For system architecture context
+- [Error Handling](./error_handling.md) - For error testing scenarios
+- [Deployment](./deployment.md) - For deployment testing
 
 ## 1. Testing Levels
 
 ### Unit Testing
-1. **Coverage Requirements**
-   - Minimum 80% code coverage
-   - 100% coverage for critical paths
-   - All error conditions tested
-   - Mock external dependencies
+1. **Component Tests**
+   - Individual functions
+   - React components
+   - Service modules
+   - Utility classes
 
-2. **Test Organization**
-   - Group by component
-   - Descriptive test names
-   - Setup/teardown patterns
-   - Shared test utilities
-
-3. **Testing Tools**
-   - Jest for JavaScript/TypeScript
-   - Mocha for Node.js
-   - Chai for assertions
-   - Sinon for mocking
+2. **Coverage Requirements**
+   - Code coverage: >80%
+   - Branch coverage: >70%
+   - Function coverage: >90%
+   - Line coverage: >85%
 
 ### Integration Testing
-1. **API Testing**
-   - Endpoint validation
-   - Request/response validation
-   - Error handling
-   - Rate limiting
-   - Authentication flows
-
-2. **Service Integration**
-   - AITubo integration
-   - BSV blockchain integration
-   - Wallet interactions
+1. **Service Integration**
+   - API endpoints
    - Database operations
+   - External services
+   - Event handling
 
-3. **Cross-Service Testing**
-   - End-to-end flows
-   - Service dependencies
-   - Data consistency
+2. **Component Integration**
+   - Frontend flows
+   - Backend services
+   - WebSocket events
    - State management
 
-## 2. Performance Testing
+## 2. Testing Tools
 
-### Load Testing
-1. **Concurrent Users**
-   - Baseline: 10K users
-   - Target: 100K users
-   - Peak: 200K users
+### Frontend Testing
+1. **Unit Testing**
+   ```typescript
+   // Component Test Example
+   describe('WalletConnector', () => {
+     it('should connect wallet', async () => {
+       const wrapper = mount(<WalletConnector />);
+       await wrapper.find('button').simulate('click');
+       expect(wrapper.state('connected')).toBe(true);
+     });
+   });
+   ```
 
-2. **Transaction Load**
-   - Sustained: 1K tx/minute
-   - Peak: 5K tx/minute
-   - Recovery time: <5 minutes
+2. **E2E Testing**
+   ```typescript
+   // Cypress Test Example
+   describe('Meme Creation', () => {
+     it('should create new meme', () => {
+       cy.login();
+       cy.uploadImage('test.png');
+       cy.waitForTransformation();
+       cy.get('[data-testid="preview"]').should('be.visible');
+     });
+   });
+   ```
 
-3. **Content Processing**
-   - AITubo processing time
-   - Storage operations
-   - CDN performance
-   - Cache hit rates
+### Backend Testing
+1. **API Testing**
+   ```typescript
+   // API Test Example
+   describe('Content API', () => {
+     it('should process content', async () => {
+       const response = await request(app)
+         .post('/api/content')
+         .send({ file: 'test.png' });
+       expect(response.status).toBe(200);
+     });
+   });
+   ```
 
-### Stress Testing
-1. **System Limits**
-   - Maximum concurrent connections
-   - Database connection limits
-   - Memory utilization
-   - CPU utilization
+2. **Service Testing**
+   ```typescript
+   // Service Test Example
+   describe('TransformationService', () => {
+     it('should transform content', async () => {
+       const result = await service.transform({
+         input: 'test.png',
+         options: { quality: 'high' }
+       });
+       expect(result.status).toBe('success');
+     });
+   });
+   ```
 
-2. **Recovery Testing**
-   - System recovery time
-   - Data consistency checks
-   - Service restoration
-   - Alert verification
+## 3. Test Environments
 
-## 3. Security Testing
+### Environment Setup
+1. **Local Environment**
+   - Mock services
+   - Test database
+   - Test wallets
+   - Isolated storage
 
-### Penetration Testing
-1. **Authentication**
-   - Wallet signature validation
-   - Session management
-   - Access control
-   - Rate limiting
+2. **CI Environment**
+   - Automated builds
+   - Test runners
+   - Coverage reports
+   - Performance metrics
 
-2. **Data Protection**
-   - Encryption validation
-   - Data access patterns
-   - Privacy compliance
-   - Secure transmission
+### Test Data
+1. **Test Fixtures**
+   - Sample content
+   - User profiles
+   - Transaction data
+   - System states
 
-3. **Smart Contract Security**
-   - Transaction validation
-   - Double-spend prevention
-   - Balance verification
-   - State consistency
+2. **Mock Services**
+   - AITubo API
+   - BSV node
+   - Wallet providers
+   - External services
 
-### Vulnerability Assessment
-1. **Regular Scans**
-   - Weekly automated scans
-   - Monthly manual review
-   - Quarterly third-party audit
-   - Annual penetration test
+## 4. Testing Types
 
-2. **Compliance Testing**
-   - GDPR requirements
-   - KYC/AML validation
-   - Data retention
-   - Access logging
-
-## 4. QA Processes
-
-### Manual Testing
-1. **User Interface**
-   - Visual consistency
-   - Responsive design
-   - Browser compatibility
-   - Mobile optimization
-
-2. **User Flows**
-   - Content creation
-   - Round participation
-   - Wallet interactions
-   - Trading operations
-
-3. **Error Handling**
-   - User feedback
-   - Error recovery
-   - Graceful degradation
-   - Help documentation
-
-### Automated Testing
-1. **CI/CD Pipeline**
-   - Pre-commit hooks
-   - Build validation
-   - Test automation
-   - Deployment verification
+### Functional Testing
+1. **Feature Testing**
+   - User stories
+   - Business rules
+   - Edge cases
+   - Error scenarios
 
 2. **Regression Testing**
    - Core functionality
    - Critical paths
+   - Known issues
+   - Fixed bugs
+
+### Non-Functional Testing
+1. **Performance Testing**
+   - Load testing
+   - Stress testing
+   - Scalability testing
+   - Endurance testing
+
+2. **Security Testing**
+   - Penetration testing
+   - Vulnerability scanning
+   - Authentication testing
+   - Authorization testing
+
+## 5. Test Automation
+
+### CI/CD Integration
+1. **Pipeline Integration**
+   - Pre-commit hooks
+   - Build validation
+   - Test automation
+   - Deployment gates
+
+2. **Reporting**
+   - Test results
+   - Coverage reports
    - Performance metrics
-   - Security checks
+   - Error logs
 
-## 5. Testing Environments
+### Automation Framework
+1. **Framework Structure**
+   ```
+   tests/
+   ├── unit/
+   │   ├── components/
+   │   ├── services/
+   │   └── utils/
+   ├── integration/
+   │   ├── api/
+   │   ├── services/
+   │   └── flows/
+   ├── e2e/
+   │   ├── features/
+   │   └── support/
+   └── fixtures/
+       ├── data/
+       └── mocks/
+   ```
 
-### Development
-- Local development setup
-- Mocked external services
-- Test data generation
-- Quick feedback loop
+2. **Best Practices**
+   - Page objects
+   - Test utilities
+   - Shared fixtures
+   - Custom commands
 
-### Staging
-- Production-like environment
-- Real external services
-- Sanitized production data
-- Performance monitoring
+## 6. Quality Metrics
 
-### Production
-- Live monitoring
-- Gradual rollout
-- Feature flags
-- Rollback capability
+### Performance Metrics
+1. **Response Times**
+   - API latency: <200ms
+   - Page load: <2s
+   - Transaction time: <500ms
+   - Animation FPS: >30
 
-## 6. Test Documentation
+2. **Resource Usage**
+   - CPU usage: <70%
+   - Memory usage: <80%
+   - Network calls: <50/page
+   - Bundle size: <500KB
 
-### Test Plans
-- Test objectives
-- Coverage requirements
-- Resource allocation
-- Timeline and milestones
+### Quality Gates
+1. **Release Criteria**
+   - Test coverage
+   - Performance benchmarks
+   - Security scan
+   - Code quality
 
-### Test Reports
-- Test results
-- Coverage metrics
-- Performance data
-- Issue tracking
+2. **Monitoring**
+   - Error rates
+   - User metrics
+   - System health
+   - Performance trends
 
-### Test Maintenance
-- Regular review cycles
-- Test case updates
-- Documentation updates
-- Tool maintenance 
+## 7. Testing Process
+
+### Test Planning
+1. **Test Strategy**
+   - Scope definition
+   - Resource allocation
+   - Timeline planning
+   - Risk assessment
+
+2. **Test Cases**
+   - Test scenarios
+   - Test data
+   - Expected results
+   - Validation criteria
+
+### Test Execution
+1. **Execution Flow**
+   - Test preparation
+   - Test execution
+   - Result validation
+   - Issue reporting
+
+2. **Issue Management**
+   - Bug tracking
+   - Priority setting
+   - Resolution tracking
+   - Verification process 
