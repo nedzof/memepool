@@ -17,15 +17,32 @@ async function initUnisatWallet() {
 
     try {
         await window.unisat.requestAccounts();
-        const address = await window.unisat.getAccounts().then(accounts => accounts[0]);
+        const accounts = await window.unisat.getAccounts();
+        const address = accounts[0];
         if (!address) throw new Error('No address found');
         
-        return {
+        // Get the public key
+        const publicKey = await window.unisat.getPublicKey();
+        if (!publicKey) throw new Error('Failed to get public key');
+
+        // Convert to legacy address using bsv.js
+        const legacyAddress = new bsv.PublicKey(publicKey).toAddress().toString();
+        
+        const wallet = {
             type: 'unisat',
-            getAddress: () => address,
-            getPublicKey: () => address,
-            getBalance: () => getBalance(address)
+            address: legacyAddress,
+            publicKey: publicKey,
+            getAddress: () => legacyAddress,
+            getPublicKey: () => publicKey,
+            getBalance: () => getBalance(legacyAddress)
         };
+
+        // Store wallet instance and data
+        window.wallet = wallet;
+        sessionStorage.setItem('wallet_address', legacyAddress);
+        sessionStorage.setItem('wallet_public_key', publicKey);
+        
+        return wallet;
     } catch (error) {
         console.error('Error initializing Unisat wallet:', error);
         throw error;
@@ -38,15 +55,35 @@ async function initOKXWallet() {
 
     try {
         await window.okxwallet.request({ method: 'eth_requestAccounts' });
-        const address = await window.okxwallet.request({ method: 'eth_accounts' }).then(accounts => accounts[0]);
+        const accounts = await window.okxwallet.request({ method: 'eth_accounts' });
+        const address = accounts[0];
         if (!address) throw new Error('No address found');
+
+        // Get the public key
+        const publicKey = await window.okxwallet.request({ 
+            method: 'eth_getPublicKey',
+            params: [address]
+        });
+        if (!publicKey) throw new Error('Failed to get public key');
+
+        // Convert to legacy address using bsv.js
+        const legacyAddress = new bsv.PublicKey(publicKey).toAddress().toString();
         
-        return {
+        const wallet = {
             type: 'okx',
-            getAddress: () => address,
-            getPublicKey: () => address,
-            getBalance: () => getBalance(address)
+            address: legacyAddress,
+            publicKey: publicKey,
+            getAddress: () => legacyAddress,
+            getPublicKey: () => publicKey,
+            getBalance: () => getBalance(legacyAddress)
         };
+
+        // Store wallet instance and data
+        window.wallet = wallet;
+        sessionStorage.setItem('wallet_address', legacyAddress);
+        sessionStorage.setItem('wallet_public_key', publicKey);
+        
+        return wallet;
     } catch (error) {
         console.error('Error initializing OKX wallet:', error);
         throw error;
@@ -63,20 +100,26 @@ async function initPhantomWallet() {
     try {
         // Request connection to Phantom
         const resp = await window.phantom.solana.connect();
-        const address = resp.publicKey.toString();
-        if (!address) throw new Error('No address found');
+        const solanaAddress = resp.publicKey.toString();
+        if (!solanaAddress) throw new Error('No address found');
+        
+        // Get the public key bytes
+        const publicKeyBytes = resp.publicKey.toBytes();
+        const publicKey = Buffer.from(publicKeyBytes).toString('hex');
+        
+        // Convert to legacy address using bsv.js
+        const legacyAddress = new bsv.PublicKey(publicKey).toAddress().toString();
         
         // Create wallet interface
         const wallet = {
             type: 'phantom',
-            address: address,
-            getAddress: () => address,
-            getPublicKey: () => address,
+            address: legacyAddress,
+            publicKey: publicKey,
+            getAddress: () => legacyAddress,
+            getPublicKey: () => publicKey,
             getBalance: async () => {
                 try {
-                    const connection = new window.solana.Connection('https://api.mainnet-beta.solana.com');
-                    const balance = await connection.getBalance(new window.solana.PublicKey(address));
-                    return balance / 1e9; // Convert lamports to SOL
+                    return await getBalance(legacyAddress);
                 } catch (error) {
                     console.error('Error getting Phantom wallet balance:', error);
                     return 0;
@@ -91,8 +134,10 @@ async function initPhantomWallet() {
             }
         };
 
-        // Store wallet instance
+        // Store wallet instance and data
         window.wallet = wallet;
+        sessionStorage.setItem('wallet_address', legacyAddress);
+        sessionStorage.setItem('wallet_public_key', publicKey);
         
         return wallet;
     } catch (error) {

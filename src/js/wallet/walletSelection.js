@@ -207,9 +207,22 @@ export function setupWalletSelectionEvents(availableWallets) {
                     throw new Error(`Failed to initialize ${wallet.name} wallet`);
                 }
 
-                // Store wallet type and initialized state
+                // Verify we have the required data
+                if (!walletInstance.address || !walletInstance.publicKey) {
+                    throw new Error(`${wallet.name} wallet initialization missing required data`);
+                }
+
+                // Store wallet data in session
                 sessionStorage.setItem('wallet_type', key);
+                sessionStorage.setItem('wallet_address', walletInstance.address);
+                sessionStorage.setItem('wallet_public_key', walletInstance.publicKey);
                 sessionStorage.setItem('wallet_initialized', 'true');
+                
+                console.log('Wallet data stored:', {
+                    type: key,
+                    address: walletInstance.address,
+                    hasPublicKey: !!walletInstance.publicKey
+                });
                 
                 // Hide selection modal and show main wallet modal
                 hideModal('walletSelectionModal');
@@ -218,6 +231,11 @@ export function setupWalletSelectionEvents(availableWallets) {
                 return walletInstance;
             } catch (error) {
                 console.error(`Error initializing ${key} wallet:`, error);
+                // Clean up any partial data on failure
+                sessionStorage.removeItem('wallet_type');
+                sessionStorage.removeItem('wallet_address');
+                sessionStorage.removeItem('wallet_public_key');
+                sessionStorage.removeItem('wallet_initialized');
                 throw error;
             }
         }, {
