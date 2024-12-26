@@ -7,17 +7,30 @@ let connectButton = null;
 
 // Initialize connect button
 export function initializeConnectButton() {
-    connectButton = document.querySelector('.connect-wallet-btn, #connectWalletBtn');
-    if (!connectButton) {
+    connectButton = document.getElementById('connectWalletBtn');
+    
+    if (connectButton) {
+        // Remove any existing click handlers
+        const newButton = connectButton.cloneNode(true);
+        connectButton.parentNode.replaceChild(newButton, connectButton);
+        connectButton = newButton;
+        
+        connectButton.addEventListener('click', handleConnectWalletClick);
+        console.log('Connect button initialized');
+    } else {
         console.warn('Connect button not found, will try again when DOM updates');
-        // Set up a mutation observer to watch for the button
+        
         const observer = new MutationObserver((mutations, obs) => {
-            const button = document.querySelector('.connect-wallet-btn, #connectWalletBtn');
+            const button = document.getElementById('connectWalletBtn');
             if (button) {
-                console.log('Connect button found, initializing...');
-                connectButton = button;
-                button.addEventListener('click', handleConnectWalletClick);
-                obs.disconnect(); // Stop observing once we find the button
+                // Remove any existing click handlers
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                connectButton = newButton;
+                
+                connectButton.addEventListener('click', handleConnectWalletClick);
+                console.log('Connect button initialized after DOM update');
+                obs.disconnect();
             }
         });
         
@@ -25,11 +38,7 @@ export function initializeConnectButton() {
             childList: true,
             subtree: true
         });
-        return;
     }
-
-    console.log('Found connect button, adding click handler');
-    connectButton.addEventListener('click', handleConnectWalletClick);
 }
 
 // Loading state

@@ -168,8 +168,17 @@ export function showModal(modalId) {
         return;
     }
     console.log(`Showing modal: ${modalId}`);
-    modal.classList.remove('hidden');
-    document.body.classList.add('modal-open');
+    
+    // Initialize modal if not already initialized
+    let modalInstance = modals.get(modalId);
+    if (!modalInstance) {
+        modalInstance = initializeModal(modalId);
+    }
+    
+    // Show the modal using the Modal class
+    if (modalInstance) {
+        modalInstance.show();
+    }
 }
 
 // Hide a modal
@@ -180,8 +189,12 @@ export function hideModal(modalId) {
         return;
     }
     console.log(`Hiding modal: ${modalId}`);
-    modal.classList.add('hidden');
-    document.body.classList.remove('modal-open');
+    
+    // Get modal instance
+    const modalInstance = modals.get(modalId);
+    if (modalInstance) {
+        modalInstance.hide();
+    }
 }
 
 // Error message display
