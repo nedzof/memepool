@@ -67,4 +67,4 @@ pids/
 
 # Temporary files
 tmp/
-temp/
+temp//docs

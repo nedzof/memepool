@@ -39,23 +39,21 @@ function displaySeedPhrase(mnemonic) {
 }
 
 // Helper function to handle button setup with loading state and error handling
-async function setupWalletButton(buttonId, handler, options = {}) {
-    console.log('Setting up button:', buttonId);
-    const button = document.getElementById(buttonId);
+async function setupWalletButton(button, handler, options = {}) {
+    console.log('Setting up button:', button);
     if (!button) {
-        console.error(`Button with id ${buttonId} not found`);
+        console.error('Button not found');
         return;
     }
-    console.log('Found button:', button);
 
     const clickHandler = async (e) => {
-        console.log(`Button ${buttonId} clicked`);
+        console.log(`Button clicked:`, button);
         try {
             setWalletLoading(true);
             console.log('Set wallet loading state');
             
             await options.preAction?.();
-            console.log('Executing handler for', buttonId);
+            console.log('Executing handler for button');
             await handler();
             console.log('Handler execution complete');
 
@@ -68,7 +66,7 @@ async function setupWalletButton(buttonId, handler, options = {}) {
                 showModal(options.showModal);
             }
         } catch (error) {
-            console.error(`Error in ${buttonId}:`, error);
+            console.error('Error in button handler:', error);
             showError(error.message || options.errorMessage || 'An error occurred');
             options.onError?.(error);
         } finally {
@@ -84,7 +82,7 @@ async function setupWalletButton(buttonId, handler, options = {}) {
 
     // Add the click handler to the new button
     newButton.addEventListener('click', clickHandler);
-    console.log(`Click handler added to ${buttonId}`);
+    console.log('Click handler added to button');
 }
 
 // Handle connect wallet click - tries to connect to first available wallet or shows selection
@@ -191,10 +189,15 @@ export function setupWalletSelectionEvents(availableWallets) {
         console.log('Found button for wallet:', key);
 
         if (availableWallets[key]) {
-            setupWalletButton(wallet.id, async () => {
-                await connectExternalWallet(key);
+            setupWalletButton(button, async () => {
+                if (wallet.checkReady?.() === false) {
+                    window.open(wallet.installUrl, '_blank');
+                    throw new Error(`${wallet.name} wallet not ready`);
+                }
+                await initializeWallet(key);
             }, {
                 hideModal: true,
+                showModal: 'mainWalletModal',
                 errorMessage: wallet.errorMessage
             });
         } else {
@@ -205,7 +208,7 @@ export function setupWalletSelectionEvents(availableWallets) {
     });
 
     // Setup create wallet button
-    setupWalletButton('createWalletBtn', async () => {
+    setupWalletButton(document.getElementById('createWalletBtn'), async () => {
         console.log('Create wallet button clicked');
         showCreateWalletModal();
     }, {
