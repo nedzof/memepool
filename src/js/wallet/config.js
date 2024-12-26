@@ -1,5 +1,8 @@
 import { fetchBalanceFromWhatsOnChain } from './bitcoin.js';
 import { resetWalletUI } from './walletUIManager.js';
+import * as bsvLib from '@bsv/sdk';
+
+const bsv = bsvLib;
 
 // Get balance with WhatsOnChain
 async function getBalance(address) {
@@ -8,6 +11,17 @@ async function getBalance(address) {
     } catch (error) {
         console.error('Error getting balance:', error);
         return 0;
+    }
+}
+
+// Convert public key to legacy address
+function convertToLegacyAddress(publicKeyHex) {
+    try {
+        const publicKey = bsv.PublicKey.fromString(publicKeyHex);
+        return publicKey.toAddress().toString();
+    } catch (error) {
+        console.error('Error converting to legacy address:', error);
+        throw new Error('Failed to convert public key to legacy address');
     }
 }
 
@@ -25,8 +39,8 @@ async function initUnisatWallet() {
         const publicKey = await window.unisat.getPublicKey();
         if (!publicKey) throw new Error('Failed to get public key');
 
-        // Convert to legacy address using bsv.js
-        const legacyAddress = new bsv.PublicKey(publicKey).toAddress().toString();
+        // Convert to legacy address
+        const legacyAddress = convertToLegacyAddress(publicKey);
         
         const wallet = {
             type: 'unisat',
@@ -54,34 +68,72 @@ async function initOKXWallet() {
     if (!window.okxwallet) throw new Error('OKX wallet not found');
 
     try {
-        await window.okxwallet.request({ method: 'eth_requestAccounts' });
-        const accounts = await window.okxwallet.request({ method: 'eth_accounts' });
-        const address = accounts[0];
-        if (!address) throw new Error('No address found');
+        // Request Bitcoin account access
+        console.log('Requesting Bitcoin accounts...');
+        await window.okxwallet.bitcoin.connect();
+        const accounts = await window.okxwallet.bitcoin.getAccounts();
+        console.log('Bitcoin accounts received:', accounts);
+        
+        if (!accounts || accounts.length === 0) {
+            throw new Error('No accounts found in OKX Wallet');
+        }
 
-        // Get the public key
-        const publicKey = await window.okxwallet.request({ 
-            method: 'eth_getPublicKey',
-            params: [address]
-        });
+        const address = accounts[0];
+
+        // Request signature for login verification
+        console.log('Requesting signature for login verification...');
+        const message = 'Sign this message to verify your wallet ownership\nTimestamp: ' + Date.now();
+        const signature = await window.okxwallet.bitcoin.signMessage(message);
+        console.log('Signature received:', signature);
+
+        if (!signature) {
+            throw new Error('Failed to get signature for login verification');
+        }
+
+        // Get public key
+        console.log('Requesting public key...');
+        const publicKey = await window.okxwallet.bitcoin.getPublicKey();
+        console.log('Public key received:', publicKey);
+        
         if (!publicKey) throw new Error('Failed to get public key');
 
-        // Convert to legacy address using bsv.js
-        const legacyAddress = new bsv.PublicKey(publicKey).toAddress().toString();
+        // Clean public key (remove 0x prefix if present)
+        const cleanPubKey = publicKey.replace('0x', '');
+        console.log('Cleaned public key:', cleanPubKey);
+
+        // Convert to legacy address
+        const legacyAddress = convertToLegacyAddress(cleanPubKey);
+        console.log('Legacy address calculated:', legacyAddress);
         
         const wallet = {
             type: 'okx',
             address: legacyAddress,
-            publicKey: publicKey,
+            publicKey: cleanPubKey,
+            signature: signature,
             getAddress: () => legacyAddress,
-            getPublicKey: () => publicKey,
-            getBalance: () => getBalance(legacyAddress)
+            getPublicKey: () => cleanPubKey,
+            getBalance: () => getBalance(legacyAddress),
+            signMessage: async (message) => {
+                return await window.okxwallet.bitcoin.signMessage(message);
+            },
+            send: async (toAddress, amount) => {
+                try {
+                    const txHash = await window.okxwallet.bitcoin.sendTransaction({
+                        to: toAddress,
+                        value: amount * 1e8 // Convert to satoshis
+                    });
+                    return { txid: txHash };
+                } catch (error) {
+                    throw new Error('Failed to send transaction: ' + error.message);
+                }
+            }
         };
 
         // Store wallet instance and data
         window.wallet = wallet;
         sessionStorage.setItem('wallet_address', legacyAddress);
-        sessionStorage.setItem('wallet_public_key', publicKey);
+        sessionStorage.setItem('wallet_public_key', cleanPubKey);
+        sessionStorage.setItem('wallet_signature', signature);
         
         return wallet;
     } catch (error) {
@@ -107,8 +159,8 @@ async function initPhantomWallet() {
         const publicKeyBytes = resp.publicKey.toBytes();
         const publicKey = Buffer.from(publicKeyBytes).toString('hex');
         
-        // Convert to legacy address using bsv.js
-        const legacyAddress = new bsv.PublicKey(publicKey).toAddress().toString();
+        // Convert to legacy address
+        const legacyAddress = convertToLegacyAddress(publicKey);
         
         // Create wallet interface
         const wallet = {
