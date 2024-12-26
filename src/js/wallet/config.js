@@ -17,6 +17,24 @@ async function getBalance(address) {
 // Convert public key to legacy address
 function convertToLegacyAddress(publicKeyHex) {
     try {
+        // If the key doesn't start with 02, 03, or 04, assume it's an x-coordinate only
+        if (!publicKeyHex.startsWith('02') && !publicKeyHex.startsWith('03') && !publicKeyHex.startsWith('04')) {
+            console.log('Converting x-coordinate to public key...');
+            
+            // Create a compressed public key (starts with 02)
+            const compressedKey = '02' + publicKeyHex;
+            console.log('Compressed public key:', compressedKey);
+            
+            // Create BSV public key from compressed format
+            const publicKey = bsv.PublicKey.fromString(compressedKey);
+            console.log('Converted public key:', publicKey.toString());
+            
+            // Get legacy address
+            return publicKey.toAddress().toString();
+        }
+
+        // Otherwise use the provided public key format
+        console.log('Using provided public key format...');
         const publicKey = bsv.PublicKey.fromString(publicKeyHex);
         return publicKey.toAddress().toString();
     } catch (error) {
@@ -144,51 +162,72 @@ async function initOKXWallet() {
 
 // Initialize Phantom wallet interface
 async function initPhantomWallet() {
-    if (!window.phantom?.solana) {
+    if (!window.phantom) {
         window.open('https://phantom.app', '_blank');
         throw new Error('Phantom wallet not found. Please install Phantom wallet.');
     }
 
     try {
-        // Request connection to Phantom
-        const resp = await window.phantom.solana.connect();
-        const solanaAddress = resp.publicKey.toString();
-        if (!solanaAddress) throw new Error('No address found');
+        // Get Bitcoin provider
+        const provider = window.phantom?.bitcoin;
+        if (!provider?.isPhantom) {
+            throw new Error('Phantom Bitcoin provider not found');
+        }
+
+        // Request accounts
+        console.log('Requesting Phantom Bitcoin accounts...');
+        const accounts = await provider.requestAccounts();
+        console.log('Received accounts:', accounts);
+
+        if (!accounts || accounts.length === 0) {
+            throw new Error('No accounts found in Phantom Wallet');
+        }
+
+        // Look for a P2PKH account or use the first account's public key
+        let address, publicKey;
+        const p2pkhAccount = accounts.find(acc => acc.addressType === 'p2pkh');
         
-        // Get the public key bytes
-        const publicKeyBytes = resp.publicKey.toBytes();
-        const publicKey = Buffer.from(publicKeyBytes).toString('hex');
-        
-        // Convert to legacy address
-        const legacyAddress = convertToLegacyAddress(publicKey);
-        
+        if (p2pkhAccount) {
+            console.log('Found P2PKH account:', p2pkhAccount);
+            address = p2pkhAccount.address;
+            publicKey = p2pkhAccount.publicKey;
+        } else {
+            console.log('No P2PKH account found, deriving legacy address from first account');
+            publicKey = accounts[0].publicKey;
+            // Convert to legacy address using the public key
+            address = convertToLegacyAddress(publicKey);
+        }
+
+        console.log('Using address:', address);
+        console.log('Using public key:', publicKey);
+
         // Create wallet interface
         const wallet = {
             type: 'phantom',
-            address: legacyAddress,
+            address: address,
             publicKey: publicKey,
-            getAddress: () => legacyAddress,
+            getAddress: () => address,
             getPublicKey: () => publicKey,
             getBalance: async () => {
                 try {
-                    return await getBalance(legacyAddress);
+                    return await getBalance(address);
                 } catch (error) {
                     console.error('Error getting Phantom wallet balance:', error);
                     return 0;
                 }
             },
+            signMessage: async (message) => {
+                throw new Error('Message signing not yet supported for Phantom wallet');
+            },
             disconnect: async () => {
-                try {
-                    await window.phantom.solana.disconnect();
-                } catch (error) {
-                    console.error('Error disconnecting Phantom wallet:', error);
-                }
+                // Note: According to docs, there's no programmatic disconnect
+                console.log('Note: Users must disconnect manually through Phantom wallet UI');
             }
         };
 
         // Store wallet instance and data
         window.wallet = wallet;
-        sessionStorage.setItem('wallet_address', legacyAddress);
+        sessionStorage.setItem('wallet_address', address);
         sessionStorage.setItem('wallet_public_key', publicKey);
         
         return wallet;
