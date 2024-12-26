@@ -1,10 +1,17 @@
 import { showModal, hideModal, showError } from '../../modal.js';
 import { initializeWallet } from '../setup.js';
 import { validateMnemonic, validateMnemonicRandomness, generateSecureMnemonic } from '../mnemonic.js';
+import { initializeSuccessAnimationModal } from './successAnimationModal.js';
 
 // Initialize create wallet flow
 function initializeCreateFlow(modal) {
     console.log('Initializing create wallet flow...');
+    
+    // Remove any existing walletSetupComplete listeners
+    window.removeEventListener('walletSetupComplete', handleWalletSetupComplete);
+
+    // Initialize success modal when wallet setup completes
+    window.addEventListener('walletSetupComplete', handleWalletSetupComplete);
     
     // Get elements
     const seedPhraseGrid = modal.querySelector('#seedPhraseGrid');
@@ -62,16 +69,27 @@ function initializeCreateFlow(modal) {
             const password = sessionStorage.getItem('temp_password');
             if (!password) throw new Error('Password not found');
 
-            // Initialize wallet with manual type
-            await initializeWallet(mnemonic, password, 'manual');
+            // Initialize wallet
+            const success = await startWalletSetup();
+            
+            if (!success) {
+                throw new Error('Failed to setup wallet');
+            }
             
             // Show success animation
             hideModal('seedModal');
             showModal('walletCreatedModal');
+
+            // Initialize success modal when wallet setup completes
+            window.addEventListener('walletSetupComplete', (event) => {
+                try {
+                    console.log('walletSetupComplete event received:', event.detail);
+                    initializeSuccessAnimationModal();
+                } catch (error) {
+                    console.error('Error in walletSetupComplete listener:', error);
+                }
+            });
             
-            // Clear sensitive data
-            sessionStorage.removeItem('temp_password');
-            sessionStorage.removeItem('temp_mnemonic');
         } catch (error) {
             console.error('Error confirming seed phrase:', error);
             const errorDiv = createForm.querySelector('.error-message');
@@ -88,6 +106,12 @@ function initializeCreateFlow(modal) {
 // Initialize import wallet flow
 function initializeImportFlow(modal) {
     console.log('Initializing import wallet flow...');
+    
+    // Remove any existing walletSetupComplete listeners
+    window.removeEventListener('walletSetupComplete', handleWalletSetupComplete);
+
+    // Initialize success modal when wallet setup completes
+    window.addEventListener('walletSetupComplete', handleWalletSetupComplete);
     
     // Get elements
     const seedPhraseInputs = modal.querySelector('#seedPhraseInputs');
@@ -168,19 +192,19 @@ function initializeImportFlow(modal) {
             // Additional security check
             await validateMnemonicRandomness(seedPhrase);
 
-            // Get password from session storage
-            const password = sessionStorage.getItem('temp_password');
-            if (!password) throw new Error('Password not found');
+            // Store the validated seed phrase
+            sessionStorage.setItem('temp_mnemonic', seedPhrase);
 
-            // Initialize wallet with imported type
-            await initializeWallet(seedPhrase, password, 'imported');
+            // Initialize wallet
+            const success = await startWalletSetup();
+            
+            if (!success) {
+                throw new Error('Failed to setup wallet');
+            }
             
             // Show success animation
             hideModal('seedModal');
             showModal('walletCreatedModal');
-            
-            // Clear sensitive data
-            sessionStorage.removeItem('temp_password');
             
         } catch (error) {
             console.error('Error importing seed phrase:', error);
@@ -192,6 +216,16 @@ function initializeImportFlow(modal) {
             }
         }
     });
+}
+
+// Handler for walletSetupComplete event
+function handleWalletSetupComplete(event) {
+    try {
+        console.log('walletSetupComplete event received:', event.detail);
+        initializeSuccessAnimationModal();
+    } catch (error) {
+        console.error('Error in walletSetupComplete listener:', error);
+    }
 }
 
 // Initialize seed modal

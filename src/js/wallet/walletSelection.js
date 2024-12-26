@@ -147,9 +147,12 @@ export function showWalletSelection() {
     console.log('Available wallets:', availableWallets);
     
     showModal('walletSelectionModal');
-    console.log('Setting up wallet selection events...');
-    setupWalletSelectionEvents(availableWallets);
-    console.log('Wallet selection events setup complete');
+
+    setTimeout(() => {
+        console.log('Setting up wallet selection events...');
+        setupWalletSelectionEvents(availableWallets);
+        console.log('Wallet selection events setup complete');
+    }, 0);
 }
 
 // Handle import wallet click
@@ -180,7 +183,7 @@ export function setupWalletSelectionEvents(availableWallets) {
     // Setup wallet buttons
     Object.entries(SUPPORTED_WALLETS).forEach(([key, wallet]) => {
         console.log('Setting up wallet button:', key);
-        const button = document.getElementById(wallet.id);
+        const button = modal.querySelector(`[data-wallet="${key}"]`);
         if (!button) {
             console.error(`Button for wallet ${key} not found`);
             return;
@@ -189,14 +192,9 @@ export function setupWalletSelectionEvents(availableWallets) {
 
         if (availableWallets[key]) {
             setupWalletButton(wallet.id, async () => {
-                if (wallet.checkReady?.() === false) {
-                    window.open(wallet.installUrl, '_blank');
-                    throw new Error(`${wallet.name} wallet not ready`);
-                }
-                await initializeWallet(key);
+                await connectExternalWallet(key);
             }, {
                 hideModal: true,
-                showModal: 'mainWalletModal',
                 errorMessage: wallet.errorMessage
             });
         } else {
@@ -215,4 +213,47 @@ export function setupWalletSelectionEvents(availableWallets) {
     });
     
     console.log('All wallet selection events setup complete');
+}
+
+async function connectExternalWallet(walletKey) {
+    try {
+        let publicKey;
+
+        switch (walletKey) {
+            case 'okx':
+                publicKey = await connectOKXWallet();
+                break;
+            case 'unisat':
+                publicKey = await connectUnisatWallet();
+                break;
+            // Add more cases for other wallets
+            default:
+                throw new Error('Unsupported wallet');
+        }
+
+        // Calculate legacy address from public key
+        const legacyAddress = bsv.Address.fromPublicKey(publicKey).toString();
+
+        // Store public key and legacy address in wallet instance
+        window.wallet = {
+            publicKey,
+            legacyAddress
+        };
+
+        // Show success animation modal
+        showSuccessAnimation();
+    } catch (error) {
+        console.error('Error connecting external wallet:', error);
+        showWalletError('Failed to connect wallet. Please try again.');
+    }
+}
+
+async function connectOKXWallet() {
+    // Implement OKX wallet connection logic
+    // Return the public key
+}
+
+async function connectUnisatWallet() {
+    // Implement Unisat wallet connection logic
+    // Return the public key
 } 

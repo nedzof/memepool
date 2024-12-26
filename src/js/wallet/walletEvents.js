@@ -6,45 +6,46 @@ import { disconnectWallet } from './config.js';
 export function setupMainWalletEvents() {
     console.log('Setting up main wallet events');
     
-    // Get all the buttons
-    const sendBtn = document.getElementById('sendBtn');
-    const receiveBtn = document.getElementById('receiveBtn');
-    const profileBtn = document.getElementById('profileBtn');
-    const disconnectBtn = document.getElementById('disconnectBtn');
+    const mainWalletModal = document.getElementById('mainWalletModal');
+    if (!mainWalletModal) {
+        console.error('Main wallet modal not found');
+        return;
+    }
 
-    // Setup Send button
-    if (sendBtn) {
-        sendBtn.addEventListener('click', () => {
+    // Handle button clicks using event delegation
+    mainWalletModal.addEventListener('click', (event) => {
+        if (event.target.matches('#sendBtn')) {
             console.log('Send button clicked');
-            showSendModal();
-        });
-    }
-
-    // Setup Receive button
-    if (receiveBtn) {
-        receiveBtn.addEventListener('click', () => {
+            try {
+                showSendModal();
+            } catch (error) {
+                console.error('Error in Send button handler:', error);
+            }
+        } else if (event.target.matches('#receiveBtn')) {
             console.log('Receive button clicked');
-            showReceiveModal();
-        });
-    }
-
-    // Setup Profile button
-    if (profileBtn) {
-        profileBtn.addEventListener('click', () => {
+            try {
+                showReceiveModal();
+            } catch (error) {
+                console.error('Error in Receive button handler:', error);
+            }
+        } else if (event.target.matches('#profileBtn')) {
             console.log('Profile button clicked');
-            hideModal('mainWalletModal');
-            showModal('profileSetupModal');
-        });
-    }
-
-    // Setup Disconnect button
-    if (disconnectBtn) {
-        disconnectBtn.addEventListener('click', () => {
+            try {
+                hideModal('mainWalletModal');
+                showModal('profileSetupModal');
+            } catch (error) {
+                console.error('Error in Profile button handler:', error);
+            }
+        } else if (event.target.matches('#disconnectBtn')) {
             console.log('Disconnect button clicked');
-            disconnectWallet();
-            location.reload();
-        });
-    }
+            try {
+                disconnectWallet();
+                location.reload();
+            } catch (error) {
+                console.error('Error in Disconnect button handler:', error);
+            }
+        }
+    });
 }
 
 // Clean up wallet events

@@ -1,5 +1,6 @@
 import { BitcoinWallet } from './bitcoin.js';
 import { showError, hideModal, showModal } from '../modal.js';
+import { initializeSuccessAnimationModal } from './modals/successAnimationModal.js';
 
 // Initialize wallet with required properties
 async function initializeWallet(mnemonic, password, type = 'manual') {
@@ -81,17 +82,60 @@ async function startWalletSetup() {
 
         // Initialize wallet with proper type
         const type = flowType === 'create' ? 'manual' : 'imported';
-        await initializeWallet(mnemonic, password, type);
+        const walletData = await initializeWallet(mnemonic, password, type);
+
+        // Ensure wallet data is properly set before proceeding
+        if (!walletData || !walletData.address) {
+            throw new Error('Wallet initialization failed');
+        }
+
+        // Store critical wallet data in session storage
+        sessionStorage.setItem('wallet_type', type);
+        sessionStorage.setItem('wallet_address', walletData.address);
+        
+        // Validate all required session data is set
+        const requiredData = ['wallet_type', 'wallet_address', 'wallet_initialized'];
+        for (const key of requiredData) {
+            if (!sessionStorage.getItem(key)) {
+                throw new Error(`Missing required session data: ${key}`);
+            }
+        }
+        
+        // Set initialization flag last, after all other data is set
+        sessionStorage.setItem('wallet_initialized', 'true');
+        
+        // Clean up sensitive data
+        sessionStorage.removeItem('temp_mnemonic');
+        sessionStorage.removeItem('temp_password');
+        sessionStorage.removeItem('wallet_flow');
+
+        console.log('Dispatching walletSetupComplete event');
+        // Signal validation completion
+        window.dispatchEvent(new CustomEvent('walletSetupComplete', { 
+            detail: { success: true, address: walletData.address }
+        }));
 
         console.log('Wallet setup completed successfully');
-        
-        // Return success
         return true;
 
     } catch (error) {
         console.error('Wallet setup failed:', error);
         showError(error.message || 'Failed to setup wallet');
-        throw error;
+        
+        // Clean up any partial data on failure
+        sessionStorage.removeItem('wallet_type');
+        sessionStorage.removeItem('wallet_address');
+        sessionStorage.removeItem('wallet_initialized');
+        sessionStorage.removeItem('temp_mnemonic');
+        sessionStorage.removeItem('temp_password');
+        sessionStorage.removeItem('wallet_flow');
+        
+        // Signal validation failure
+        window.dispatchEvent(new CustomEvent('walletSetupComplete', { 
+            detail: { success: false, error: error.message }
+        }));
+        
+        return false;
     }
 }
 

@@ -2,6 +2,8 @@
 export class Modal {
     constructor(modalId) {
         this.modal = document.getElementById(modalId);
+        this.isTransitioning = false;
+        this.transitionTimeout = null;
         if (!this.modal) {
             console.error(`Modal with id ${modalId} not found`);
             return;
@@ -16,24 +18,27 @@ export class Modal {
         }
 
         // Set up close button handlers
-        const closeButtons = this.modal.querySelectorAll('.modal-close');
-        closeButtons.forEach(button => {
-            button.addEventListener('click', () => this.hide());
+        this.closeButtons = this.modal.querySelectorAll('.modal-close');
+        this.closeHandler = () => this.hide();
+        this.closeButtons.forEach(button => {
+            button.addEventListener('click', this.closeHandler);
         });
 
         // Close on backdrop click
-        this.backdrop.addEventListener('click', (e) => {
+        this.backdropHandler = (e) => {
             if (e.target === this.backdrop) {
                 this.hide();
             }
-        });
+        };
+        this.backdrop.addEventListener('click', this.backdropHandler);
 
         // Close on escape key
-        document.addEventListener('keydown', (e) => {
+        this.escapeHandler = (e) => {
             if (e.key === 'Escape') {
                 this.hide();
             }
-        });
+        };
+        document.addEventListener('keydown', this.escapeHandler);
 
         // Handle password visibility toggle
         const toggleButtons = this.modal.querySelectorAll('.password-toggle');
@@ -54,7 +59,15 @@ export class Modal {
     }
 
     show() {
-        if (!this.modal) return;
+        if (!this.modal || this.isTransitioning) return;
+        
+        // Clear any existing transition timeout
+        if (this.transitionTimeout) {
+            clearTimeout(this.transitionTimeout);
+            this.transitionTimeout = null;
+        }
+        
+        this.isTransitioning = true;
         
         // Show backdrop
         this.backdrop.classList.add('visible');
@@ -70,11 +83,25 @@ export class Modal {
         requestAnimationFrame(() => {
             this.modal.classList.add('open');
             this.modal.classList.remove('modal-exit');
+            
+            // Reset transitioning state after animation
+            this.transitionTimeout = setTimeout(() => {
+                this.isTransitioning = false;
+                this.transitionTimeout = null;
+            }, 300);
         });
     }
 
     hide() {
-        if (!this.modal) return;
+        if (!this.modal || this.isTransitioning) return;
+        
+        // Clear any existing transition timeout
+        if (this.transitionTimeout) {
+            clearTimeout(this.transitionTimeout);
+            this.transitionTimeout = null;
+        }
+        
+        this.isTransitioning = true;
         
         // Hide modal with animation
         this.modal.classList.remove('open');
@@ -84,9 +111,38 @@ export class Modal {
         this.backdrop.classList.remove('visible');
         
         // Wait for animation to complete before hiding
-        setTimeout(() => {
+        this.transitionTimeout = setTimeout(() => {
             this.modal.style.display = 'none';
+            this.isTransitioning = false;
+            this.transitionTimeout = null;
+            
+            // Dispatch hide event after animation
+            const hideEvent = new Event('hide', { bubbles: true });
+            this.modal.dispatchEvent(hideEvent);
         }, 300); // Match the CSS transition duration
+    }
+
+    destroy() {
+        // Clear any pending transition timeout
+        if (this.transitionTimeout) {
+            clearTimeout(this.transitionTimeout);
+            this.transitionTimeout = null;
+        }
+        
+        // Reset transition state
+        this.isTransitioning = false;
+        
+        // Remove event listeners
+        this.closeButtons.forEach(button => {
+            button.removeEventListener('click', this.closeHandler);
+        });
+        this.backdrop.removeEventListener('click', this.backdropHandler);
+        document.removeEventListener('keydown', this.escapeHandler);
+        
+        // Remove backdrop if no other modals are using it
+        if (!document.querySelector('.modal[style*="display: block"]')) {
+            this.backdrop.remove();
+        }
     }
 }
 
@@ -104,26 +160,28 @@ export function initializeModal(modalId) {
     return modals.get(modalId);
 }
 
+// Show a modal
 export function showModal(modalId) {
-    if (!modalId) {
-        console.warn('Attempted to show modal without ID');
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`Modal with ID ${modalId} not found`);
         return;
     }
-    const modal = initializeModal(modalId);
-    if (modal) {
-        modal.show();
-    }
+    console.log(`Showing modal: ${modalId}`);
+    modal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
 }
 
+// Hide a modal
 export function hideModal(modalId) {
-    if (!modalId) {
-        console.warn('Attempted to hide modal without ID');
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`Modal with ID ${modalId} not found`);
         return;
     }
-    const modal = modals.get(modalId);
-    if (modal) {
-        modal.hide();
-    }
+    console.log(`Hiding modal: ${modalId}`);
+    modal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
 }
 
 // Error message display
