@@ -178,19 +178,59 @@ export function setupWalletSelectionEvents(availableWallets) {
     }
     console.log('Found wallet selection modal');
 
+    const detectedContainer = modal.querySelector('.detected-wallets');
+    const undetectedContainer = modal.querySelector('.undetected-wallets');
+
+    if (!detectedContainer || !undetectedContainer) {
+        console.error('Wallet containers not found');
+        return;
+    }
+
+    // Clear existing wallet buttons
+    detectedContainer.innerHTML = '';
+    undetectedContainer.innerHTML = '';
+
     // Setup wallet buttons
     Object.entries(SUPPORTED_WALLETS).forEach(([key, wallet]) => {
         console.log('Setting up wallet button:', key);
-        const button = modal.querySelector(`[data-wallet="${key}"]`);
-        if (!button) {
-            console.error(`Button for wallet ${key} not found`);
-            return;
-        }
-        console.log('Found button for wallet:', key);
-
-        // Check if wallet is available or should redirect to install
+        
+        // Create wallet button
+        const button = document.createElement('button');
+        button.className = 'neon-button flex items-center justify-between w-full py-3 px-4 rounded-xl mb-2';
+        button.setAttribute('data-wallet', key);
+        
+        // Check if wallet is available
         const isAvailable = wallet.checkAvailability();
         console.log(`Wallet ${key} availability:`, isAvailable);
+        
+        button.setAttribute('data-wallet-detected', isAvailable);
+        button.setAttribute('data-tooltip', `Click to install ${wallet.name}`);
+        
+        // Create button content
+        button.innerHTML = `
+            <div class="flex items-center">
+                <img src="src/assets/wallet-logos/${key.toLowerCase()}-logo.${key === 'unisat' ? 'png' : 'svg'}" 
+                     alt="${wallet.name}" 
+                     class="w-6 h-6 mr-3"
+                     onerror="this.onerror=null; this.src='src/assets/wallet-logos/${key.toLowerCase()}-logo.png';">
+                <span class="text-white font-medium text-sm">${wallet.name}</span>
+            </div>
+            <div class="status-container">
+                ${isAvailable ? `
+                    <span class="wallet-status" data-wallet-detected="true">Detected</span>
+                ` : `
+                    <span class="status-text undetected-text" data-wallet-detected="false">Not Detected</span>
+                    <span class="status-text install-text">Install →</span>
+                `}
+            </div>
+        `;
+
+        // Add to appropriate container
+        if (isAvailable) {
+            detectedContainer.appendChild(button);
+        } else {
+            undetectedContainer.appendChild(button);
+        }
 
         setupWalletButton(button, async () => {
             if (!isAvailable) {

@@ -40,7 +40,7 @@
     <div id="walletSelectionModal" class="modal neon-theme" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Connect Wallet</h2>
+                <h2 class="modal-title">Choose how you want to connect</h2>
                 <button class="modal-close">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -48,74 +48,51 @@
                 </button>
             </div>
             
-            <div class="modal-body space-y-6">
-                <!-- Wallet Grid -->
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- OKX Wallet -->
-                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="okx">
-                        <div class="w-14 h-14 mb-2 rounded-lg flex items-center justify-center">
-                            <img src="src/assets/wallet-logos/okx-logo.svg" alt="OKX Wallet" class="w-12 h-12">
-                        </div>
-                        <span class="text-white font-medium text-sm text-center">OKX Wallet</span>
+            <div class="modal-body space-y-4">
+                <!-- Generate New Wallet -->
+                <div class="wallet-group">
+                    <div class="wallet-group-title">Create or Import</div>
+                    <button id="createWalletBtn" class="neon-button flex items-center justify-center w-full py-3 rounded-xl mb-2">
+                        <svg class="w-6 h-6 mr-2 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        <span class="text-[#00ffa3] font-medium text-sm">Generate New Wallet</span>
                     </button>
                     
-                    <!-- Unisat Wallet -->
-                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="unisat">
-                        <div class="w-14 h-14 mb-2 rounded-lg flex items-center justify-center">
-                            <img src="src/assets/wallet-logos/unisat-logo.png" alt="Unisat Wallet" class="w-12 h-12">
-                        </div>
-                        <span class="text-white font-medium text-sm text-center">Unisat Wallet</span>
-                    </button>
-                    
-                    <!-- Yours Wallet -->
-                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="yours">
-                        <div class="w-14 h-14 mb-2 rounded-lg flex items-center justify-center">
-                            <img src="src/assets/wallet-logos/yours-logo.svg" alt="Yours Wallet" class="w-12 h-12">
-                        </div>
-                        <span class="text-white font-medium text-sm text-center">Yours Wallet</span>
-                    </button>
-
-                    <!-- Phantom Wallet -->
-                    <button class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group" data-wallet="phantom">
-                        <div class="w-14 h-14 mb-2 rounded-lg flex items-center justify-center">
-                            <img src="src/assets/wallet-logos/phantom-logo.svg" alt="Phantom Wallet" class="w-12 h-12">
-                        </div>
-                        <span class="text-white font-medium text-sm text-center">Phantom Wallet</span>
-                    </button>
-                </div>
-
-                <!-- Divider -->
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-700"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 text-gray-400 bg-black">Or</span>
-                    </div>
-                </div>
-
-                <!-- Create/Import Buttons -->
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- Create New Wallet -->
-                    <button id="createWalletBtn" class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group">
-                        <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                        </div>
-                        <span class="text-white font-medium text-sm text-center">Create New Wallet</span>
-                    </button>
-
-                    <!-- Import Wallet -->
                     <button id="importWalletBtn" 
                             onclick="window.handleImportWalletClick()"
-                            class="neon-button flex flex-col items-center justify-center p-4 rounded-xl group">
-                        <div class="w-10 h-10 mb-2 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                            </svg>
+                            class="neon-button flex items-center justify-center w-full py-3 rounded-xl">
+                        <svg class="w-6 h-6 mr-2 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        <span class="text-white font-medium text-sm">Import Wallet</span>
+                    </button>
+                </div>
+                
+                <!-- External Wallets -->
+                <div class="wallet-group" data-section="detected">
+                    <div class="wallet-group-title">Detected Wallets</div>
+                    <div class="detected-wallets">
+                        <!-- Wallet buttons will be dynamically inserted here based on detection -->
+                    </div>
+                </div>
+                
+                <div class="wallet-group" data-section="undetected">
+                    <div class="wallet-group-title">Available Wallets</div>
+                    <div class="undetected-wallets">
+                        <!-- Wallet buttons will be dynamically inserted here based on detection -->
+                    </div>
+                </div>
+                
+                <!-- Social Login -->
+                <div class="wallet-group">
+                    <div class="wallet-group-title">Other Options</div>
+                    <button class="neon-button social-login flex items-center justify-between w-full py-3 px-4 rounded-xl">
+                        <div class="flex items-center">
+                            <img src="src/assets/wallet-logos/x-logo.svg" alt="X Login" class="w-6 h-6 mr-3">
+                            <span class="text-white font-medium text-sm">Continue with X</span>
                         </div>
-                        <span class="text-white font-medium text-sm text-center">Import Wallet</span>
+                        <span class="text-gray-400 text-xs font-medium">Social Login</span>
                     </button>
                 </div>
             </div>
