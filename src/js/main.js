@@ -6,6 +6,20 @@ import { startWalletSetup } from './wallet/setup.js';
 import { initializeBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
 import { initializeWalletUI } from './wallet/walletUIManager.js';
+import { setupMainWalletEvents } from './wallet/walletEvents.js';
+
+// Initialize main wallet modal when loaded
+function initializeMainWalletModal() {
+    console.log('Initializing main wallet modal...');
+    const mainWalletModal = document.getElementById('mainWalletModal');
+    if (mainWalletModal) {
+        console.log('Found main wallet modal, setting up events');
+        setupMainWalletEvents();
+    } else {
+        console.log('Main wallet modal not found, will try again');
+        setTimeout(initializeMainWalletModal, 100);
+    }
+}
 
 // Expose wallet functions globally
 window.showWalletSelection = function() {
@@ -219,12 +233,12 @@ async function initializeApp() {
     }
 }
 
-// Initialize the application
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing app...');
     initializeApp();
-}
+    initializeMainWalletModal();
+});
 
 // Initialize submissions refresh
 setInterval(() => {

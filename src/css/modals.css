@@ -154,7 +154,7 @@
 
 /* Modal Body */
 .modal-body {
-  padding: 28px;
+  padding: 24px;
   color: rgba(255, 255, 255, 0.95);
 }
 
@@ -167,6 +167,10 @@
   );
 }
 
+.modal-body .space-y-4 > * + * {
+  margin-top: 16px;
+}
+
 /* Neon Button Style */
 .neon-button {
   background: rgba(0, 0, 0, 0.4);
@@ -177,6 +181,7 @@
               inset 0 0 20px rgba(0, 0, 0, 0.5),
               0 0 10px rgba(0, 255, 163, 0.1);
   backdrop-filter: blur(8px);
+  padding: 12px 24px;
 }
 
 .neon-button:hover {
@@ -184,7 +189,7 @@
   box-shadow: 0 0 40px rgba(0, 255, 163, 0.3),
               inset 0 0 30px rgba(0, 255, 163, 0.1),
               0 0 20px rgba(0, 255, 163, 0.2);
-  transform: translateY(-3px) scale(1.02);
+  transform: translateY(-2px);
   background: linear-gradient(
     180deg,
     rgba(0, 255, 163, 0.2) 0%,
@@ -193,7 +198,7 @@
 }
 
 .neon-button:active {
-  transform: translateY(1px) scale(0.98);
+  transform: translateY(1px);
   box-shadow: 0 0 30px rgba(0, 255, 163, 0.25),
               inset 0 0 20px rgba(0, 255, 163, 0.15);
   background: linear-gradient(

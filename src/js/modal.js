@@ -83,6 +83,7 @@ export class Modal {
         requestAnimationFrame(() => {
             this.modal.classList.add('open');
             this.modal.classList.remove('modal-exit');
+            this.modal.classList.remove('hidden');
             
             // Reset transitioning state after animation
             this.transitionTimeout = setTimeout(() => {
@@ -95,6 +96,12 @@ export class Modal {
     hide() {
         if (!this.modal || this.isTransitioning) return;
         
+        // Don't hide the main wallet modal if it's being shown
+        if (this.modal.id === 'mainWalletModal' && !this.modal.classList.contains('hidden')) {
+            console.log('Preventing main wallet modal from being hidden');
+            return;
+        }
+        
         // Clear any existing transition timeout
         if (this.transitionTimeout) {
             clearTimeout(this.transitionTimeout);
@@ -106,9 +113,13 @@ export class Modal {
         // Hide modal with animation
         this.modal.classList.remove('open');
         this.modal.classList.add('modal-exit');
+        this.modal.classList.add('hidden');
         
-        // Hide backdrop
-        this.backdrop.classList.remove('visible');
+        // Hide backdrop if no other modals are visible
+        const visibleModals = document.querySelectorAll('.modal:not(.hidden)');
+        if (visibleModals.length <= 1) {
+            this.backdrop.classList.remove('visible');
+        }
         
         // Wait for animation to complete before hiding
         this.transitionTimeout = setTimeout(() => {

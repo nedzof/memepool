@@ -79,16 +79,12 @@ function initializeCreateFlow(modal) {
             // Show success animation
             hideModal('seedModal');
             showModal('walletCreatedModal');
-
-            // Initialize success modal when wallet setup completes
-            window.addEventListener('walletSetupComplete', (event) => {
-                try {
-                    console.log('walletSetupComplete event received:', event.detail);
-                    initializeSuccessAnimationModal();
-                } catch (error) {
-                    console.error('Error in walletSetupComplete listener:', error);
-                }
-            });
+            
+            // Remove any existing walletSetupComplete listeners
+            const existingListener = window._walletSetupListener;
+            if (existingListener) {
+                window.removeEventListener('walletSetupComplete', existingListener);
+            }
             
         } catch (error) {
             console.error('Error confirming seed phrase:', error);
@@ -222,7 +218,7 @@ function initializeImportFlow(modal) {
 function handleWalletSetupComplete(event) {
     try {
         console.log('walletSetupComplete event received:', event.detail);
-        initializeSuccessAnimationModal();
+        hideModal('seedModal');
     } catch (error) {
         console.error('Error in walletSetupComplete listener:', error);
     }

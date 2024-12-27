@@ -129,11 +129,11 @@ export function setupReceiveModal() {
     });
     
     // Get and display the legacy address
-    if (window.wallet) {
+    if (window.bitcoinWallet) {
         console.log('Wallet found, getting legacy address...');
         try {
             // Try to get the legacy address immediately
-            const legacyAddress = window.wallet.getLegacyAddress?.() || window.wallet.legacyAddress || window.wallet.address;
+            const legacyAddress = window.bitcoinWallet.getLegacyAddress?.() || window.bitcoinWallet.legacyAddress || window.bitcoinWallet.address;
             
             if (legacyAddress) {
                 console.log('Got legacy address:', legacyAddress);
@@ -169,8 +169,8 @@ export function setupReceiveModal() {
             }
             
             // Also listen for address changes
-            if (typeof window.wallet.on === 'function') {
-                window.wallet.on('addressChanged', (newAddress) => {
+            if (typeof window.bitcoinWallet.on === 'function') {
+                window.bitcoinWallet.on('addressChanged', (newAddress) => {
                     if (newAddress) {
                         if (walletAddressInput) {
                             walletAddressInput.value = newAddress;

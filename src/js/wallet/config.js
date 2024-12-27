@@ -237,6 +237,96 @@ async function initPhantomWallet() {
     }
 }
 
+// Initialize Yours wallet interface
+async function initYoursWallet() {
+    if (!window.yours) {
+        window.open('https://yours.org', '_blank');
+        throw new Error('Yours wallet not found. Please install Yours wallet.');
+    }
+
+    try {
+        // Check if Yours is ready
+        if (!window.yours.isReady) {
+            throw new Error('Yours wallet is not ready');
+        }
+
+        // Custom sign message with Memepool branding
+        const signMessage = `Welcome to Memepool!
+
+This signature request is to verify your wallet ownership.
+This request will not trigger a blockchain transaction or cost any fees.
+
+Timestamp: ${Date.now()}`;
+
+        // Request connection with custom message
+        const identityPubKey = await window.yours.connect(signMessage);
+        if (!identityPubKey) {
+            throw new Error('Failed to connect to Yours wallet');
+        }
+
+        // Get addresses
+        const { bsvAddress, ordAddress, identityAddress } = await window.yours.getAddresses();
+        if (!bsvAddress) {
+            throw new Error('Failed to get BSV address from Yours wallet');
+        }
+
+        // Get public keys
+        const { bsvPubKey, ordPubKey } = await window.yours.getPubKeys();
+        if (!bsvPubKey) {
+            throw new Error('Failed to get BSV public key from Yours wallet');
+        }
+
+        const wallet = {
+            type: 'yours',
+            address: bsvAddress,
+            publicKey: bsvPubKey,
+            identityAddress,
+            identityPubKey,
+            ordinalAddress: ordAddress,
+            ordinalPubKey: ordPubKey,
+            getAddress: () => bsvAddress,
+            getPublicKey: () => bsvPubKey,
+            getBalance: () => getBalance(bsvAddress),
+            send: async (toAddress, amount, data = null) => {
+                try {
+                    const paymentParams = [{
+                        satoshis: amount,
+                        address: toAddress
+                    }];
+                    
+                    if (data) {
+                        paymentParams[0].data = data.map(d => Buffer.from(d).toString('hex'));
+                    }
+                    
+                    const { txid } = await window.yours.sendBsv(paymentParams);
+                    return { txid };
+                } catch (error) {
+                    throw new Error('Failed to send transaction: ' + error.message);
+                }
+            },
+            signMessage: async (message) => {
+                return await window.yours.signMessage(message);
+            },
+            disconnect: async () => {
+                // Add disconnect functionality if supported by Yours wallet
+                console.log('Disconnecting Yours wallet...');
+            }
+        };
+
+        // Store wallet instance and data
+        window.wallet = wallet;
+        sessionStorage.setItem('wallet_address', bsvAddress);
+        sessionStorage.setItem('wallet_public_key', bsvPubKey);
+        sessionStorage.setItem('wallet_identity_address', identityAddress);
+        sessionStorage.setItem('wallet_identity_pubkey', identityPubKey);
+        
+        return wallet;
+    } catch (error) {
+        console.error('Error initializing Yours wallet:', error);
+        throw error;
+    }
+}
+
 // Required wallet interface methods
 const REQUIRED_METHODS = ['getAddress', 'getBalance', 'getPublicKey'];
 
@@ -271,6 +361,12 @@ export const SUPPORTED_WALLETS = {
         errorMessage: 'Failed to connect to Phantom Wallet. Please make sure Phantom is installed and unlocked.',
         retryAttempts: 3,
         retryDelay: 1000
+    },
+    yours: {
+        name: 'Yours',
+        initialize: initYoursWallet,
+        checkAvailability: () => window.yours?.isReady || false,
+        installUrl: 'https://yours.org'
     }
 };
 
