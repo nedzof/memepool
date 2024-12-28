@@ -427,21 +427,59 @@ export async function initializeWallet(walletType) {
 }
 
 // Disconnect wallet and clean up
-export function disconnectWallet() {
+export async function disconnectWallet() {
+    console.log('Disconnecting wallet...');
+    
+    // Get current wallet type
+    const walletType = sessionStorage.getItem('wallet_type');
+    console.log('Current wallet type:', walletType);
+
+    // Call wallet-specific disconnect if available
+    if (window.wallet) {
+        try {
+            switch (walletType) {
+                case 'unisat':
+                    if (window.unisat) {
+                        await window.unisat.disconnect();
+                    }
+                    break;
+                case 'okx':
+                    if (window.okxwallet?.bitcoin) {
+                        await window.okxwallet.bitcoin.disconnect();
+                    }
+                    break;
+                case 'phantom':
+                    // Phantom doesn't have a programmatic disconnect
+                    console.log('Note: Users must disconnect manually through Phantom wallet UI');
+                    break;
+                case 'yours':
+                    if (window.yours?.disconnect) {
+                        await window.yours.disconnect();
+                    }
+                    break;
+                default:
+                    console.log('No specific disconnect handler for wallet type:', walletType);
+            }
+        } catch (error) {
+            console.warn('Error during wallet-specific disconnect:', error);
+        }
+    }
+
     // Clear session storage
+    sessionStorage.removeItem('wallet_type');
+    sessionStorage.removeItem('wallet_address');
+    sessionStorage.removeItem('wallet_public_key');
+    sessionStorage.removeItem('wallet_initialized');
+    sessionStorage.removeItem('wallet_signature');
     sessionStorage.removeItem('temp_mnemonic');
+    localStorage.removeItem('memepire_wallet_session');
     localStorage.removeItem('memepool_wallet_session');
 
     // Clear global wallet instance
-    if (window.wallet?.disconnect) {
-        try {
-            window.wallet.disconnect();
-        } catch (error) {
-            console.warn('Error disconnecting wallet:', error);
-        }
-    }
     window.wallet = null;
 
     // Reset UI
     resetWalletUI();
+
+    console.log('Wallet disconnected and session cleared');
 } 

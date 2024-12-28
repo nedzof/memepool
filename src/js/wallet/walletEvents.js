@@ -32,26 +32,27 @@ export function setupMainWalletEvents() {
         showReceiveModal();
     });
 
-    disconnectButton.addEventListener('click', () => {
+    disconnectButton.addEventListener('click', async () => {
         console.log('Disconnect button clicked');
         
-        // Terminate the current session
-        terminateSession();
+        try {
+            // Disconnect the wallet first (this also resets the UI)
+            await disconnectWallet();
+            
+            // Terminate the session
+            terminateSession();
 
-        // Reset wallet UI to disconnected state
-        resetWalletUI();
+            // Update header button to disconnected state
+            updateHeaderWalletButton(false);
 
-        // Update header button to disconnected state
-        updateHeaderWalletButton(false);
-
-        // Clear wallet data from session storage
-        sessionStorage.removeItem('wallet_type');
-        sessionStorage.removeItem('wallet_address');
-        sessionStorage.removeItem('wallet_public_key');
-        sessionStorage.removeItem('wallet_initialized');
-
-        // Hide the main wallet modal
-        hideModal('mainWalletModal');
+            // Hide the main wallet modal
+            hideModal('mainWalletModal');
+            
+            console.log('Wallet disconnected successfully');
+        } catch (error) {
+            console.error('Error disconnecting wallet:', error);
+            showError('Failed to disconnect wallet. Please try again.');
+        }
     });
 
     // Start balance updates when modal is shown
