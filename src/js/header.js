@@ -121,16 +121,15 @@ function initializeHeader() {
 function initializeConnectionStatus() {
     console.log('Initializing connection status...');
     
-    // Get connect wallet button and text elements
+    // Get connect wallet button
     const connectButton = document.getElementById('connectWalletBtn');
-    const connectText = document.getElementById('connectWalletText');
 
-    if (!connectButton || !connectText) {
-        console.error('Connect wallet button or text element not found');
+    if (!connectButton) {
+        console.error('Connect wallet button not found');
         return;
     }
 
-    console.log('Found connect button elements');
+    console.log('Found connect button element');
 
     // Check if we have a wallet initialized
     const isWalletInitialized = sessionStorage.getItem('wallet_initialized') === 'true';
@@ -191,10 +190,9 @@ async function checkConnection() {
 
 function updateHeaderWalletButton(isConnected, balance = null) {
     const connectButton = document.getElementById('connectWalletBtn');
-    const connectText = document.getElementById('connectWalletText');
 
-    if (!connectButton || !connectText) {
-        console.error('Connect button elements not found');
+    if (!connectButton) {
+        console.error('Connect button not found');
         return;
     }
 
@@ -208,14 +206,14 @@ function updateHeaderWalletButton(isConnected, balance = null) {
 
     if (isConnected) {
         // Update text and classes
-        connectText.textContent = balance ? `${balance.toFixed(8)} BSV` : 'Connected';
+        connectButton.textContent = balance ? `${balance.toFixed(8)} BSV` : 'Connected';
         connectButton.classList.add('connected');
         
         // Set new click handler
         currentClickHandler = onConnectedClick;
     } else {
         // Update text and classes
-        connectText.textContent = 'Connect Wallet';
+        connectButton.textContent = 'Connect Wallet';
         connectButton.classList.remove('connected');
         
         // Set new click handler

@@ -184,7 +184,7 @@ async function initializeApp() {
         const appElement = document.getElementById('app');
         console.log('App element:', appElement);
         
-        // Load included content
+        // Load included content first
         console.log('Loading included content...');
         const includedContentLoaded = await loadIncludedContent(appElement);
         if (!includedContentLoaded.every(Boolean)) {
@@ -192,6 +192,10 @@ async function initializeApp() {
             throw new Error('Failed to load included content');
         }
         console.log('All included content loaded successfully');
+
+        // Initialize header first since it's critical
+        console.log('Initializing header...');
+        initializeHeader();
         
         // Load main content
         console.log('Loading main content...');
@@ -200,7 +204,7 @@ async function initializeApp() {
             throw new Error('Failed to load main content');
         }
 
-        // Load wallet modals first
+        // Load wallet modals
         console.log('Loading wallet modals...');
         const walletModalsLoaded = await loadWalletModals();
         if (!walletModalsLoaded) {
@@ -234,10 +238,6 @@ async function initializeApp() {
         console.log('Attempting to restore session...');
         const sessionRestored = await restoreSession();
         console.log('Session restore result:', sessionRestored);
-
-        // Initialize header last, after session is restored
-        console.log('Initializing header...');
-        initializeHeader();
         
         console.log('App initialization complete');
         
