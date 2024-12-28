@@ -5,45 +5,10 @@ import { handleConnectWalletClick } from './walletSelection.js';
 let isLoading = false;
 let connectButton = null;
 
-// Initialize connect button
-export function initializeConnectButton() {
-    connectButton = document.getElementById('connectWalletBtn');
-    
-    if (connectButton) {
-        // Remove any existing click handlers
-        const newButton = connectButton.cloneNode(true);
-        connectButton.parentNode.replaceChild(newButton, connectButton);
-        connectButton = newButton;
-        
-        connectButton.addEventListener('click', handleConnectWalletClick);
-        console.log('Connect button initialized');
-    } else {
-        console.warn('Connect button not found, will try again when DOM updates');
-        
-        const observer = new MutationObserver((mutations, obs) => {
-            const button = document.getElementById('connectWalletBtn');
-            if (button) {
-                // Remove any existing click handlers
-                const newButton = button.cloneNode(true);
-                button.parentNode.replaceChild(newButton, button);
-                connectButton = newButton;
-                
-                connectButton.addEventListener('click', handleConnectWalletClick);
-                console.log('Connect button initialized after DOM update');
-                obs.disconnect();
-            }
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    }
-}
-
 // Loading state
 export function setWalletLoading(loading) {
     isLoading = loading;
+    const connectButton = document.getElementById('connectWalletBtn');
     if (connectButton) {
         if (loading) {
             connectButton.classList.add('loading');
@@ -57,33 +22,30 @@ export function setWalletLoading(loading) {
 
 // Reset wallet UI to disconnected state
 export function resetWalletUI() {
+    const connectButton = document.getElementById('connectWalletBtn');
     if (connectButton) {
         connectButton.textContent = 'Connect Wallet';
         connectButton.classList.remove('connected');
         connectButton.dataset.walletConnected = 'false';
         delete connectButton.dataset.balance;
-        connectButton.addEventListener('click', handleConnectWalletClick);
     }
 }
 
 // Update wallet UI with connected state
 export async function updateWalletUI(balance = null) {
+    const connectButton = document.getElementById('connectWalletBtn');
     if (connectButton) {
         connectButton.textContent = balance ? `${balance.toFixed(8)} BSV` : 'Connected';
         connectButton.classList.add('connected');
         connectButton.dataset.walletConnected = 'true';
         if (balance) connectButton.dataset.balance = balance;
-        
-        // Update click handler to show main wallet
-        connectButton.addEventListener('click', () => {
-            showModal('mainWalletModal');
-        });
     }
 }
 
 // Initialize wallet UI
 export function initializeWalletUI() {
-    initializeConnectButton();
+    // No need to initialize connect button here as it's handled by header.js
+    console.log('Wallet UI initialized');
 }
 
 // Balance update functions
@@ -95,11 +57,4 @@ export function startBalanceUpdates() {
 export function stopBalanceUpdates() {
     // Implement if needed
     console.log('Balance updates stopped');
-}
-
-// Initialize when the DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeConnectButton);
-} else {
-    initializeConnectButton();
 } 
