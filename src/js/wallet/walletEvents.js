@@ -45,8 +45,26 @@ export function setupMainWalletEvents() {
             // Update header button to disconnected state
             updateHeaderWalletButton(false);
 
-            // Hide the main wallet modal
-            hideModal('mainWalletModal');
+            // Force close the main wallet modal first
+            const mainWalletModal = document.getElementById('mainWalletModal');
+            if (mainWalletModal) {
+                mainWalletModal.style.display = 'none';
+                mainWalletModal.classList.remove('open');
+                mainWalletModal.classList.add('hidden');
+            }
+
+            // Close any other open modals
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (!modal.classList.contains('hidden') && modal.id !== 'mainWalletModal') {
+                    hideModal(modal.id);
+                }
+            });
+
+            // Hide the backdrop if no other modals are visible
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.classList.remove('visible');
+            }
             
             console.log('Wallet disconnected successfully');
         } catch (error) {

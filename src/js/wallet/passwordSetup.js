@@ -42,6 +42,16 @@ export function setupPasswordValidation(onSuccess) {
     }
     console.log('Found password setup form');
 
+    // Setup back button
+    const backButton = document.querySelector('#passwordSetupModal .back-to-menu');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            console.log('Back button clicked');
+            hideModal('passwordSetupModal');
+            showModal('walletSelectionModal');
+        });
+    }
+
     // Setup input event listeners
     const setupPassword = document.getElementById('setupPassword');
     const confirmPassword = document.getElementById('confirmPassword');
