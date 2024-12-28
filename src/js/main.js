@@ -7,6 +7,7 @@ import { initializeBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
 import { initializeWalletUI } from './wallet/walletUIManager.js';
 import { setupMainWalletEvents } from './wallet/walletEvents.js';
+import { VideoUploader } from './video-upload.js';
 
 // Initialize main wallet modal when loaded
 function initializeMainWalletModal() {
@@ -35,6 +36,20 @@ window.showWalletSelection = function() {
 // Make wallet setup function available globally
 window.startWalletSetup = startWalletSetup;
 
+// Add compete button handler
+function setupCompeteButton() {
+    const competeButton = document.querySelector('[data-compete-button]');
+    if (competeButton) {
+        competeButton.addEventListener('click', () => {
+            console.log('Compete button clicked, showing video modal');
+            showModal('videoModal');
+        });
+    } else {
+        console.warn('Compete button not found, will try again');
+        setTimeout(setupCompeteButton, 100);
+    }
+}
+
 async function loadMainContent() {
     try {
         const response = await fetch('/src/components/main-content.html');
@@ -55,6 +70,10 @@ async function loadMainContent() {
             } else {
                 console.error('Shift blocks button not found');
             }
+
+            // Setup compete button
+            setupCompeteButton();
+            
             return true;
         }
         return false;
@@ -221,6 +240,11 @@ async function initializeApp() {
         // Initialize seed modal
         initializeSeedModal();
         console.log('Seed modal initialized');
+
+        // Initialize video uploader
+        console.log('Initializing video uploader...');
+        new VideoUploader();
+        console.log('Video uploader initialized');
 
         // Show wallet selection
         showWalletSelection();

@@ -1,0 +1,85 @@
+<!-- Video Modal -->
+<div id="videoModal" class="modal neon-theme" style="display: none;">
+    <div class="w-full max-w-md rounded-xl overflow-hidden relative" 
+         style="background: linear-gradient(135deg, #0c0620 0%, #120c34 50%, #1a1147 100%); 
+                border: 1px solid rgba(255, 0, 255, 0.3);
+                box-shadow: 0 0 30px rgba(255, 0, 255, 0.2)">
+        <button class="modal-close absolute top-4 right-4 text-white hover:text-white/80 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-6 text-center" 
+                style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                       -webkit-background-clip: text;
+                       -webkit-text-fill-color: transparent;
+                       text-shadow: 0 0 10px rgba(255, 0, 255, 0.3)">
+                Create Your Video
+            </h2>
+
+            <div id="modalContent">
+                <!-- Upload step -->
+                <div id="uploadStep">
+                    <div class="rounded-lg overflow-hidden relative p-1 mb-4" 
+                         style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                                box-shadow: 0 0 20px rgba(255, 0, 255, 0.2)">
+                        <div id="dropZone" class="w-full h-64 rounded-lg flex flex-col items-center justify-center p-4 border-2 border-dashed border-white/30 hover:border-white/50 transition-colors">
+                            <svg class="w-12 h-12 mb-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p class="text-white/70 text-center mb-2">Drag and drop your video here or</p>
+                            <label class="cursor-pointer px-4 py-2 rounded-lg text-white font-bold transition-all duration-300 hover:scale-105"
+                                   style="background: linear-gradient(45deg, #ff00ff, #00ffff);">
+                                Browse Files
+                                <input type="file" id="fileInput" class="hidden" accept="video/mp4,video/webm">
+                            </label>
+                            <p class="text-white/50 text-sm mt-2">Max: 5 seconds, 100MB (MP4, WebM)</p>
+                        </div>
+                    </div>
+                    <div id="uploadError" class="hidden text-red-500 text-sm mb-4"></div>
+                    <div id="uploadProgress" class="hidden">
+                        <div class="h-2 rounded-full overflow-hidden" style="background: rgba(255, 0, 255, 0.1);">
+                            <div id="progressBar" class="h-full transition-all duration-300"
+                                 style="background: linear-gradient(45deg, #ff00ff, #00ffff); width: 0%">
+                            </div>
+                        </div>
+                        <p id="progressText" class="text-white/70 text-sm mt-1 text-center">0%</p>
+                    </div>
+                </div>
+
+                <!-- Preview step -->
+                <div id="previewStep" class="hidden">
+                    <div class="rounded-lg overflow-hidden relative p-1" 
+                         style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                                box-shadow: 0 0 20px rgba(255, 0, 255, 0.2)">
+                        <video 
+                            id="previewVideo"
+                            src=""
+                            controls
+                            class="w-full rounded-lg">
+                        </video>
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <button 
+                            id="startOver"
+                            class="flex-1 py-3 rounded-lg font-bold transition-all duration-300 hover:scale-105 text-white"
+                            style="background: rgba(255, 0, 255, 0.1);
+                                   border: 1px solid rgba(255, 0, 255, 0.3);
+                                   box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
+                            Start Over
+                        </button>
+                        <button 
+                            id="signBroadcast"
+                            class="flex-1 py-3 rounded-lg font-bold transition-all duration-300 hover:scale-105 text-white"
+                            style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                                   box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                            Sign & Broadcast
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 
