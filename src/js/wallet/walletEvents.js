@@ -1,67 +1,70 @@
-import { updateWalletUI, startBalanceUpdates, stopBalanceUpdates } from './walletUIManager.js';
+import { updateWalletUI, startBalanceUpdates, stopBalanceUpdates, resetWalletUI } from './walletUIManager.js';
 import { showModal, hideModal, showError } from '../modal.js';
 import { disconnectWallet } from './config.js';
 import { showSendModal, showReceiveModal } from './modalManager.js';
+import { terminateSession } from './auth/session.js';
+import { updateHeaderWalletButton } from '../header.js';
 
 // Setup main wallet events
 export function setupMainWalletEvents() {
-    console.log('Setting up main wallet events');
+    console.log('Setting up main wallet events...');
     
+    // Get main wallet modal elements
     const mainWalletModal = document.getElementById('mainWalletModal');
-    if (!mainWalletModal) {
-        console.error('Main wallet modal not found');
+    const sendButton = document.getElementById('sendBtn');
+    const receiveButton = document.getElementById('receiveBtn');
+    const disconnectButton = document.getElementById('disconnectBtn');
+
+    // Verify elements exist
+    if (!mainWalletModal || !sendButton || !receiveButton || !disconnectButton) {
+        console.error('Main wallet modal elements not found');
         return;
     }
 
-    // Check if events are already initialized
-    if (mainWalletModal.hasAttribute('data-events-initialized')) {
-        console.log('Main wallet events already initialized');
-        return;
-    }
-
-    // Handle button clicks using event delegation
-    mainWalletModal.addEventListener('click', (event) => {
-        // Find the closest button that was clicked
-        const button = event.target.closest('button');
-        if (!button) return;
-
-        console.log('Button clicked:', button.id);
-
-        if (button.id === 'sendBtn') {
-            console.log('Send button clicked');
-            try {
-                showSendModal();
-            } catch (error) {
-                console.error('Error in Send button handler:', error);
-            }
-        } else if (button.id === 'receiveBtn') {
-            console.log('Receive button clicked');
-            try {
-                showReceiveModal();
-            } catch (error) {
-                console.error('Error in Receive button handler:', error);
-            }
-        } else if (button.id === 'profileBtn') {
-            console.log('Profile button clicked');
-            try {
-                hideModal('mainWalletModal');
-                showModal('profileSetupModal');
-            } catch (error) {
-                console.error('Error in Profile button handler:', error);
-            }
-        } else if (button.id === 'disconnectBtn') {
-            console.log('Disconnect button clicked');
-            try {
-                disconnectWallet();
-                location.reload();
-            } catch (error) {
-                console.error('Error in Disconnect button handler:', error);
-            }
-        }
+    // Add event listeners
+    sendButton.addEventListener('click', () => {
+        console.log('Send button clicked');
+        showSendModal();
     });
 
-    // Mark events as initialized
-    mainWalletModal.setAttribute('data-events-initialized', 'true');
+    receiveButton.addEventListener('click', () => {
+        console.log('Receive button clicked');
+        showReceiveModal();
+    });
+
+    disconnectButton.addEventListener('click', () => {
+        console.log('Disconnect button clicked');
+        
+        // Terminate the current session
+        terminateSession();
+
+        // Reset wallet UI to disconnected state
+        resetWalletUI();
+
+        // Update header button to disconnected state
+        updateHeaderWalletButton(false);
+
+        // Clear wallet data from session storage
+        sessionStorage.removeItem('wallet_type');
+        sessionStorage.removeItem('wallet_address');
+        sessionStorage.removeItem('wallet_public_key');
+        sessionStorage.removeItem('wallet_initialized');
+
+        // Hide the main wallet modal
+        hideModal('mainWalletModal');
+    });
+
+    // Start balance updates when modal is shown
+    mainWalletModal.addEventListener('show.bs.modal', () => {
+        console.log('Main wallet modal shown, starting balance updates');
+        startBalanceUpdates();
+    });
+
+    // Stop balance updates when modal is hidden
+    mainWalletModal.addEventListener('hide.bs.modal', () => {
+        console.log('Main wallet modal hidden, stopping balance updates');
+        stopBalanceUpdates();
+    });
 
     console.log('Main wallet events setup complete');
 }
