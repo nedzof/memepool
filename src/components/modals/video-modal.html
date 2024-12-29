@@ -49,9 +49,75 @@
                     </div>
                 </div>
 
+                <!-- Processing step -->
+                <div id="processingStep" class="hidden">
+                    <div class="space-y-4">
+                        <!-- Processing status -->
+                        <div class="flex items-center justify-between p-3 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                            <span id="processingStatus" class="text-white">Processing video...</span>
+                            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        </div>
+
+                        <!-- Video metadata -->
+                        <div class="space-y-2">
+                            <h3 class="text-white/70 mb-2">Video Information</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                    <span class="text-white/50 text-sm">Duration</span>
+                                    <p id="videoDuration" class="text-white font-mono">--:--</p>
+                                </div>
+                                <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                    <span class="text-white/50 text-sm">Format</span>
+                                    <p id="videoFormat" class="text-white font-mono">---</p>
+                                </div>
+                                <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                    <span class="text-white/50 text-sm">Resolution</span>
+                                    <p id="videoResolution" class="text-white font-mono">----x----</p>
+                                </div>
+                                <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                    <span class="text-white/50 text-sm">Bitrate</span>
+                                    <p id="videoBitrate" class="text-white font-mono">--- Kbps</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Processing steps -->
+                        <div class="space-y-2">
+                            <div id="stepVerification" class="flex items-center space-x-2 text-white/70">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path class="hidden check-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    <path class="animate-spin spinner-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v4m0 4v4m-4-3h4m4 0h-4m8-4a8 8 0 11-16 0 8 8 0 0116 0z" />
+                                </svg>
+                                <span>Format verification</span>
+                            </div>
+                            <div id="stepMetadata" class="flex items-center space-x-2 text-white/70">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path class="hidden check-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    <path class="animate-spin spinner-icon hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v4m0 4v4m-4-3h4m4 0h-4m8-4a8 8 0 11-16 0 8 8 0 0116 0z" />
+                                </svg>
+                                <span>Extracting metadata</span>
+                            </div>
+                            <div id="stepThumbnail" class="flex items-center space-x-2 text-white/70">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path class="hidden check-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    <path class="animate-spin spinner-icon hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v4m0 4v4m-4-3h4m4 0h-4m8-4a8 8 0 11-16 0 8 8 0 0116 0z" />
+                                </svg>
+                                <span>Generating thumbnail</span>
+                            </div>
+                            <div id="stepOptimization" class="flex items-center space-x-2 text-white/70">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path class="hidden check-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    <path class="animate-spin spinner-icon hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v4m0 4v4m-4-3h4m4 0h-4m8-4a8 8 0 11-16 0 8 8 0 0116 0z" />
+                                </svg>
+                                <span>Optimizing video</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Preview step -->
                 <div id="previewStep" class="hidden">
-                    <div class="rounded-lg overflow-hidden relative p-1" 
+                    <div class="rounded-lg overflow-hidden relative p-1 mb-4" 
                          style="background: linear-gradient(45deg, #ff00ff, #00ffff);
                                 box-shadow: 0 0 20px rgba(255, 0, 255, 0.2)">
                         <video 
@@ -61,7 +127,34 @@
                             class="w-full rounded-lg">
                         </video>
                     </div>
-                    <div class="flex gap-4 mt-4">
+
+                    <!-- Video Information -->
+                    <div class="mb-4 space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                <span class="text-white/50 text-sm">Duration</span>
+                                <p id="previewDuration" class="text-white font-mono">--:--</p>
+                            </div>
+                            <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                <span class="text-white/50 text-sm">Format</span>
+                                <p id="previewFormat" class="text-white font-mono">---</p>
+                            </div>
+                            <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                <span class="text-white/50 text-sm">Resolution</span>
+                                <p id="previewResolution" class="text-white font-mono">----x----</p>
+                            </div>
+                            <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                <span class="text-white/50 text-sm">Bitrate</span>
+                                <p id="previewBitrate" class="text-white font-mono">--- Kbps</p>
+                            </div>
+                        </div>
+                        <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                            <span class="text-white/50 text-sm">File Size</span>
+                            <p id="previewSize" class="text-white font-mono">-- MB</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
                         <button 
                             id="startOver"
                             class="flex-1 py-3 rounded-lg font-bold transition-all duration-300 hover:scale-105 text-white"

@@ -1,4 +1,4 @@
-import { showError } from './modal.js';
+import { VideoProcessingUI } from './video-processing.js';
 
 export class VideoUploader {
     constructor() {
@@ -11,9 +11,9 @@ export class VideoUploader {
         this.previewVideo = document.getElementById('previewVideo');
         
         this.maxSize = 100 * 1024 * 1024; // 100MB
-        this.maxDuration = 5; // 5 seconds
         this.allowedTypes = ['video/mp4', 'video/webm'];
         
+        this.processingUI = new VideoProcessingUI();
         this.initializeEventListeners();
     }
 
@@ -44,6 +44,11 @@ export class VideoUploader {
             if (file) {
                 this.validateAndProcessVideo(file);
             }
+        });
+
+        // Handle "Start Over" button
+        document.getElementById('startOver').addEventListener('click', () => {
+            this.reset();
         });
     }
 
@@ -80,49 +85,22 @@ export class VideoUploader {
             return;
         }
 
-        // Create video element for duration check
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-
         try {
-            // Create object URL for the file
-            const objectUrl = URL.createObjectURL(file);
-            video.src = objectUrl;
-
-            // Wait for metadata to load
-            await new Promise((resolve, reject) => {
-                video.onloadedmetadata = resolve;
-                video.onerror = reject;
-            });
-
-            // Validate duration
-            if (video.duration > this.maxDuration) {
-                this.showError('Video too long. Maximum duration is 5 seconds.');
-                this.uploadProgress.classList.add('hidden');
-                URL.revokeObjectURL(objectUrl);
-                return;
-            }
-
-            // Update progress
+            // Update upload progress
             this.updateProgress(50);
 
-            // Show preview
-            this.previewVideo.src = objectUrl;
-            await new Promise((resolve) => {
-                this.previewVideo.onloadeddata = resolve;
-            });
+            // Process the video
+            await this.processingUI.processVideo(file);
 
-            // Update progress and show preview step
+            // Update progress and hide progress bar
             this.updateProgress(100);
-            document.getElementById('uploadStep').classList.add('hidden');
-            document.getElementById('previewStep').classList.remove('hidden');
-
-            // Clean up
-            URL.revokeObjectURL(objectUrl);
+            setTimeout(() => {
+                this.uploadProgress.classList.add('hidden');
+            }, 500);
 
         } catch (error) {
             console.error('Error processing video:', error);
-            this.showError('Error processing video. Please try again.');
+            this.showError(error.message || 'Error processing video. Please try again.');
             this.uploadProgress.classList.add('hidden');
         }
     }
@@ -139,16 +117,12 @@ export class VideoUploader {
         
         // Show upload step
         document.getElementById('uploadStep').classList.remove('hidden');
+        document.getElementById('processingStep').classList.add('hidden');
         document.getElementById('previewStep').classList.add('hidden');
     }
 }
 
 // Initialize video uploader when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const uploader = new VideoUploader();
-    
-    // Handle "Start Over" button
-    document.getElementById('startOver').addEventListener('click', () => {
-        uploader.reset();
-    });
+    new VideoUploader();
 }); 

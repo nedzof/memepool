@@ -12,20 +12,27 @@
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
     "ecpair": "^3.0.0-rc.0",
+    "fluent-ffmpeg": "^2.1.2",
     "qrcode": "^1.5.4",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "stream-browserify": "^3.0.0",
     "tiny-secp256k1": "^2.2.3",
+    "uuid": "^9.0.1",
     "vite": "^6.0.3",
     "yours-wallet-provider": "^3.4.2"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest"
   },
   "devDependencies": {
+    "@babel/core": "^7.23.7",
+    "@babel/preset-env": "^7.23.7",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
     "vite-plugin-top-level-await": "^1.4.4",
     "vite-plugin-wasm": "^3.4.1",
     "webpack": "^5.97.1",
