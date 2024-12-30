@@ -1,8 +1,10 @@
 import { VideoProcessor } from '../services/video-processor.js';
+import { InscriptionService } from '../services/inscription-service.js';
 
 export class VideoProcessingUI {
     constructor() {
         this.videoProcessor = new VideoProcessor();
+        this.inscriptionService = new InscriptionService();
         this.initializeElements();
         this.activeUrls = [];
     }
@@ -24,12 +26,16 @@ export class VideoProcessingUI {
         this.previewResolution = document.getElementById('previewResolution');
         this.previewBitrate = document.getElementById('previewBitrate');
         this.previewSize = document.getElementById('previewSize');
+
+        // Inscription elements
+        this.inscriptionId = document.getElementById('inscriptionId');
+        this.inscriptionCreator = document.getElementById('inscriptionCreator');
+        this.inscriptionTimestamp = document.getElementById('inscriptionTimestamp');
         
         // Processing step indicators
         this.stepVerification = document.getElementById('stepVerification');
         this.stepMetadata = document.getElementById('stepMetadata');
         this.stepThumbnail = document.getElementById('stepThumbnail');
-        this.stepOptimization = document.getElementById('stepOptimization');
     }
 
     showProcessingStep() {
@@ -75,6 +81,13 @@ export class VideoProcessingUI {
         this.previewBitrate.textContent = `${Math.round(metadata.bitrate / 1000)} Kbps`;
     }
 
+    updateInscriptionData(inscriptionData) {
+        this.inscriptionId.textContent = inscriptionData.content.id;
+        this.inscriptionCreator.textContent = inscriptionData.content.creator;
+        this.inscriptionTimestamp.textContent = new Date(inscriptionData.content.timestamp)
+            .toLocaleString();
+    }
+
     formatDuration(seconds) {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
@@ -94,7 +107,6 @@ export class VideoProcessingUI {
             this.updateStepStatus(this.stepVerification, 'waiting');
             this.updateStepStatus(this.stepMetadata, 'waiting');
             this.updateStepStatus(this.stepThumbnail, 'waiting');
-            this.updateStepStatus(this.stepOptimization, 'waiting');
 
             // Step 1: Format verification
             this.updateStepStatus(this.stepVerification, 'pending');
@@ -121,15 +133,17 @@ export class VideoProcessingUI {
             this.activeUrls.push(thumbnailUrl);
             this.updateStepStatus(this.stepThumbnail, 'complete');
 
-            // Step 4: Video optimization (in browser, we just use the original file)
-            this.updateStepStatus(this.stepOptimization, 'pending');
-            const result = await this.videoProcessor.processVideo(file);
-            this.activeUrls.push(result.processedVideoUrl);
-            this.updateStepStatus(this.stepOptimization, 'complete');
+            // Create inscription data
+            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata);
+            this.updateInscriptionData(inscriptionData);
+
+            // Create URL for video preview
+            const videoUrl = URL.createObjectURL(file);
+            this.activeUrls.push(videoUrl);
 
             // Show preview
             const previewVideo = document.getElementById('previewVideo');
-            previewVideo.src = result.processedVideoUrl;
+            previewVideo.src = videoUrl;
             this.processingStep.classList.add('hidden');
             document.getElementById('previewStep').classList.remove('hidden');
 

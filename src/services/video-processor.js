@@ -93,36 +93,6 @@ export class VideoProcessor {
         });
     }
 
-    async processVideo(file) {
-        try {
-            // Verify format first
-            await this.verifyFormat(file);
-
-            // Extract metadata
-            const metadata = await this.extractMetadata(file);
-
-            // Validate duration
-            if (metadata.duration > 5) {
-                throw new Error('Video duration exceeds 5 seconds');
-            }
-
-            // Generate thumbnail
-            const thumbnailUrl = await this.generateThumbnail(file);
-
-            // For browser processing, we'll use the original file
-            // but create an object URL for it
-            const processedVideoUrl = URL.createObjectURL(file);
-
-            return {
-                metadata,
-                thumbnailUrl,
-                processedVideoUrl
-            };
-        } catch (error) {
-            throw new Error(`Video processing failed: ${error.message}`);
-        }
-    }
-
     cleanup(urls) {
         urls.forEach(url => {
             if (url && url.startsWith('blob:')) {

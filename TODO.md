@@ -1,6 +1,6 @@
 # Video Inscription Feature Implementation Plan
 
-## 1. Video Upload Component
+## 1. Video Upload Component ✅
 - [x] Create video upload UI component
   - [x] Implement drag-and-drop functionality
   - [x] Add file selection dialog
@@ -15,7 +15,7 @@
   - [x] Size limit warnings
   - [x] Duration limit warnings
 
-## 2. Video Processing Pipeline
+## 2. Video Processing Pipeline ✅
 - [x] Implement client-side video processing
   - [x] Format verification
   - [x] Metadata extraction (duration, dimensions, codec)
@@ -24,34 +24,37 @@
   - [x] Processing status indicators
   - [x] Metadata visualization
   - [x] Preview with details
-- [ ] Add video optimization
-  - [ ] Compression if needed
-  - [ ] Format standardization
-  - [ ] Quality preservation checks
-- [ ] Implement processing queue
-  - [ ] Progress tracking
-  - [ ] Status updates
-  - [ ] Error handling
 
-## 3. Inscription Implementation
-- [ ] Setup video inscription mechanism
-  - [ ] Implement inscription data structure
-  - [ ] Add metadata formatting
-  - [ ] Create content hash generation
+## 3. Inscription Implementation (In Progress 🔄)
+- [x] Setup video inscription mechanism
+  - [x] Implement inscription data structure
+  - [x] Add metadata formatting
+  - [x] Create content hash generation
 - [ ] Integrate with BSV testnet
   - [ ] Setup testnet wallet connection
   - [ ] Implement transaction creation
   - [ ] Add fee calculation
+- [ ] Improve content ID generation
+  - [ ] Use wallet address as part of ID
+  - [ ] Incorporate block hash for timestamp verification
+  - [ ] Create deterministic ID generation for recovery
+  - [ ] Add indexing strategy for content recovery
 - [ ] Add verification process
   - [ ] Transaction confirmation
   - [ ] Content verification
   - [ ] Ownership validation
+- [ ] Add fee estimation features
+  - [x] Add basic file size warning for fees
+  - [ ] Calculate network fees based on file size
+  - [ ] Display estimated cost before inscription
+  - [ ] Show fee breakdown (network, service fees)
+  - [ ] Add fee optimization suggestions
 
 ## 4. Testing Framework
 - [x] Unit Tests
   - [x] Video validation functions
   - [x] Processing pipeline components
-  - [ ] Inscription formatting
+  - [x] Inscription formatting
 - [ ] Integration Tests
   - [ ] Upload to inscription flow
   - [ ] Transaction creation and broadcast
@@ -80,14 +83,23 @@
   - [ ] Architecture overview
   - [ ] API endpoints
   - [ ] Data structures
+  - [ ] Fee calculation formulas
+  - [ ] Content ID format specification
+  - [ ] Recovery procedures
 - [ ] User documentation
   - [ ] Upload guidelines
   - [ ] Supported formats
+  - [ ] Fee estimation guide
   - [ ] Troubleshooting guide
 - [ ] Testing documentation
   - [ ] Test scenarios
   - [ ] Setup instructions
   - [ ] Example test cases
+- [ ] Recovery documentation
+  - [ ] Blockchain data extraction
+  - [ ] Content reindexing process
+  - [ ] Database reconstruction
+  - [ ] Service restoration steps
 
 ## 7. Final Integration
 - [ ] Code review and cleanup
@@ -110,4 +122,7 @@
 - Testing will use BSV testnet
 - Maximum video length: 5 seconds
 - Supported formats: MP4, WebM
-- Maximum file size: 100MB 
+- Maximum file size: 100MB
+- Network fees vary based on file size
+- Content IDs should be blockchain-derived for recovery
+- All essential data must be recoverable from blockchain 

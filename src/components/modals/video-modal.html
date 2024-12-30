@@ -36,6 +36,7 @@
                                 <input type="file" id="fileInput" class="hidden" accept="video/mp4,video/webm">
                             </label>
                             <p class="text-white/50 text-sm mt-2">Max: 5 seconds, 100MB (MP4, WebM)</p>
+                            <p class="text-white/40 text-xs mt-1 italic">Note: Larger files require higher network fees for inscription</p>
                         </div>
                     </div>
                     <div id="uploadError" class="hidden text-red-500 text-sm mb-4"></div>
@@ -104,13 +105,6 @@
                                 </svg>
                                 <span>Generating thumbnail</span>
                             </div>
-                            <div id="stepOptimization" class="flex items-center space-x-2 text-white/70">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path class="hidden check-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    <path class="animate-spin spinner-icon hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v4m0 4v4m-4-3h4m4 0h-4m8-4a8 8 0 11-16 0 8 8 0 0116 0z" />
-                                </svg>
-                                <span>Optimizing video</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -151,6 +145,28 @@
                         <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
                             <span class="text-white/50 text-sm">File Size</span>
                             <p id="previewSize" class="text-white font-mono">-- MB</p>
+                        </div>
+                    </div>
+
+                    <!-- Inscription Data -->
+                    <div class="mb-4">
+                        <h3 class="text-white/70 mb-2 font-semibold">Inscription Details</h3>
+                        <div class="space-y-2">
+                            <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                <span class="text-white/50 text-sm">Content ID</span>
+                                <p id="inscriptionId" class="text-white font-mono text-sm break-all">---</p>
+                                <p class="text-white/40 text-xs mt-1 italic">Note: Final ID will be derived from blockchain data</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                    <span class="text-white/50 text-sm">Creator</span>
+                                    <p id="inscriptionCreator" class="text-white font-mono">---</p>
+                                </div>
+                                <div class="p-2 rounded-lg" style="background: rgba(255, 0, 255, 0.1);">
+                                    <span class="text-white/50 text-sm">Timestamp</span>
+                                    <p id="inscriptionTimestamp" class="text-white font-mono">---</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
