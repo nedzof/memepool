@@ -1,5 +1,5 @@
 import * as bsvSdk from '@bsv/sdk';
-import { StaticTestnetWallet } from './static-testnet-wallet';
+import { testnetWallet } from './testnet-wallet.js';
 
 /**
  * Service for handling BSV testnet operations
@@ -14,8 +14,11 @@ export class BSVService {
         // Standard fee rate (1 sat/kb)
         this.feeRate = 1;
 
-        // Initialize static testnet wallet for development
-        this.staticWallet = new StaticTestnetWallet();
+        // Auto-connect testnet wallet in development
+        if (process.env.NODE_ENV !== 'production') {
+            this.wallet = testnetWallet;
+            this.connected = true;
+        }
     }
 
     /**
@@ -24,9 +27,9 @@ export class BSVService {
      */
     async connect() {
         try {
-            // For development, use static wallet
+            // Initialize BSV testnet connection
+            await this.bsv.initialize({ network: this.network });
             this.connected = true;
-            this.wallet = this.staticWallet;
             return true;
         } catch (error) {
             console.error('Failed to connect to BSV testnet:', error);
@@ -44,9 +47,13 @@ export class BSVService {
                 await this.connect();
             }
 
-            // For development, use static wallet
-            this.wallet = this.staticWallet;
-            return this.wallet.getAddress();
+            // Request wallet connection
+            const provider = await this.bsv.requestProvider();
+            this.wallet = provider;
+
+            // Get wallet address
+            const address = await this.wallet.getAddress();
+            return address;
         } catch (error) {
             console.error('Failed to connect wallet:', error);
             throw new Error('Failed to connect wallet');

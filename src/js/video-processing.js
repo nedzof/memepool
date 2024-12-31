@@ -43,116 +43,10 @@ export class VideoProcessingUI {
         // Add BSV elements
         this.signBroadcastBtn = document.getElementById('signBroadcast');
         this.walletStatus = document.getElementById('walletStatus');
-
-        // Add wallet elements
-        this.walletAddress = document.getElementById('walletAddress');
-        this.walletNetwork = document.getElementById('walletNetwork');
-        this.walletStatus = document.getElementById('walletStatus');
-        this.walletBalance = document.getElementById('walletBalance');
-        this.walletBalanceSats = document.getElementById('walletBalanceSats');
     }
 
-    async setupEventListeners() {
+    setupEventListeners() {
         this.signBroadcastBtn?.addEventListener('click', () => this.handleSignAndBroadcast());
-        
-        // Initialize wallet connection immediately and update UI
-        const walletInfo = await this.initializeWallet();
-        if (walletInfo) {
-            this.updateWalletInfo(walletInfo);
-        }
-    }
-
-    async initializeWallet() {
-        try {
-            console.log('Starting wallet initialization...');
-            
-            // Connect to wallet
-            await this.bsvService.connectWallet();
-            console.log('Wallet connected');
-            
-            // Get wallet info and update UI immediately
-            const walletInfo = this.bsvService.wallet.getWalletInfo();
-            console.log('Wallet info retrieved:', walletInfo);
-
-            // Ensure we have an address
-            if (!walletInfo.address) {
-                throw new Error('No wallet address available');
-            }
-            
-            this.updateWalletInfo(walletInfo);
-            console.log('Wallet UI updated');
-
-            // Update inscription creator with wallet address
-            if (this.inscriptionCreator) {
-                this.inscriptionCreator.textContent = walletInfo.address;
-                console.log('Inscription creator updated with address:', walletInfo.address);
-            }
-
-            // Set up periodic balance updates
-            this.startBalanceUpdates();
-            console.log('Balance updates initialized');
-
-            return walletInfo;
-        } catch (error) {
-            console.error('Failed to initialize wallet:', error);
-            this.updateWalletInfo({
-                address: '---',
-                network: 'unknown',
-                isConnected: false,
-                balance: { satoshis: 0, bsv: 0 }
-            });
-            throw error;
-        }
-    }
-
-    startBalanceUpdates() {
-        // Update balance every 30 seconds
-        this.balanceUpdateInterval = setInterval(async () => {
-            if (this.bsvService.wallet) {
-                const balance = await this.bsvService.wallet.getBalance();
-                this.updateBalanceDisplay(balance);
-            }
-        }, 30000);
-    }
-
-    updateWalletInfo(walletInfo) {
-        console.log('Updating wallet info in UI:', walletInfo);
-        
-        if (this.walletAddress && walletInfo.address) {
-            this.walletAddress.textContent = walletInfo.address;
-            console.log('Updated wallet address display:', walletInfo.address);
-        } else {
-            console.warn('Could not update wallet address:', {
-                elementExists: !!this.walletAddress,
-                addressExists: !!walletInfo.address
-            });
-        }
-        
-        if (this.walletNetwork && walletInfo.network) {
-            this.walletNetwork.textContent = walletInfo.network;
-            console.log('Updated network display:', walletInfo.network);
-        }
-        
-        if (this.walletStatus) {
-            const status = walletInfo.isConnected ? 'Connected' : 'Disconnected';
-            this.walletStatus.textContent = status;
-            this.walletStatus.style.color = walletInfo.isConnected ? '#00ff00' : '#ff0000';
-            console.log('Updated connection status:', status);
-        }
-        
-        if (walletInfo.balance) {
-            this.updateBalanceDisplay(walletInfo.balance);
-            console.log('Updated balance display:', walletInfo.balance);
-        }
-    }
-
-    updateBalanceDisplay(balance) {
-        if (this.walletBalance) {
-            this.walletBalance.textContent = `${balance.bsv} BSV`;
-        }
-        if (this.walletBalanceSats) {
-            this.walletBalanceSats.textContent = `${balance.satoshis} sats`;
-        }
     }
 
     async handleSignAndBroadcast() {
@@ -265,11 +159,6 @@ export class VideoProcessingUI {
 
     async processVideo(file) {
         try {
-            // Ensure wallet is connected before processing
-            if (!this.bsvService.wallet) {
-                await this.initializeWallet();
-            }
-
             this.currentFile = file; // Store file reference
             this.showProcessingStep();
             
@@ -372,10 +261,5 @@ export class VideoProcessingUI {
         this.activeUrls = [];
         this.currentFile = null;
         this.currentInscriptionData = null;
-
-        // Clear balance update interval
-        if (this.balanceUpdateInterval) {
-            clearInterval(this.balanceUpdateInterval);
-        }
     }
 } 

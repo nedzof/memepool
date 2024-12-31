@@ -34,7 +34,6 @@
   - [x] Setup testnet wallet connection
   - [x] Implement transaction creation
   - [x] Add fee calculation
-  - [ ] Fix wallet status display in UI (Connected Address not showing correctly)
 - [ ] Improve content ID generation
   - [ ] Use wallet address as part of ID
   - [ ] Incorporate block hash for timestamp verification
