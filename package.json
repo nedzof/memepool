@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@bsv/sdk": "^1.2.19",
+    "@bsv/sdk": "^1.2.20",
     "@unisat/wallet-sdk": "^1.8.0",
     "aerospike": "^6.0.0",
     "bip32": "^5.0.0-rc.0",

@@ -1,12 +1,15 @@
 import { VideoProcessor } from '../services/video-processor.js';
 import { InscriptionService } from '../services/inscription-service.js';
+import { BSVService } from '../services/bsv-service.js';
 
 export class VideoProcessingUI {
     constructor() {
         this.videoProcessor = new VideoProcessor();
         this.inscriptionService = new InscriptionService();
+        this.bsvService = new BSVService();
         this.initializeElements();
         this.activeUrls = [];
+        this.setupEventListeners();
     }
 
     initializeElements() {
@@ -36,6 +39,61 @@ export class VideoProcessingUI {
         this.stepVerification = document.getElementById('stepVerification');
         this.stepMetadata = document.getElementById('stepMetadata');
         this.stepThumbnail = document.getElementById('stepThumbnail');
+
+        // Add BSV elements
+        this.signBroadcastBtn = document.getElementById('signBroadcast');
+        this.walletStatus = document.getElementById('walletStatus');
+    }
+
+    setupEventListeners() {
+        this.signBroadcastBtn?.addEventListener('click', () => this.handleSignAndBroadcast());
+    }
+
+    async handleSignAndBroadcast() {
+        try {
+            // Connect wallet if not connected
+            if (!this.bsvService.wallet) {
+                const address = await this.bsvService.connectWallet();
+                this.inscriptionCreator.textContent = address;
+            }
+
+            // Get current file and inscription data
+            const file = this.currentFile;
+            const inscriptionData = this.currentInscriptionData;
+
+            if (!file || !inscriptionData) {
+                throw new Error('No video selected');
+            }
+
+            // Create and broadcast transaction
+            const txid = await this.bsvService.createInscriptionTransaction(inscriptionData, file);
+
+            // Update UI with transaction status
+            this.updateTransactionStatus(txid);
+
+        } catch (error) {
+            console.error('Transaction failed:', error);
+            // Show error in modal
+            const uploadError = document.getElementById('uploadError');
+            uploadError.textContent = error.message;
+            uploadError.classList.remove('hidden');
+        }
+    }
+
+    async updateTransactionStatus(txid) {
+        try {
+            const status = await this.bsvService.getTransactionStatus(txid);
+            
+            // Update UI with transaction status
+            if (status.confirmed) {
+                this.signBroadcastBtn.textContent = 'Inscription Confirmed';
+                this.signBroadcastBtn.disabled = true;
+            } else {
+                this.signBroadcastBtn.textContent = `Confirming (${status.confirmations})...`;
+            }
+        } catch (error) {
+            console.error('Failed to update transaction status:', error);
+        }
     }
 
     showProcessingStep() {
@@ -101,6 +159,7 @@ export class VideoProcessingUI {
 
     async processVideo(file) {
         try {
+            this.currentFile = file; // Store file reference
             this.showProcessingStep();
             
             // Initialize all steps to waiting
@@ -135,7 +194,13 @@ export class VideoProcessingUI {
 
             // Create inscription data
             const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata);
+            this.currentInscriptionData = inscriptionData; // Store inscription data
             this.updateInscriptionData(inscriptionData);
+
+            // Calculate estimated fees
+            const totalSize = file.size + JSON.stringify(inscriptionData).length;
+            const feeInfo = await this.bsvService.calculateFee(totalSize);
+            this.updateFeeEstimate(feeInfo);
 
             // Create URL for video preview
             const videoUrl = URL.createObjectURL(file);
@@ -162,9 +227,39 @@ export class VideoProcessingUI {
         }
     }
 
+    updateFeeEstimate(feeInfo) {
+        const estimatedFee = document.getElementById('estimatedFee');
+        const feeDetails = document.getElementById('feeDetails');
+        
+        if (estimatedFee) {
+            estimatedFee.textContent = `${feeInfo.bsv} BSV`;
+        }
+        
+        if (feeDetails) {
+            feeDetails.innerHTML = `
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                        <span class="text-white/50 text-xs">Size</span>
+                        <p class="text-white text-sm">${feeInfo.sizeKb.toFixed(2)} KB</p>
+                    </div>
+                    <div>
+                        <span class="text-white/50 text-xs">Rounded Size</span>
+                        <p class="text-white text-sm">${feeInfo.roundedKb} KB</p>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <span class="text-white/50 text-xs">Network Fee</span>
+                    <p class="text-white text-sm">${feeInfo.fee} satoshis (${feeInfo.rate} sat/KB)</p>
+                </div>
+            `;
+        }
+    }
+
     cleanup() {
         // Clean up any object URLs we created
         this.videoProcessor.cleanup(this.activeUrls);
         this.activeUrls = [];
+        this.currentFile = null;
+        this.currentInscriptionData = null;
     }
 } 

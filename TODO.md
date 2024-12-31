@@ -30,10 +30,10 @@
   - [x] Implement inscription data structure
   - [x] Add metadata formatting
   - [x] Create content hash generation
-- [ ] Integrate with BSV testnet
-  - [ ] Setup testnet wallet connection
-  - [ ] Implement transaction creation
-  - [ ] Add fee calculation
+- [x] Integrate with BSV testnet
+  - [x] Setup testnet wallet connection
+  - [x] Implement transaction creation
+  - [x] Add fee calculation
 - [ ] Improve content ID generation
   - [ ] Use wallet address as part of ID
   - [ ] Incorporate block hash for timestamp verification
@@ -43,18 +43,20 @@
   - [ ] Transaction confirmation
   - [ ] Content verification
   - [ ] Ownership validation
-- [ ] Add fee estimation features
+- [x] Add fee estimation features
   - [x] Add basic file size warning for fees
-  - [ ] Calculate network fees based on file size
-  - [ ] Display estimated cost before inscription
-  - [ ] Show fee breakdown (network, service fees)
-  - [ ] Add fee optimization suggestions
+  - [x] Calculate network fees based on file size (1 sat/KB standard rate)
+  - [x] Display estimated cost before inscription
+  - [x] Show fee breakdown (size, rate, total)
+  - [x] Add fee calculation explanation
 
-## 4. Testing Framework
+## 4. Testing Framework (In Progress 🔄)
 - [x] Unit Tests
   - [x] Video validation functions
   - [x] Processing pipeline components
   - [x] Inscription formatting
+  - [x] BSV transaction creation
+  - [x] Fee calculation
 - [ ] Integration Tests
   - [ ] Upload to inscription flow
   - [ ] Transaction creation and broadcast
