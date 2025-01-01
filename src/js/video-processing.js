@@ -10,6 +10,8 @@ export class VideoProcessingUI {
         this.initializeElements();
         this.activeUrls = [];
         this.setupEventListeners();
+        this.initializeWalletAddress();
+        this.balanceUpdateTimer = null;
     }
 
     initializeElements() {
@@ -34,6 +36,7 @@ export class VideoProcessingUI {
         this.inscriptionId = document.getElementById('inscriptionId');
         this.inscriptionCreator = document.getElementById('inscriptionCreator');
         this.inscriptionTimestamp = document.getElementById('inscriptionTimestamp');
+        this.walletBalance = document.getElementById('walletBalance');
         
         // Processing step indicators
         this.stepVerification = document.getElementById('stepVerification');
@@ -57,13 +60,23 @@ export class VideoProcessingUI {
                 this.inscriptionCreator.textContent = address;
             }
 
-            // Get current file and inscription data
+            // Get current file and metadata
             const file = this.currentFile;
-            const inscriptionData = this.currentInscriptionData;
+            const metadata = this.currentMetadata;
 
-            if (!file || !inscriptionData) {
+            if (!file || !metadata) {
                 throw new Error('No video selected');
             }
+
+            // Get wallet address
+            const address = await this.bsvService.getWalletAddress();
+            
+            // Create inscription data with wallet address
+            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata, address);
+            this.currentInscriptionData = inscriptionData;
+            
+            // Update UI with inscription data
+            this.updateInscriptionData(inscriptionData);
 
             // Create and broadcast transaction
             const txid = await this.bsvService.createInscriptionTransaction(inscriptionData, file);
@@ -159,7 +172,7 @@ export class VideoProcessingUI {
 
     async processVideo(file) {
         try {
-            this.currentFile = file; // Store file reference
+            this.currentFile = file;
             this.showProcessingStep();
             
             // Initialize all steps to waiting
@@ -191,12 +204,22 @@ export class VideoProcessingUI {
             const thumbnailUrl = await this.videoProcessor.generateThumbnail(file);
             this.activeUrls.push(thumbnailUrl);
             this.updateStepStatus(this.stepThumbnail, 'complete');
-
+            
+            // Get wallet address (or connect if needed)
+            let address;
+            try {
+                address = await this.bsvService.getWalletAddress();
+            } catch (error) {
+                address = await this.bsvService.connectWallet();
+                // Start balance updates when wallet is connected
+                this.startBalanceUpdates();
+            }
+            
             // Create inscription data
-            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata);
-            this.currentInscriptionData = inscriptionData; // Store inscription data
+            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata, address);
+            this.currentInscriptionData = inscriptionData;
             this.updateInscriptionData(inscriptionData);
-
+            
             // Calculate estimated fees
             const totalSize = file.size + JSON.stringify(inscriptionData).length;
             const feeInfo = await this.bsvService.calculateFee(totalSize);
@@ -261,5 +284,39 @@ export class VideoProcessingUI {
         this.activeUrls = [];
         this.currentFile = null;
         this.currentInscriptionData = null;
+        
+        // Stop balance updates
+        if (this.balanceUpdateTimer) {
+            this.bsvService.stopBalanceUpdates(this.balanceUpdateTimer);
+            this.balanceUpdateTimer = null;
+        }
+    }
+
+    async initializeWalletAddress() {
+        try {
+            // Try to get wallet address if already connected
+            const address = await this.bsvService.getWalletAddress();
+            if (address) {
+                this.inscriptionCreator.textContent = address;
+                // Start balance updates
+                this.startBalanceUpdates();
+            }
+        } catch (error) {
+            console.log('Wallet not yet connected');
+        }
+    }
+
+    startBalanceUpdates() {
+        // Stop any existing updates
+        if (this.balanceUpdateTimer) {
+            this.bsvService.stopBalanceUpdates(this.balanceUpdateTimer);
+        }
+        
+        // Start new balance updates
+        this.balanceUpdateTimer = this.bsvService.startBalanceUpdates((balance) => {
+            if (this.walletBalance) {
+                this.walletBalance.textContent = `${balance.toFixed(8)} BSV`;
+            }
+        });
     }
 } 

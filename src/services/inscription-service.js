@@ -6,9 +6,10 @@ export class InscriptionService {
      * Creates an inscription data structure for a video
      * @param {File} file - The video file
      * @param {Object} metadata - Video metadata
+     * @param {string} creatorAddress - The creator's wallet address
      * @returns {Object} Inscription data structure
      */
-    createInscriptionData(file, metadata) {
+    createInscriptionData(file, metadata, creatorAddress) {
         const timestamp = new Date().toISOString();
         
         return {
@@ -17,7 +18,7 @@ export class InscriptionService {
             content: {
                 id: this.generateContentId(file, timestamp),
                 title: file.name,
-                creator: "testnet_address", // Will be replaced with actual wallet address
+                creator: creatorAddress,
                 timestamp: timestamp,
                 metadata: {
                     format: file.type,

@@ -24,6 +24,10 @@
   - [x] Processing status indicators
   - [x] Metadata visualization
   - [x] Preview with details
+- [x] Implement processing queue
+  - [x] Queue management
+  - [x] Sequential processing
+  - [x] Error handling
 
 ## 3. Inscription Implementation (In Progress 🔄)
 - [x] Setup video inscription mechanism
@@ -33,7 +37,9 @@
 - [x] Integrate with BSV testnet
   - [x] Setup testnet wallet connection
   - [x] Implement transaction creation
-  - [x] Add fee calculation
+  - [x] Add fee calculation (1 sat/kb)
+  - [x] Add static testnet address support
+  - [x] Add real-time balance updates
 - [ ] Improve content ID generation
   - [ ] Use wallet address as part of ID
   - [ ] Incorporate block hash for timestamp verification
@@ -57,6 +63,7 @@
   - [x] Inscription formatting
   - [x] BSV transaction creation
   - [x] Fee calculation
+  - [x] Testnet wallet integration
 - [ ] Integration Tests
   - [ ] Upload to inscription flow
   - [ ] Transaction creation and broadcast
@@ -125,6 +132,6 @@
 - Maximum video length: 5 seconds
 - Supported formats: MP4, WebM
 - Maximum file size: 100MB
-- Network fees vary based on file size
+- Network fees vary based on file size (1 sat/KB)
 - Content IDs should be blockchain-derived for recovery
 - All essential data must be recoverable from blockchain 

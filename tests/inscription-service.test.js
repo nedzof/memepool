@@ -4,6 +4,7 @@ describe('InscriptionService', () => {
     let inscriptionService;
     let mockFile;
     let mockMetadata;
+    let mockAddress;
 
     beforeEach(() => {
         inscriptionService = new InscriptionService();
@@ -24,16 +25,19 @@ describe('InscriptionService', () => {
             },
             bitrate: 1000000 // 1Mbps
         };
+
+        // Mock creator address
+        mockAddress = 'testnet_wallet_address_123';
     });
 
     describe('createInscriptionData', () => {
         test('should create valid inscription data structure', () => {
-            const result = inscriptionService.createInscriptionData(mockFile, mockMetadata);
+            const result = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
 
             expect(result).toHaveProperty('type', 'memepool');
             expect(result).toHaveProperty('version', '1.0');
             expect(result.content).toHaveProperty('title', mockFile.name);
-            expect(result.content).toHaveProperty('creator');
+            expect(result.content).toHaveProperty('creator', mockAddress);
             expect(result.content).toHaveProperty('timestamp');
             expect(result.content.metadata).toHaveProperty('format', mockFile.type);
             expect(result.content.metadata).toHaveProperty('size', mockFile.size);
@@ -43,8 +47,8 @@ describe('InscriptionService', () => {
         });
 
         test('should generate unique content IDs', () => {
-            const result1 = inscriptionService.createInscriptionData(mockFile, mockMetadata);
-            const result2 = inscriptionService.createInscriptionData(mockFile, mockMetadata);
+            const result1 = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
+            const result2 = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
 
             expect(result1.content.id).not.toBe(result2.content.id);
         });
@@ -52,7 +56,7 @@ describe('InscriptionService', () => {
 
     describe('validateInscriptionData', () => {
         test('should validate correct inscription data', () => {
-            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata);
+            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
             expect(() => inscriptionService.validateInscriptionData(data)).not.toThrow();
         });
 
@@ -69,7 +73,7 @@ describe('InscriptionService', () => {
         });
 
         test('should throw error for empty required fields', () => {
-            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata);
+            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
             data.content.title = '';
 
             expect(() => inscriptionService.validateInscriptionData(data)).toThrow();

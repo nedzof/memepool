@@ -1,4 +1,4 @@
-import { PrivateKey } from '@bsv/sdk';
+import * as bsvSdk from '@bsv/sdk';
 
 /**
  * Simple testnet wallet service for development
@@ -7,15 +7,17 @@ import { PrivateKey } from '@bsv/sdk';
 export class TestnetWallet {
     constructor() {
         // Static testnet private key
-        this.privateKey = 'cNeCNR7mtXm3d6sJUuhtYuJqvtxBaZ3buUxMF2Qm5wRYEg9PKb5j';
-        this.address = null;
+        this.privateKey = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy';
+        // Hardcoded wallet address
+        this.address = 'n2SqMQ3vsUq6d1MYX8rpyY3m78aQi6bLLJ';
         this.initialize();
     }
 
     initialize() {
         try {
-            const privKey = PrivateKey.fromWif(this.privateKey);
-            this.address = privKey.toAddress().toString();
+            // Verify the private key is valid
+            const privKey = bsvSdk.PrivateKey.fromWif(this.privateKey);
+            // We're using the hardcoded address instead of deriving it
             console.log('Testnet wallet initialized with address:', this.address);
         } catch (error) {
             console.error('Failed to initialize testnet wallet:', error);

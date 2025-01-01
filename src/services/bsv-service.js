@@ -5,7 +5,7 @@ import { testnetWallet } from './testnet-wallet.js';
  * Service for handling BSV testnet operations
  */
 export class BSVService {
-    constructor() {
+    constructor(isTestMode = false) {
         this.network = 'testnet';
         this.connected = false;
         this.wallet = null;
@@ -14,8 +14,8 @@ export class BSVService {
         // Standard fee rate (1 sat/kb)
         this.feeRate = 1;
 
-        // Auto-connect testnet wallet in development
-        if (process.env.NODE_ENV !== 'production') {
+        // Auto-connect testnet wallet in development, but not in test mode
+        if (process.env.NODE_ENV !== 'production' && !isTestMode) {
             this.wallet = testnetWallet;
             this.connected = true;
         }
@@ -47,16 +47,87 @@ export class BSVService {
                 await this.connect();
             }
 
-            // Request wallet connection
+            // Use testnet wallet in development
+            if (process.env.NODE_ENV !== 'production') {
+                this.wallet = testnetWallet;
+                return this.wallet.getAddress();
+            }
+
+            // For production, request wallet provider
             const provider = await this.bsv.requestProvider();
             this.wallet = provider;
-
-            // Get wallet address
-            const address = await this.wallet.getAddress();
-            return address;
+            return await this.wallet.getAddress();
         } catch (error) {
             console.error('Failed to connect wallet:', error);
             throw new Error('Failed to connect wallet');
+        }
+    }
+
+    /**
+     * Get wallet address if connected
+     * @returns {Promise<string>} Wallet address
+     */
+    async getWalletAddress() {
+        if (!this.wallet) {
+            throw new Error('Wallet not connected');
+        }
+        return this.wallet.getAddress();
+    }
+
+    /**
+     * Get wallet balance
+     * @returns {Promise<number>} Balance in BSV
+     */
+    async getBalance() {
+        if (!this.wallet) {
+            throw new Error('Wallet not connected');
+        }
+        
+        try {
+            const address = await this.getWalletAddress();
+            // WhatsOnChain API endpoint (removed 'test-' prefix)
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/address/${address}/balance`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch balance from WhatsOnChain');
+            }
+            
+            const data = await response.json();
+            // Convert satoshis to BSV (1 BSV = 100,000,000 satoshis)
+            const balanceBSV = (data.confirmed + data.unconfirmed) / 100000000;
+            console.log(`Current wallet balance: ${balanceBSV.toFixed(8)} BSV (${data.confirmed + data.unconfirmed} satoshis)`);
+            return balanceBSV;
+        } catch (error) {
+            console.error('Failed to fetch balance:', error);
+            // Return 0 balance in case of error
+            return 0;
+        }
+    }
+
+    /**
+     * Start periodic balance updates
+     * @param {Function} callback - Function to call with updated balance
+     * @param {number} interval - Update interval in milliseconds
+     * @returns {number} Timer ID
+     */
+    startBalanceUpdates(callback, interval = 30000) {
+        // Initial balance fetch
+        this.getBalance().then(callback);
+        
+        // Set up periodic updates
+        return setInterval(async () => {
+            const balance = await this.getBalance();
+            callback(balance);
+        }, interval);
+    }
+
+    /**
+     * Stop periodic balance updates
+     * @param {number} timerId - Timer ID from startBalanceUpdates
+     */
+    stopBalanceUpdates(timerId) {
+        if (timerId) {
+            clearInterval(timerId);
         }
     }
 
@@ -113,10 +184,10 @@ export class BSVService {
             // Create transaction
             const tx = new this.bsv.Transaction()
                 .from(await this.wallet.getUtxos())
-                .addOutput(new this.bsv.Transaction.Output({
+                .addOutput({
                     script: dataScript,
                     satoshis: 0
-                }))
+                })
                 .change(await this.wallet.getAddress())
                 .fee(feeInfo.fee);
 
@@ -127,6 +198,9 @@ export class BSVService {
             const txid = await this.wallet.broadcastTransaction(signedTx);
             return txid;
         } catch (error) {
+            if (error.message === 'Wallet not connected') {
+                throw error;
+            }
             console.error('Failed to create inscription transaction:', error);
             throw new Error('Failed to create inscription transaction');
         }

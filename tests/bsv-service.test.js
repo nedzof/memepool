@@ -1,5 +1,3 @@
-import { BSVService } from '../src/services/bsv-service.js';
-
 // Mock bsv SDK
 jest.mock('@bsv/sdk', () => ({
     initialize: jest.fn().mockResolvedValue(true),
@@ -24,13 +22,20 @@ jest.mock('@bsv/sdk', () => ({
     })
 }));
 
+// Mock testnet wallet
+jest.mock('../src/services/testnet-wallet', () => ({
+    testnetWallet: null
+}));
+
+import { BSVService } from '../src/services/bsv-service.js';
+
 describe('BSVService', () => {
     let bsvService;
     let mockFile;
     let mockInscriptionData;
 
     beforeEach(() => {
-        bsvService = new BSVService();
+        bsvService = new BSVService(true);
         mockFile = new File(['test'], 'test.mp4', { type: 'video/mp4' });
         mockInscriptionData = {
             type: 'memepool',
@@ -131,7 +136,9 @@ describe('BSVService', () => {
         });
 
         test('should throw error if wallet not connected', async () => {
-            await expect(bsvService.createInscriptionTransaction(mockInscriptionData, mockFile))
+            // Create new instance without connecting wallet
+            const newBsvService = new BSVService(true);
+            await expect(newBsvService.createInscriptionTransaction(mockInscriptionData, mockFile))
                 .rejects.toThrow('Wallet not connected');
         });
     });
