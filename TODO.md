@@ -40,10 +40,10 @@
   - [x] Add fee calculation (1 sat/kb)
   - [x] Add static testnet address support
   - [x] Add real-time balance updates
-- [ ] Improve content ID generation
-  - [ ] Use wallet address as part of ID
-  - [ ] Incorporate block hash for timestamp verification
-  - [ ] Create deterministic ID generation for recovery
+- [x] Improve content ID generation (In Progress 🔄)
+  - [x] Use wallet address as part of ID
+  - [x] Incorporate block hash for timestamp verification
+  - [x] Create deterministic ID generation for recovery
   - [ ] Add indexing strategy for content recovery
 - [ ] Add verification process
   - [ ] Transaction confirmation

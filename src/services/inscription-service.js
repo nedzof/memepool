@@ -7,19 +7,21 @@ export class InscriptionService {
      * @param {File} file - The video file
      * @param {Object} metadata - Video metadata
      * @param {string} creatorAddress - The creator's wallet address
+     * @param {string} blockHash - Latest block hash
      * @returns {Object} Inscription data structure
      */
-    createInscriptionData(file, metadata, creatorAddress) {
+    createInscriptionData(file, metadata, creatorAddress, blockHash) {
         const timestamp = new Date().toISOString();
         
         return {
             type: "memepool",
             version: "1.0",
             content: {
-                id: this.generateContentId(file, timestamp),
+                id: this.generateContentId(file, timestamp, creatorAddress, blockHash),
                 title: file.name,
                 creator: creatorAddress,
                 timestamp: timestamp,
+                blockHash: blockHash,
                 metadata: {
                     format: file.type,
                     size: file.size,
@@ -35,15 +37,18 @@ export class InscriptionService {
      * Generates a unique content ID
      * @param {File} file - The video file
      * @param {string} timestamp - ISO timestamp
+     * @param {string} creatorAddress - The creator's wallet address
+     * @param {string} blockHash - Latest block hash for timestamp verification
      * @returns {string} Unique content ID
      */
-    generateContentId(file, timestamp) {
-        // Generate a random component for uniqueness
-        const random = Math.random().toString(36).substring(2, 15);
-        const fileComponent = file.name.replace(/[^a-zA-Z0-9]/g, '');
+    generateContentId(file, timestamp, creatorAddress, blockHash) {
+        // Use deterministic components for the ID
+        const fileComponent = file.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const timeComponent = timestamp.replace(/[^0-9]/g, '');
+        const addressComponent = creatorAddress.slice(-8); // Use last 8 chars of address
+        const blockComponent = blockHash.slice(-6); // Use last 6 chars of block hash
         
-        return `${fileComponent}-${timeComponent}-${random}`;
+        return `${fileComponent}-${timeComponent}-${addressComponent}-${blockComponent}`;
     }
 
     /**

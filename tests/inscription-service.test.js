@@ -5,6 +5,8 @@ describe('InscriptionService', () => {
     let mockFile;
     let mockMetadata;
     let mockAddress;
+    let mockTimestamp;
+    let mockBlockHash;
 
     beforeEach(() => {
         inscriptionService = new InscriptionService();
@@ -27,18 +29,64 @@ describe('InscriptionService', () => {
         };
 
         // Mock creator address
-        mockAddress = 'testnet_wallet_address_123';
+        mockAddress = 'n2SqMQ3vsUq6d1MYX8rpyY3m78aQi6bLLJ';
+        
+        // Fixed timestamp for deterministic testing
+        mockTimestamp = '2024-02-14T12:00:00.000Z';
+
+        // Mock block hash
+        mockBlockHash = '000000000000000000a7fb6c2b0eb7b13336c82424c74a17925b81b874ee0185';
+    });
+
+    describe('generateContentId', () => {
+        test('should generate deterministic content ID with block hash', () => {
+            const id1 = inscriptionService.generateContentId(mockFile, mockTimestamp, mockAddress, mockBlockHash);
+            const id2 = inscriptionService.generateContentId(mockFile, mockTimestamp, mockAddress, mockBlockHash);
+            
+            expect(id1).toBe(id2);
+            expect(id1).toMatch(/^testvideo-\d+-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{6}$/);
+            expect(id1.split('-')[2]).toBe(mockAddress.slice(-8));
+            expect(id1.split('-')[3]).toBe(mockBlockHash.slice(-6));
+        });
+
+        test('should handle special characters in filename', () => {
+            const specialFile = {
+                ...mockFile,
+                name: 'test@#$%^&*video.mp4'
+            };
+            
+            const id = inscriptionService.generateContentId(specialFile, mockTimestamp, mockAddress, mockBlockHash);
+            expect(id).toMatch(/^testvideo-\d+-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{6}$/);
+        });
+
+        test('should use consistent case for filename', () => {
+            const upperCaseFile = {
+                ...mockFile,
+                name: 'TEST-VIDEO.mp4'
+            };
+            
+            const lowerCaseFile = {
+                ...mockFile,
+                name: 'test-video.mp4'
+            };
+            
+            const id1 = inscriptionService.generateContentId(upperCaseFile, mockTimestamp, mockAddress, mockBlockHash);
+            const id2 = inscriptionService.generateContentId(lowerCaseFile, mockTimestamp, mockAddress, mockBlockHash);
+            
+            expect(id1).toBe(id2);
+        });
     });
 
     describe('createInscriptionData', () => {
-        test('should create valid inscription data structure', () => {
-            const result = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
+        test('should create valid inscription data structure with block hash', () => {
+            const result = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress, mockBlockHash);
 
             expect(result).toHaveProperty('type', 'memepool');
             expect(result).toHaveProperty('version', '1.0');
             expect(result.content).toHaveProperty('title', mockFile.name);
             expect(result.content).toHaveProperty('creator', mockAddress);
             expect(result.content).toHaveProperty('timestamp');
+            expect(result.content).toHaveProperty('blockHash', mockBlockHash);
             expect(result.content.metadata).toHaveProperty('format', mockFile.type);
             expect(result.content.metadata).toHaveProperty('size', mockFile.size);
             expect(result.content.metadata).toHaveProperty('duration', mockMetadata.duration);
@@ -46,11 +94,9 @@ describe('InscriptionService', () => {
             expect(result.content.metadata).toHaveProperty('bitrate', mockMetadata.bitrate);
         });
 
-        test('should generate unique content IDs', () => {
-            const result1 = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
-            const result2 = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
-
-            expect(result1.content.id).not.toBe(result2.content.id);
+        test('should include block hash in content ID', () => {
+            const result = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress, mockBlockHash);
+            expect(result.content.id.split('-')[3]).toBe(mockBlockHash.slice(-6));
         });
     });
 

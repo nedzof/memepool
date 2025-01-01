@@ -224,4 +224,27 @@ export class BSVService {
             throw new Error('Failed to get transaction status');
         }
     }
+
+    /**
+     * Get latest block hash from testnet
+     * @returns {Promise<string>} Latest block hash
+     */
+    async getLatestBlockHash() {
+        try {
+            // WhatsOnChain API endpoint for latest block info
+            const response = await fetch('https://api.whatsonchain.com/v1/bsv/test/chain/info');
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch latest block info');
+            }
+            
+            const data = await response.json();
+            const blockHash = data.bestblockhash;
+            console.log('Latest block hash:', blockHash);
+            return blockHash;
+        } catch (error) {
+            console.error('Failed to fetch block hash:', error);
+            throw error;
+        }
+    }
 } 

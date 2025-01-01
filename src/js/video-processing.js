@@ -71,8 +71,11 @@ export class VideoProcessingUI {
             // Get wallet address
             const address = await this.bsvService.getWalletAddress();
             
-            // Create inscription data with wallet address
-            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata, address);
+            // Get latest block hash
+            const blockHash = await this.bsvService.getLatestBlockHash();
+            
+            // Create inscription data with wallet address and block hash
+            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata, address, blockHash);
             this.currentInscriptionData = inscriptionData;
             
             // Update UI with inscription data
@@ -215,8 +218,11 @@ export class VideoProcessingUI {
                 this.startBalanceUpdates();
             }
             
+            // Get latest block hash
+            const blockHash = await this.bsvService.getLatestBlockHash();
+            
             // Create inscription data
-            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata, address);
+            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata, address, blockHash);
             this.currentInscriptionData = inscriptionData;
             this.updateInscriptionData(inscriptionData);
             
