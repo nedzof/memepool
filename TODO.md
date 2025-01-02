@@ -40,11 +40,47 @@
   - [x] Add fee calculation (1 sat/kb)
   - [x] Add static testnet address support
   - [x] Add real-time balance updates
-- [x] Improve content ID generation (In Progress 🔄)
+- [x] Improve content ID generation
   - [x] Use wallet address as part of ID
   - [x] Incorporate block hash for timestamp verification
   - [x] Create deterministic ID generation for recovery
-  - [ ] Add indexing strategy for content recovery
+  - [x] Add indexing strategy for content recovery
+    - [x] Create RecoveryService for blockchain data retrieval
+      - [x] Implement WhatsOnChain API integration
+      - [x] Add batch processing for block scanning
+      - [x] Create progress tracking and reporting
+      - [x] Implement data verification system
+        - [x] Block hash verification
+        - [x] Transaction signature validation
+        - [x] Timestamp consistency checks
+      - [x] Build recovery index structure
+        - [x] Block height indexing
+        - [x] Content ID mapping
+        - [x] Transaction data caching
+      - [x] Add progressive recovery mechanism
+        - [x] Batch processing of blocks
+        - [x] Partial data availability
+        - [x] Progress monitoring
+      - [x] Create recovery testing framework
+        - [x] Mock blockchain data
+        - [x] Recovery scenarios
+        - [x] Performance testing
+    - [ ] Implement data verification system
+      - [ ] Block hash verification
+      - [ ] Transaction signature validation
+      - [ ] Timestamp consistency checks
+    - [ ] Build recovery index structure
+      - [ ] Block height indexing
+      - [ ] Content ID mapping
+      - [ ] Transaction data caching
+    - [ ] Add progressive recovery mechanism
+      - [ ] Batch processing of blocks
+      - [ ] Partial data availability
+      - [ ] Progress monitoring
+    - [ ] Create recovery testing framework
+      - [ ] Mock blockchain data
+      - [ ] Recovery scenarios
+      - [ ] Performance testing
 - [ ] Add verification process
   - [ ] Transaction confirmation
   - [ ] Content verification
