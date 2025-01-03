@@ -96,10 +96,10 @@
   - [x] BSV transaction creation
   - [x] Fee calculation
   - [x] Testnet wallet integration
-- [ ] Integration Tests
-  - [ ] Upload to inscription flow
-  - [ ] Transaction creation and broadcast
-  - [ ] Content verification process
+- [x] Integration Tests
+  - [x] Upload to inscription flow
+  - [x] Transaction creation and broadcast
+  - [x] Content verification process
 - [ ] E2E Tests
   - [ ] Complete upload-to-inscription flow
   - [ ] Ownership transfer process
