@@ -1,6 +1,12 @@
 export class VideoProcessor {
     constructor() {
-        this.videoElement = document.createElement('video');
+        // No need to create video element in constructor
+    }
+
+    createVideoElement() {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        return video;
     }
 
     async verifyFormat(file) {
@@ -11,19 +17,26 @@ export class VideoProcessor {
                 return;
             }
 
+            const video = this.createVideoElement();
             const url = URL.createObjectURL(file);
-            this.videoElement.src = url;
+            video.src = url;
 
-            this.videoElement.onloadedmetadata = () => {
+            const cleanup = () => {
                 URL.revokeObjectURL(url);
+                video.onloadedmetadata = null;
+                video.onerror = null;
+            };
+
+            video.onloadedmetadata = () => {
+                cleanup();
                 resolve({
                     isValid: true,
                     format: file.type.split('/')[1]
                 });
             };
 
-            this.videoElement.onerror = () => {
-                URL.revokeObjectURL(url);
+            video.onerror = () => {
+                cleanup();
                 reject(new Error('Invalid video format'));
             };
         });
@@ -31,25 +44,32 @@ export class VideoProcessor {
 
     async extractMetadata(file) {
         return new Promise((resolve, reject) => {
+            const video = this.createVideoElement();
             const url = URL.createObjectURL(file);
-            this.videoElement.src = url;
+            video.src = url;
 
-            this.videoElement.onloadedmetadata = () => {
+            const cleanup = () => {
+                URL.revokeObjectURL(url);
+                video.onloadedmetadata = null;
+                video.onerror = null;
+            };
+
+            video.onloadedmetadata = () => {
                 const metadata = {
-                    duration: this.videoElement.duration,
+                    duration: video.duration,
                     dimensions: {
-                        width: this.videoElement.videoWidth,
-                        height: this.videoElement.videoHeight
+                        width: video.videoWidth,
+                        height: video.videoHeight
                     },
                     codec: file.type.split('/')[1].toUpperCase(),
-                    bitrate: Math.round(file.size * 8 / this.videoElement.duration) // Approximate bitrate
+                    bitrate: Math.round(file.size * 8 / video.duration) // Approximate bitrate
                 };
-                URL.revokeObjectURL(url);
+                cleanup();
                 resolve(metadata);
             };
 
-            this.videoElement.onerror = () => {
-                URL.revokeObjectURL(url);
+            video.onerror = () => {
+                cleanup();
                 reject(new Error('Failed to extract metadata'));
             };
         });
@@ -57,37 +77,45 @@ export class VideoProcessor {
 
     async generateThumbnail(file) {
         return new Promise((resolve, reject) => {
+            const video = this.createVideoElement();
             const url = URL.createObjectURL(file);
-            this.videoElement.src = url;
+            video.src = url;
 
-            this.videoElement.onloadeddata = () => {
-                // Seek to the middle of the video
-                this.videoElement.currentTime = this.videoElement.duration / 2;
+            const cleanup = () => {
+                URL.revokeObjectURL(url);
+                video.onloadeddata = null;
+                video.onseeked = null;
+                video.onerror = null;
             };
 
-            this.videoElement.onseeked = () => {
+            video.onloadeddata = () => {
+                // Seek to the middle of the video
+                video.currentTime = video.duration / 2;
+            };
+
+            video.onseeked = () => {
                 try {
                     // Create a canvas to capture the frame
                     const canvas = document.createElement('canvas');
-                    canvas.width = this.videoElement.videoWidth;
-                    canvas.height = this.videoElement.videoHeight;
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
                     
                     // Draw the video frame on the canvas
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(this.videoElement, 0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     
                     // Convert to data URL
                     const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    URL.revokeObjectURL(url);
+                    cleanup();
                     resolve(thumbnailUrl);
                 } catch (error) {
-                    URL.revokeObjectURL(url);
+                    cleanup();
                     reject(new Error('Failed to generate thumbnail'));
                 }
             };
 
-            this.videoElement.onerror = () => {
-                URL.revokeObjectURL(url);
+            video.onerror = () => {
+                cleanup();
                 reject(new Error('Failed to generate thumbnail'));
             };
         });

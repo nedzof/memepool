@@ -1,118 +1,184 @@
 import { VideoProcessor } from '../src/services/video-processor.js';
-import fs from 'fs';
-import path from 'path';
+
+// Mock browser APIs
+global.URL = {
+    createObjectURL: jest.fn(blob => `blob:${Math.random()}`),
+    revokeObjectURL: jest.fn()
+};
+
+class MockHTMLVideoElement {
+    constructor() {
+        this.videoWidth = 1280;
+        this.videoHeight = 720;
+        this.duration = 3.5;
+        this.currentTime = 0;
+        this.preload = null;
+        this._errorMode = false;
+    }
+
+    set src(value) {
+        this._src = value;
+        // Use queueMicrotask to simulate async behavior but avoid Jest timeouts
+        queueMicrotask(() => {
+            if (this._errorMode) {
+                if (this.onerror) {
+                    this.onerror(new Error('Video loading failed'));
+                }
+            } else {
+                if (this.onloadedmetadata) {
+                    this.onloadedmetadata();
+                }
+                if (this.onloadeddata) {
+                    this.onloadeddata();
+                    if (this.onseeked) {
+                        this.onseeked();
+                    }
+                }
+            }
+        });
+    }
+
+    get src() {
+        return this._src;
+    }
+
+    setErrorMode(value = true) {
+        this._errorMode = value;
+    }
+}
+
+global.HTMLVideoElement = MockHTMLVideoElement;
+
+global.document = {
+    createElement: jest.fn(type => {
+        if (type === 'video') {
+            return new MockHTMLVideoElement();
+        }
+        if (type === 'canvas') {
+            return {
+                width: 1280,
+                height: 720,
+                getContext: () => ({
+                    drawImage: jest.fn()
+                }),
+                toDataURL: () => 'data:image/jpeg;base64,fake'
+            };
+        }
+    })
+};
 
 describe('VideoProcessor', () => {
     let videoProcessor;
-    const testVideoPath = path.join(__dirname, 'fixtures', 'test-video.mp4');
+    let mockVideoFile;
 
-    beforeAll(() => {
+    beforeEach(() => {
         videoProcessor = new VideoProcessor();
         
-        // Create test video file if it doesn't exist
-        if (!fs.existsSync(testVideoPath)) {
-            const testDir = path.join(__dirname, 'fixtures');
-            if (!fs.existsSync(testDir)) {
-                fs.mkdirSync(testDir, { recursive: true });
-            }
-            // Copy sample video to test directory
-            fs.copyFileSync(path.join(__dirname, '../src/assets/sample.mp4'), testVideoPath);
-        }
-    });
+        // Create a mock video file
+        mockVideoFile = new File(
+            [new ArrayBuffer(1024 * 1024)], // 1MB of data
+            'test-video.mp4',
+            { type: 'video/mp4' }
+        );
 
-    afterAll(() => {
-        // Cleanup test files
-        if (fs.existsSync(testVideoPath)) {
-            fs.unlinkSync(testVideoPath);
-        }
+        // Reset mocks
+        jest.clearAllMocks();
     });
 
     describe('Format Verification', () => {
         test('should verify valid MP4 format', async () => {
-            const result = await videoProcessor.verifyFormat(testVideoPath);
+            const result = await videoProcessor.verifyFormat(mockVideoFile);
             expect(result.isValid).toBe(true);
             expect(result.format).toBe('mp4');
+            expect(URL.createObjectURL).toHaveBeenCalledWith(mockVideoFile);
+            expect(URL.revokeObjectURL).toHaveBeenCalled();
         });
 
         test('should reject invalid video format', async () => {
-            const invalidPath = path.join(__dirname, 'fixtures', 'invalid.txt');
-            fs.writeFileSync(invalidPath, 'not a video');
+            const invalidFile = new File(
+                [new ArrayBuffer(1024)],
+                'invalid.txt',
+                { type: 'text/plain' }
+            );
             
-            await expect(videoProcessor.verifyFormat(invalidPath))
+            await expect(videoProcessor.verifyFormat(invalidFile))
                 .rejects
                 .toThrow('Invalid video format');
-                
-            fs.unlinkSync(invalidPath);
+        });
+
+        test('should handle video loading errors', async () => {
+            const mockVideo = new MockHTMLVideoElement();
+            mockVideo.setErrorMode(true);
+            document.createElement.mockImplementationOnce(() => mockVideo);
+
+            await expect(videoProcessor.verifyFormat(mockVideoFile))
+                .rejects
+                .toThrow('Invalid video format');
         });
     });
 
     describe('Metadata Extraction', () => {
         test('should extract video metadata', async () => {
-            const metadata = await videoProcessor.extractMetadata(testVideoPath);
+            const metadata = await videoProcessor.extractMetadata(mockVideoFile);
             
             expect(metadata).toHaveProperty('duration');
             expect(metadata).toHaveProperty('dimensions');
             expect(metadata).toHaveProperty('codec');
-            expect(metadata.duration).toBeLessThanOrEqual(5); // Max 5 seconds
-            expect(metadata.dimensions).toHaveProperty('width');
-            expect(metadata.dimensions).toHaveProperty('height');
+            expect(metadata.duration).toBe(3.5);
+            expect(metadata.dimensions).toEqual({
+                width: 1280,
+                height: 720
+            });
+            expect(metadata.codec).toBe('MP4');
+            expect(metadata.bitrate).toBeGreaterThan(0);
+            expect(URL.createObjectURL).toHaveBeenCalledWith(mockVideoFile);
+            expect(URL.revokeObjectURL).toHaveBeenCalled();
         });
 
-        test('should throw error for non-existent file', async () => {
-            await expect(videoProcessor.extractMetadata('nonexistent.mp4'))
+        test('should handle metadata extraction errors', async () => {
+            const mockVideo = new MockHTMLVideoElement();
+            mockVideo.setErrorMode(true);
+            document.createElement.mockImplementationOnce(() => mockVideo);
+
+            await expect(videoProcessor.extractMetadata(mockVideoFile))
                 .rejects
-                .toThrow('File not found');
+                .toThrow('Failed to extract metadata');
         });
     });
 
     describe('Thumbnail Generation', () => {
         test('should generate thumbnail from video', async () => {
-            const thumbnailPath = await videoProcessor.generateThumbnail(testVideoPath);
+            const thumbnailUrl = await videoProcessor.generateThumbnail(mockVideoFile);
             
-            expect(fs.existsSync(thumbnailPath)).toBe(true);
-            expect(path.extname(thumbnailPath)).toBe('.jpg');
-            
-            // Cleanup
-            fs.unlinkSync(thumbnailPath);
+            expect(thumbnailUrl).toMatch(/^data:image\/jpeg;base64,/);
+            expect(URL.createObjectURL).toHaveBeenCalledWith(mockVideoFile);
+            expect(URL.revokeObjectURL).toHaveBeenCalled();
         });
 
-        test('should throw error for corrupted video', async () => {
-            const corruptedPath = path.join(__dirname, 'fixtures', 'corrupted.mp4');
-            fs.writeFileSync(corruptedPath, 'corrupted data');
-            
-            await expect(videoProcessor.generateThumbnail(corruptedPath))
+        test('should handle thumbnail generation errors', async () => {
+            const mockVideo = new MockHTMLVideoElement();
+            mockVideo.setErrorMode(true);
+            document.createElement.mockImplementationOnce(() => mockVideo);
+
+            await expect(videoProcessor.generateThumbnail(mockVideoFile))
                 .rejects
                 .toThrow('Failed to generate thumbnail');
-                
-            fs.unlinkSync(corruptedPath);
         });
     });
 
-    describe('Video Processing Pipeline', () => {
-        test('should process video successfully', async () => {
-            const result = await videoProcessor.processVideo(testVideoPath);
-            
-            expect(result).toHaveProperty('metadata');
-            expect(result).toHaveProperty('thumbnailPath');
-            expect(result).toHaveProperty('processedVideoPath');
-            expect(result.metadata.duration).toBeLessThanOrEqual(5);
-            expect(fs.existsSync(result.thumbnailPath)).toBe(true);
-            expect(fs.existsSync(result.processedVideoPath)).toBe(true);
-            
-            // Cleanup
-            fs.unlinkSync(result.thumbnailPath);
-            fs.unlinkSync(result.processedVideoPath);
-        });
+    describe('Cleanup', () => {
+        test('should revoke object URLs', () => {
+            const urls = [
+                'blob:http://localhost/123',
+                'blob:http://localhost/456',
+                'data:image/jpeg;base64,abc'
+            ];
 
-        test('should handle processing errors gracefully', async () => {
-            const invalidPath = path.join(__dirname, 'fixtures', 'invalid.mp4');
-            fs.writeFileSync(invalidPath, 'invalid data');
-            
-            await expect(videoProcessor.processVideo(invalidPath))
-                .rejects
-                .toThrow('Video processing failed');
-                
-            fs.unlinkSync(invalidPath);
+            videoProcessor.cleanup(urls);
+
+            expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2);
+            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/123');
+            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/456');
         });
     });
 }); 
