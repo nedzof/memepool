@@ -59,6 +59,42 @@ describe('VerificationService', () => {
             const result = service.isInscriptionTransaction(tx);
             expect(result).toBe(false);
         });
+
+        it('should handle malformed vout array', () => {
+            const tx = {
+                vout: null
+            };
+            const result = service.isInscriptionTransaction(tx);
+            expect(result).toBe(false);
+        });
+
+        it('should handle missing scriptPubKey', () => {
+            const tx = {
+                vout: [{
+                    // missing scriptPubKey
+                }]
+            };
+            const result = service.isInscriptionTransaction(tx);
+            expect(result).toBe(false);
+        });
+
+        it('should handle invalid version in inscription data', () => {
+            const tx = {
+                vout: [{
+                    scriptPubKey: {
+                        type: 'nulldata',
+                        asm: 'OP_RETURN',
+                        hex: Buffer.from(JSON.stringify({
+                            type: 'memepool',
+                            version: '2.0', // invalid version
+                            data: 'test'
+                        })).toString('hex')
+                    }
+                }]
+            };
+            const result = service.isInscriptionTransaction(tx);
+            expect(result).toBe(false);
+        });
     });
 
     describe('decodeInscriptionData', () => {
@@ -156,6 +192,28 @@ describe('VerificationService', () => {
             const result = await service.verifyTimestamp(Date.now(), 100);
             expect(result).toBe(false);
         });
+
+        it('should handle network timeout', async () => {
+            global.fetch = jest.fn().mockRejectedValue(new Error('Network timeout'));
+            
+            const result = await service.verifyTimestamp(Date.now(), 100);
+            expect(result).toBe(false);
+        });
+
+        it('should handle invalid block data response', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ /* missing time field */ })
+            });
+            
+            const result = await service.verifyTimestamp(Date.now(), 100);
+            expect(result).toBe(false);
+        });
+
+        it('should handle malformed timestamp', async () => {
+            const result = await service.verifyTimestamp('invalid', 100);
+            expect(result).toBe(false);
+        });
     });
 
     describe('verifyInscription', () => {
@@ -205,6 +263,79 @@ describe('VerificationService', () => {
             const results = await service.verifyInscription(mockInscription);
             expect(results.verified).toBe(false);
             expect(results.errors).toContain('Block hash verification failed');
+        });
+
+        it('should handle missing transaction data', async () => {
+            const invalidInscription = {
+                blockHash: 'block123',
+                blockHeight: 100,
+                content: {
+                    timestamp: Date.now()
+                }
+                // missing transaction field
+            };
+
+            const results = await service.verifyInscription(invalidInscription);
+            expect(results.verified).toBe(false);
+            expect(results.signatureVerified).toBe(false);
+            expect(results.errors).toContain('Transaction signature verification failed');
+        });
+
+        it('should handle missing content data', async () => {
+            const invalidInscription = {
+                transaction: {
+                    txid: 'tx123',
+                    vin: [{ scriptSig: 'valid_signature' }]
+                },
+                blockHash: 'block123',
+                blockHeight: 100
+                // missing content field
+            };
+
+            const results = await service.verifyInscription(invalidInscription);
+            expect(results.verified).toBe(false);
+            expect(results.timestampVerified).toBe(false);
+            expect(results.errors).toContain('Timestamp verification failed');
+        });
+
+        it('should handle completely invalid inscription data', async () => {
+            const results = await service.verifyInscription(null);
+            expect(results.verified).toBe(false);
+            expect(results.errors.length).toBeGreaterThan(0);
+        });
+
+        it('should handle top-level verification errors', async () => {
+            const invalidInscription = {
+                transaction: undefined,
+                blockHash: undefined,
+                blockHeight: 'invalid',
+                content: null
+            };
+
+            const results = await service.verifyInscription(invalidInscription);
+            expect(results.verified).toBe(false);
+            expect(results.errors.length).toBeGreaterThan(0);
+            expect(results.blockVerified).toBe(true);
+            expect(results.signatureVerified).toBe(false);
+            expect(results.timestampVerified).toBe(false);
+        });
+    });
+
+    describe('verifySignature', () => {
+        it('should verify valid transaction signature', () => {
+            const tx = { /* mock transaction data */ };
+            const scriptSig = 'valid_signature';
+            
+            const result = service.verifySignature(tx, scriptSig);
+            expect(result).toBe(true);
+        });
+
+        it('should return true as placeholder implementation', () => {
+            const tx = null; // even invalid tx should return true as it's a placeholder
+            const scriptSig = 'valid_signature';
+            
+            const result = service.verifySignature(tx, scriptSig);
+            expect(result).toBe(true);
         });
     });
 }); 

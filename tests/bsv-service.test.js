@@ -185,6 +185,27 @@ describe('BSVService', () => {
             const feeInfo = await bsvService.calculateFee(100);
             expect(feeInfo.fee).toBe(1);
         });
+
+        test('should handle zero byte size', async () => {
+            const feeInfo = await bsvService.calculateFee(0);
+            expect(feeInfo.fee).toBe(1); // Minimum fee
+            expect(feeInfo.roundedKb).toBe(1);
+            expect(feeInfo.sizeBytes).toBe(0);
+        });
+
+        test('should handle very large file sizes', async () => {
+            const size = 1024 * 1024; // 1MB
+            const feeInfo = await bsvService.calculateFee(size);
+            expect(feeInfo.roundedKb).toBe(1024);
+            expect(feeInfo.fee).toBe(1024);
+        });
+
+        test('should handle decimal kilobyte values', async () => {
+            const size = 1536; // 1.5KB
+            const feeInfo = await bsvService.calculateFee(size);
+            expect(feeInfo.roundedKb).toBe(2); // Should round up
+            expect(feeInfo.fee).toBe(2);
+        });
     });
 
     describe('createInscriptionTransaction', () => {
@@ -214,6 +235,30 @@ describe('BSVService', () => {
                 .rejects
                 .toThrow('Failed to create inscription transaction');
         });
+
+        test('should handle UTXO fetch errors', async () => {
+            bsvSdk.mockProvider.getUtxos.mockRejectedValueOnce(new Error('UTXO fetch failed'));
+            
+            await expect(bsvService.createInscriptionTransaction(mockInscriptionData, mockFile))
+                .rejects
+                .toThrow('Failed to create inscription transaction');
+        });
+
+        test('should handle signing errors', async () => {
+            bsvSdk.mockProvider.signTransaction.mockRejectedValueOnce(new Error('Signing failed'));
+            
+            await expect(bsvService.createInscriptionTransaction(mockInscriptionData, mockFile))
+                .rejects
+                .toThrow('Failed to create inscription transaction');
+        });
+
+        test('should handle invalid file input', async () => {
+            const invalidFile = null; // null file should definitely fail
+            
+            await expect(bsvService.createInscriptionTransaction(mockInscriptionData, invalidFile))
+                .rejects
+                .toThrow('Failed to create inscription transaction');
+        });
     });
 
     describe('getTransactionStatus', () => {
@@ -239,42 +284,162 @@ describe('BSVService', () => {
         let timerId;
 
         beforeEach(async () => {
-            jest.useFakeTimers({ advanceTimers: true });
-            await bsvService.connectWallet();
+            jest.useFakeTimers();
             updateCallback = jest.fn();
+            await bsvService.connectWallet();
         });
 
         afterEach(() => {
             if (timerId) {
                 bsvService.stopBalanceUpdates(timerId);
             }
+            jest.clearAllTimers();
             jest.useRealTimers();
+            jest.clearAllMocks();
         });
 
         test('should start periodic balance updates', async () => {
+            // Mock successful balance fetch
+            fetch.mockImplementation(() => Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    confirmed: 1000000,
+                    unconfirmed: 0
+                })
+            }));
+
             timerId = bsvService.startBalanceUpdates(updateCallback, 1000);
             
             // Wait for initial balance fetch
             await Promise.resolve();
-            await jest.advanceTimersByTimeAsync(100);
-            expect(updateCallback).toHaveBeenCalledTimes(1);
+            await jest.advanceTimersByTimeAsync(0);
+            await Promise.resolve();
             
-            // Advance time and wait for next update
+            expect(updateCallback).toHaveBeenCalledTimes(1);
+            expect(updateCallback).toHaveBeenCalledWith(0.01); // 1000000 satoshis = 0.01 BSV
+            
+            // Reset mock for next update
+            fetch.mockImplementationOnce(() => Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    confirmed: 2000000,
+                    unconfirmed: 0
+                })
+            }));
+
+            // Clear the initial call count
+            updateCallback.mockClear();
+
+            // Advance timer and verify update
             await jest.advanceTimersByTimeAsync(1000);
-            expect(updateCallback).toHaveBeenCalledTimes(2);
-        }, 10000); // Increase timeout to 10 seconds
+            await Promise.resolve();
+            
+            expect(updateCallback).toHaveBeenCalledTimes(1);
+            expect(updateCallback).toHaveBeenLastCalledWith(0.02); // 2000000 satoshis = 0.02 BSV
+        });
+
+        test('should handle balance update errors', async () => {
+            // Mock failed balance fetch
+            fetch.mockImplementation(() => Promise.reject(new Error('Network error')));
+            
+            timerId = bsvService.startBalanceUpdates(updateCallback, 1000);
+            
+            // Wait for initial balance fetch
+            await Promise.resolve();
+            await jest.advanceTimersByTimeAsync(0);
+            await Promise.resolve();
+            
+            expect(updateCallback).toHaveBeenCalledTimes(1);
+            expect(updateCallback).toHaveBeenCalledWith(0); // Should call with 0 on error
+            
+            // Clear the initial call count
+            updateCallback.mockClear();
+            
+            // Mock next failed balance fetch
+            fetch.mockImplementationOnce(() => Promise.reject(new Error('Network error')));
+            
+            // Advance timer and verify update
+            await jest.advanceTimersByTimeAsync(1000);
+            await Promise.resolve();
+            
+            expect(updateCallback).toHaveBeenCalledTimes(1);
+            expect(updateCallback).toHaveBeenCalledWith(0); // Should call with 0 on error
+        });
 
         test('should stop balance updates', async () => {
+            // Mock initial balance fetch
+            fetch.mockImplementation(() => Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    confirmed: 1000000,
+                    unconfirmed: 0
+                })
+            }));
+
             timerId = bsvService.startBalanceUpdates(updateCallback, 1000);
             
             // Wait for initial balance fetch
             await Promise.resolve();
-            await jest.advanceTimersByTimeAsync(100);
-            expect(updateCallback).toHaveBeenCalledTimes(1);
+            await jest.advanceTimersByTimeAsync(0);
+            await Promise.resolve();
+            
+            // Clear the initial call count
+            updateCallback.mockClear();
             
             bsvService.stopBalanceUpdates(timerId);
+            
+            // Mock next balance fetch (should not be called)
+            fetch.mockImplementationOnce(() => Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    confirmed: 2000000,
+                    unconfirmed: 0
+                })
+            }));
+            
             await jest.advanceTimersByTimeAsync(1000);
-            expect(updateCallback).toHaveBeenCalledTimes(1); // Only initial fetch
-        }, 10000); // Increase timeout to 10 seconds
+            await Promise.resolve();
+            
+            expect(updateCallback).not.toHaveBeenCalled();
+        });
+
+        test('should handle invalid timer ID gracefully', () => {
+            expect(() => bsvService.stopBalanceUpdates(null)).not.toThrow();
+            expect(() => bsvService.stopBalanceUpdates(undefined)).not.toThrow();
+        });
+    });
+
+    describe('getLatestBlockHash', () => {
+        test('should fetch latest block hash', async () => {
+            const mockHash = '000000000000000000789f78cf7c0b36cc0b6ef50d2f2854c4a3367e5c80a4a5';
+            global.fetch = jest.fn().mockImplementationOnce(() => Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({
+                    bestblockhash: mockHash
+                })
+            }));
+
+            const hash = await bsvService.getLatestBlockHash();
+            expect(hash).toBe(mockHash);
+            expect(fetch).toHaveBeenCalledWith('https://api.whatsonchain.com/v1/bsv/test/chain/info');
+        });
+
+        test('should handle API errors', async () => {
+            global.fetch = jest.fn().mockImplementationOnce(() => Promise.resolve({
+                ok: false
+            }));
+
+            await expect(bsvService.getLatestBlockHash())
+                .rejects
+                .toThrow('Failed to fetch latest block info');
+        });
+
+        test('should handle network errors', async () => {
+            global.fetch = jest.fn().mockRejectedValueOnce(new Error('Network error'));
+
+            await expect(bsvService.getLatestBlockHash())
+                .rejects
+                .toThrow('Network error');
+        });
     });
 }); 

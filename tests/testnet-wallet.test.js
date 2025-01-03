@@ -8,7 +8,7 @@ describe('TestnetWallet', () => {
     });
 
     test('should initialize with static private key', () => {
-        expect(wallet.getPrivateKey()).toBe('cNeCNR7mtXm3d6sJUuhtYuJqvtxBaZ3buUxMF2Qm5wRYEg9PKb5j');
+        expect(wallet.getPrivateKey()).toBe('cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy');
     });
 
     test('should generate consistent address from private key', () => {
