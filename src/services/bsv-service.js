@@ -48,12 +48,12 @@ export class BSVService {
             }
 
             // Use testnet wallet in development
-            if (process.env.NODE_ENV !== 'production') {
+            if (process.env.NODE_ENV === 'development') {
                 this.wallet = testnetWallet;
                 return this.wallet.getAddress();
             }
 
-            // For production, request wallet provider
+            // For production or test, request wallet provider
             const provider = await this.bsv.requestProvider();
             this.wallet = provider;
             return await this.wallet.getAddress();
@@ -145,8 +145,8 @@ export class BSVService {
         // 1.5 kb to 2.4999... kb = 2 sat
         // 2.5 kb to 3.4999... kb = 3 sat
         // etc.
-        const roundedKb = Math.floor((sizeInKb + 0.5));
-        const fee = Math.max(1, roundedKb); // Minimum fee is 1 sat
+        const roundedKb = Math.max(1, Math.floor(sizeInKb + 0.5));
+        const fee = roundedKb; // Fee is same as rounded KB (1 sat/KB)
 
         // Add size information
         const feeInfo = {

@@ -69,8 +69,12 @@ describe('RecoveryService', () => {
 
         it('should prevent multiple concurrent recoveries', async () => {
             mockProgressService.recoveryState = { isRunning: true };
+            const progressCallback = jest.fn();
 
-            await expect(service.startProgressiveRecovery(100, 200)).rejects.toThrow('Recovery process already running');
+            await expect(service.startProgressiveRecovery(100, 200, progressCallback))
+                .rejects
+                .toThrow('Recovery process already running');
+            expect(progressCallback).not.toHaveBeenCalled();
         });
     });
 
@@ -113,8 +117,11 @@ describe('RecoveryService', () => {
         it('should handle batch processing errors', async () => {
             mockBlockchainService.getBlockTransactions.mockRejectedValue(new Error('API error'));
 
-            await expect(service.processBatch(100, 110)).rejects.toThrow();
-            expect(mockProgressService.addError).toHaveBeenCalled();
+            const result = await service.processBatch(100, 110);
+            expect(result).toBe(false);
+            expect(mockProgressService.addError).toHaveBeenCalledWith(
+                expect.stringContaining('Error processing batch 100-110: API error')
+            );
         });
     });
 

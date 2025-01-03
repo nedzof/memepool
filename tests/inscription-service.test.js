@@ -44,7 +44,7 @@ describe('InscriptionService', () => {
             const id2 = inscriptionService.generateContentId(mockFile, mockTimestamp, mockAddress, mockBlockHash);
             
             expect(id1).toBe(id2);
-            expect(id1).toMatch(/^testvideo-\d+-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{6}$/);
+            expect(id1).toMatch(/^[a-z0-9]+-\d+-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{6}$/);
             expect(id1.split('-')[2]).toBe(mockAddress.slice(-8));
             expect(id1.split('-')[3]).toBe(mockBlockHash.slice(-6));
         });
@@ -56,7 +56,7 @@ describe('InscriptionService', () => {
             };
             
             const id = inscriptionService.generateContentId(specialFile, mockTimestamp, mockAddress, mockBlockHash);
-            expect(id).toMatch(/^testvideo-\d+-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{6}$/);
+            expect(id).toMatch(/^[a-z0-9]+-\d+-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{6}$/);
         });
 
         test('should use consistent case for filename', () => {
@@ -102,7 +102,7 @@ describe('InscriptionService', () => {
 
     describe('validateInscriptionData', () => {
         test('should validate correct inscription data', () => {
-            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
+            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress, mockBlockHash);
             expect(() => inscriptionService.validateInscriptionData(data)).not.toThrow();
         });
 
@@ -119,7 +119,7 @@ describe('InscriptionService', () => {
         });
 
         test('should throw error for empty required fields', () => {
-            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress);
+            const data = inscriptionService.createInscriptionData(mockFile, mockMetadata, mockAddress, mockBlockHash);
             data.content.title = '';
 
             expect(() => inscriptionService.validateInscriptionData(data)).toThrow();

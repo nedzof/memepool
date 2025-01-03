@@ -29,10 +29,11 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.7",
-    "@babel/preset-env": "^7.23.7",
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "node-fetch": "^2.7.0",
     "vite-plugin-top-level-await": "^1.4.4",
     "vite-plugin-wasm": "^3.4.1",

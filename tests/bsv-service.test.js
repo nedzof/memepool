@@ -1,33 +1,73 @@
-// Mock bsv SDK
-jest.mock('@bsv/sdk', () => ({
-    initialize: jest.fn().mockResolvedValue(true),
-    requestProvider: jest.fn().mockResolvedValue({
+// Mock BSV SDK
+jest.mock('@bsv/sdk', () => {
+    const mockProvider = {
         getAddress: jest.fn().mockResolvedValue('testnet_address'),
-        getUtxos: jest.fn().mockResolvedValue([]),
+        getUtxos: jest.fn().mockResolvedValue([{
+            txid: 'test_txid',
+            vout: 0,
+            satoshis: 1000000
+        }]),
         signTransaction: jest.fn().mockImplementation(tx => tx),
         broadcastTransaction: jest.fn().mockResolvedValue('test_txid')
-    }),
-    Script: {
-        buildDataOut: jest.fn().mockReturnValue('test_script')
-    },
-    Transaction: jest.fn().mockImplementation(() => ({
-        from: jest.fn().mockReturnThis(),
-        addOutput: jest.fn().mockReturnThis(),
-        change: jest.fn().mockReturnThis(),
-        fee: jest.fn().mockReturnThis()
-    })),
-    getTransaction: jest.fn().mockResolvedValue({
-        confirmations: 1,
-        time: Date.now()
-    })
-}));
+    };
+
+    return {
+        initialize: jest.fn().mockResolvedValue(true),
+        requestProvider: jest.fn().mockResolvedValue(mockProvider),
+        Script: {
+            buildDataOut: jest.fn().mockReturnValue('test_script')
+        },
+        Transaction: jest.fn().mockImplementation(() => ({
+            from: jest.fn().mockReturnThis(),
+            addOutput: jest.fn().mockReturnThis(),
+            change: jest.fn().mockReturnThis(),
+            fee: jest.fn().mockReturnThis(),
+            serialize: jest.fn().mockReturnValue('test_tx_hex')
+        })),
+        getTransaction: jest.fn().mockResolvedValue({
+            confirmations: 1,
+            time: Date.now(),
+            txid: 'test_txid',
+            vout: [{
+                scriptPubKey: {
+                    addresses: ['testnet_address']
+                }
+            }]
+        }),
+        mockProvider // Export for test access
+    };
+});
 
 // Mock testnet wallet
 jest.mock('../src/services/testnet-wallet', () => ({
-    testnetWallet: null
+    testnetWallet: {
+        getAddress: jest.fn().mockReturnValue('testnet_address'),
+        getUtxos: jest.fn().mockResolvedValue([{
+            txid: 'test_txid',
+            vout: 0,
+            satoshis: 1000000
+        }]),
+        signTransaction: jest.fn().mockImplementation(tx => tx),
+        broadcastTransaction: jest.fn().mockResolvedValue('test_txid')
+    }
 }));
 
+// Mock fetch for balance checks
+global.fetch = jest.fn().mockImplementation((url) => {
+    if (url.includes('/balance')) {
+        return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+                confirmed: 1000000,
+                unconfirmed: 0
+            })
+        });
+    }
+    return Promise.reject(new Error('Not found'));
+});
+
 import { BSVService } from '../src/services/bsv-service.js';
+const bsvSdk = require('@bsv/sdk');
 
 describe('BSVService', () => {
     let bsvService;
@@ -35,6 +75,8 @@ describe('BSVService', () => {
     let mockInscriptionData;
 
     beforeEach(() => {
+        jest.clearAllMocks();
+        process.env.NODE_ENV = 'test';
         bsvService = new BSVService(true);
         mockFile = new File(['test'], 'test.mp4', { type: 'video/mp4' });
         mockInscriptionData = {
@@ -49,19 +91,15 @@ describe('BSVService', () => {
         };
     });
 
-    afterEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('connect', () => {
         test('should connect to BSV testnet', async () => {
             const result = await bsvService.connect();
             expect(result).toBe(true);
-            expect(bsvService.bsv.initialize).toHaveBeenCalledWith({ network: 'testnet' });
+            expect(bsvSdk.initialize).toHaveBeenCalledWith({ network: 'testnet' });
         });
 
         test('should handle connection errors', async () => {
-            bsvService.bsv.initialize.mockRejectedValueOnce(new Error('Connection failed'));
+            bsvSdk.initialize.mockRejectedValueOnce(new Error('Connection failed'));
             await expect(bsvService.connect()).rejects.toThrow('Failed to connect to BSV testnet');
         });
     });
@@ -70,91 +108,173 @@ describe('BSVService', () => {
         test('should connect to wallet and return address', async () => {
             const address = await bsvService.connectWallet();
             expect(address).toBe('testnet_address');
-            expect(bsvService.bsv.requestProvider).toHaveBeenCalled();
+            expect(bsvSdk.requestProvider).toHaveBeenCalled();
         });
 
         test('should handle wallet connection errors', async () => {
-            bsvService.bsv.requestProvider.mockRejectedValueOnce(new Error('Wallet connection failed'));
+            bsvSdk.requestProvider.mockRejectedValueOnce(new Error('Wallet connection failed'));
             await expect(bsvService.connectWallet()).rejects.toThrow('Failed to connect wallet');
+        });
+
+        test('should auto-connect in development environment', async () => {
+            process.env.NODE_ENV = 'development';
+            const devBsvService = new BSVService(false);
+            const address = await devBsvService.connectWallet();
+            expect(address).toBe('testnet_address');
+            process.env.NODE_ENV = 'test';
+        });
+    });
+
+    describe('getWalletAddress', () => {
+        test('should return wallet address when connected', async () => {
+            await bsvService.connectWallet();
+            const address = await bsvService.getWalletAddress();
+            expect(address).toBe('testnet_address');
+        });
+
+        test('should throw error when wallet not connected', async () => {
+            await expect(bsvService.getWalletAddress())
+                .rejects
+                .toThrow('Wallet not connected');
+        });
+    });
+
+    describe('getBalance', () => {
+        test('should fetch and return wallet balance', async () => {
+            await bsvService.connectWallet();
+            const balance = await bsvService.getBalance();
+            expect(balance).toBe(0.01); // 1000000 satoshis = 0.01 BSV
+            expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/balance'));
+        });
+
+        test('should handle balance fetch errors', async () => {
+            await bsvService.connectWallet();
+            fetch.mockRejectedValueOnce(new Error('Network error'));
+            const balance = await bsvService.getBalance();
+            expect(balance).toBe(0);
+        });
+
+        test('should throw error when wallet not connected', async () => {
+            await expect(bsvService.getBalance())
+                .rejects
+                .toThrow('Wallet not connected');
         });
     });
 
     describe('calculateFee', () => {
-        test('should calculate fee for small transaction (< 1.5KB)', async () => {
-            const dataSize = 1024; // 1KB
-            const feeInfo = await bsvService.calculateFee(dataSize);
-            
-            expect(feeInfo).toHaveProperty('sizeBytes', dataSize);
-            expect(feeInfo).toHaveProperty('sizeKb', 1);
-            expect(feeInfo).toHaveProperty('roundedKb', 1);
-            expect(feeInfo).toHaveProperty('rate', 1);
-            expect(feeInfo).toHaveProperty('fee', 1);
-            expect(feeInfo).toHaveProperty('bsv', 1 / 100000000);
-        });
+        const testCases = [
+            { size: 500, expected: { roundedKb: 1, fee: 1 } },           // < 1KB
+            { size: 1024, expected: { roundedKb: 1, fee: 1 } },         // 1KB
+            { size: 1536, expected: { roundedKb: 2, fee: 2 } },         // 1.5KB
+            { size: 2048, expected: { roundedKb: 2, fee: 2 } },         // 2KB
+            { size: 2560, expected: { roundedKb: 3, fee: 3 } },         // 2.5KB
+            { size: 3072, expected: { roundedKb: 3, fee: 3 } }          // 3KB
+        ];
 
-        test('should calculate fee for medium transaction (1.5KB to 2.49KB)', async () => {
-            const dataSize = 2 * 1024; // 2KB
-            const feeInfo = await bsvService.calculateFee(dataSize);
-            
-            expect(feeInfo.sizeKb).toBe(2);
-            expect(feeInfo.roundedKb).toBe(2);
-            expect(feeInfo.fee).toBe(2);
-        });
-
-        test('should calculate fee for large transaction (2.5KB to 3.49KB)', async () => {
-            const dataSize = 3 * 1024; // 3KB
-            const feeInfo = await bsvService.calculateFee(dataSize);
-            
-            expect(feeInfo.sizeKb).toBe(3);
-            expect(feeInfo.roundedKb).toBe(3);
-            expect(feeInfo.fee).toBe(3);
-        });
-
-        test('should handle fractional kilobytes correctly', async () => {
-            const dataSize = 1.7 * 1024; // 1.7KB
-            const feeInfo = await bsvService.calculateFee(dataSize);
-            
-            expect(feeInfo.sizeKb).toBeCloseTo(1.7, 2);
-            expect(feeInfo.roundedKb).toBe(2); // Rounds to 2 because 1.7 + 0.5 = 2.2, floor = 2
-            expect(feeInfo.fee).toBe(2);
+        test.each(testCases)('should calculate correct fee for $size bytes', async ({ size, expected }) => {
+            const feeInfo = await bsvService.calculateFee(size);
+            expect(feeInfo.roundedKb).toBe(expected.roundedKb);
+            expect(feeInfo.fee).toBe(expected.fee);
+            expect(feeInfo.sizeBytes).toBe(size);
+            expect(feeInfo.sizeKb).toBe(size / 1024);
+            expect(feeInfo.rate).toBe(1);
+            expect(feeInfo.bsv).toBe(expected.fee / 100000000);
         });
 
         test('should enforce minimum fee of 1 satoshi', async () => {
-            const dataSize = 100; // Very small file
-            const feeInfo = await bsvService.calculateFee(dataSize);
-            
-            expect(feeInfo.sizeKb).toBeLessThan(1);
-            expect(feeInfo.fee).toBe(1); // Minimum fee
+            const feeInfo = await bsvService.calculateFee(100);
+            expect(feeInfo.fee).toBe(1);
         });
     });
 
     describe('createInscriptionTransaction', () => {
-        test('should create transaction with correct fee', async () => {
+        beforeEach(async () => {
             await bsvService.connectWallet();
+            bsvService.wallet = bsvSdk.mockProvider;
+        });
+
+        test('should create transaction with correct fee', async () => {
             const txid = await bsvService.createInscriptionTransaction(mockInscriptionData, mockFile);
             expect(txid).toBe('test_txid');
+            expect(bsvSdk.Script.buildDataOut).toHaveBeenCalled();
+            expect(bsvSdk.mockProvider.signTransaction).toHaveBeenCalled();
+            expect(bsvSdk.mockProvider.broadcastTransaction).toHaveBeenCalled();
         });
 
         test('should throw error if wallet not connected', async () => {
-            // Create new instance without connecting wallet
-            const newBsvService = new BSVService(true);
-            await expect(newBsvService.createInscriptionTransaction(mockInscriptionData, mockFile))
-                .rejects.toThrow('Wallet not connected');
+            bsvService.wallet = null;
+            await expect(bsvService.createInscriptionTransaction(mockInscriptionData, mockFile))
+                .rejects
+                .toThrow('Wallet not connected');
+        });
+
+        test('should handle transaction creation errors', async () => {
+            bsvSdk.mockProvider.broadcastTransaction.mockRejectedValueOnce(new Error('Broadcast failed'));
+            await expect(bsvService.createInscriptionTransaction(mockInscriptionData, mockFile))
+                .rejects
+                .toThrow('Failed to create inscription transaction');
         });
     });
 
     describe('getTransactionStatus', () => {
         test('should return transaction status', async () => {
             const status = await bsvService.getTransactionStatus('test_txid');
-            expect(status).toHaveProperty('confirmed', true);
-            expect(status).toHaveProperty('confirmations');
-            expect(status).toHaveProperty('timestamp');
+            expect(status).toEqual({
+                confirmed: true,
+                confirmations: 1,
+                timestamp: expect.any(Number)
+            });
         });
 
         test('should handle transaction status errors', async () => {
-            bsvService.bsv.getTransaction.mockRejectedValueOnce(new Error('Status check failed'));
+            bsvSdk.getTransaction.mockRejectedValueOnce(new Error('Status check failed'));
             await expect(bsvService.getTransactionStatus('test_txid'))
-                .rejects.toThrow('Failed to get transaction status');
+                .rejects
+                .toThrow('Failed to get transaction status');
         });
+    });
+
+    describe('balance updates', () => {
+        let updateCallback;
+        let timerId;
+
+        beforeEach(async () => {
+            jest.useFakeTimers({ advanceTimers: true });
+            await bsvService.connectWallet();
+            updateCallback = jest.fn();
+        });
+
+        afterEach(() => {
+            if (timerId) {
+                bsvService.stopBalanceUpdates(timerId);
+            }
+            jest.useRealTimers();
+        });
+
+        test('should start periodic balance updates', async () => {
+            timerId = bsvService.startBalanceUpdates(updateCallback, 1000);
+            
+            // Wait for initial balance fetch
+            await Promise.resolve();
+            await jest.advanceTimersByTimeAsync(100);
+            expect(updateCallback).toHaveBeenCalledTimes(1);
+            
+            // Advance time and wait for next update
+            await jest.advanceTimersByTimeAsync(1000);
+            expect(updateCallback).toHaveBeenCalledTimes(2);
+        }, 10000); // Increase timeout to 10 seconds
+
+        test('should stop balance updates', async () => {
+            timerId = bsvService.startBalanceUpdates(updateCallback, 1000);
+            
+            // Wait for initial balance fetch
+            await Promise.resolve();
+            await jest.advanceTimersByTimeAsync(100);
+            expect(updateCallback).toHaveBeenCalledTimes(1);
+            
+            bsvService.stopBalanceUpdates(timerId);
+            await jest.advanceTimersByTimeAsync(1000);
+            expect(updateCallback).toHaveBeenCalledTimes(1); // Only initial fetch
+        }, 10000); // Increase timeout to 10 seconds
     });
 }); 
