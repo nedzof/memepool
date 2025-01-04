@@ -175,17 +175,28 @@ export class BSVService {
 
             // Prepare inscription data
             const data = JSON.stringify(inscriptionData);
-            const dataScript = this.bsv.Script.buildDataOut(data);
+            
+            // Create data script using OP_FALSE OP_RETURN
+            const script = new this.bsv.Script()
+                .add(this.bsv.OpCodes.OP_FALSE)
+                .add(this.bsv.OpCodes.OP_RETURN)
+                .add(Buffer.from(data));
 
             // Calculate fee based on total size
             const totalSize = file.size + data.length;
             const feeInfo = await this.calculateFee(totalSize);
 
+            // Get UTXOs
+            const utxos = await this.wallet.getUtxos();
+            if (!utxos || utxos.length === 0) {
+                throw new Error('No UTXOs available. Please fund your wallet.');
+            }
+
             // Create transaction
             const tx = new this.bsv.Transaction()
-                .from(await this.wallet.getUtxos())
+                .from(utxos)
                 .addOutput({
-                    script: dataScript,
+                    script: script,
                     satoshis: 0
                 })
                 .change(await this.wallet.getAddress())
@@ -196,13 +207,14 @@ export class BSVService {
 
             // Broadcast transaction
             const txid = await this.wallet.broadcastTransaction(signedTx);
+            console.log('Transaction broadcast:', txid);
             return txid;
         } catch (error) {
             if (error.message === 'Wallet not connected') {
                 throw error;
             }
             console.error('Failed to create inscription transaction:', error);
-            throw new Error('Failed to create inscription transaction');
+            throw new Error('Failed to create inscription transaction: ' + error.message);
         }
     }
 

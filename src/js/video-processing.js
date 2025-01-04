@@ -54,18 +54,20 @@ export class VideoProcessingUI {
 
     async handleSignAndBroadcast() {
         try {
+            // Check if video is selected
+            if (!this.currentFile) {
+                throw new Error('Please select a video first');
+            }
+
+            // Check if metadata is available
+            if (!this.currentMetadata) {
+                throw new Error('Video processing not complete');
+            }
+
             // Connect wallet if not connected
             if (!this.bsvService.wallet) {
                 const address = await this.bsvService.connectWallet();
                 this.inscriptionCreator.textContent = address;
-            }
-
-            // Get current file and metadata
-            const file = this.currentFile;
-            const metadata = this.currentMetadata;
-
-            if (!file || !metadata) {
-                throw new Error('No video selected');
             }
 
             // Get wallet address
@@ -75,14 +77,14 @@ export class VideoProcessingUI {
             const blockHash = await this.bsvService.getLatestBlockHash();
             
             // Create inscription data with wallet address and block hash
-            const inscriptionData = this.inscriptionService.createInscriptionData(file, metadata, address, blockHash);
+            const inscriptionData = this.inscriptionService.createInscriptionData(this.currentFile, this.currentMetadata, address, blockHash);
             this.currentInscriptionData = inscriptionData;
             
             // Update UI with inscription data
             this.updateInscriptionData(inscriptionData);
 
             // Create and broadcast transaction
-            const txid = await this.bsvService.createInscriptionTransaction(inscriptionData, file);
+            const txid = await this.bsvService.createInscriptionTransaction(inscriptionData, this.currentFile);
 
             // Update UI with transaction status
             this.updateTransactionStatus(txid);
@@ -191,6 +193,7 @@ export class VideoProcessingUI {
             // Step 2: Metadata extraction
             this.updateStepStatus(this.stepMetadata, 'pending');
             const metadata = await this.videoProcessor.extractMetadata(file);
+            this.currentMetadata = metadata;
             this.updateMetadata(metadata);
             this.updateStepStatus(this.stepMetadata, 'complete');
 
