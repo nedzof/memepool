@@ -1,3 +1,4 @@
+import { Script, Transaction, OP } from '@bsv/sdk';
 import * as bsvSdk from '@bsv/sdk';
 import { testnetWallet } from './testnet-wallet.js';
 
@@ -162,74 +163,23 @@ export class BSVService {
     }
 
     /**
-     * Create and broadcast inscription transaction
-     * @param {Object} inscriptionData - The inscription data
-     * @param {File} file - The video file
-     * @returns {Promise<string>} Transaction ID
-     */
-    async createInscriptionTransaction(inscriptionData, file) {
-        try {
-            if (!this.wallet) {
-                throw new Error('Wallet not connected');
-            }
-
-            // Prepare inscription data
-            const data = JSON.stringify(inscriptionData);
-            
-            // Create data script using OP_FALSE OP_RETURN
-            const script = new this.bsv.Script()
-                .add(this.bsv.OpCodes.OP_FALSE)
-                .add(this.bsv.OpCodes.OP_RETURN)
-                .add(Buffer.from(data));
-
-            // Calculate fee based on total size
-            const totalSize = file.size + data.length;
-            const feeInfo = await this.calculateFee(totalSize);
-
-            // Get UTXOs
-            const utxos = await this.wallet.getUtxos();
-            if (!utxos || utxos.length === 0) {
-                throw new Error('No UTXOs available. Please fund your wallet.');
-            }
-
-            // Create transaction
-            const tx = new this.bsv.Transaction()
-                .from(utxos)
-                .addOutput({
-                    script: script,
-                    satoshis: 0
-                })
-                .change(await this.wallet.getAddress())
-                .fee(feeInfo.fee);
-
-            // Sign transaction
-            const signedTx = await this.wallet.signTransaction(tx);
-
-            // Broadcast transaction
-            const txid = await this.wallet.broadcastTransaction(signedTx);
-            console.log('Transaction broadcast:', txid);
-            return txid;
-        } catch (error) {
-            if (error.message === 'Wallet not connected') {
-                throw error;
-            }
-            console.error('Failed to create inscription transaction:', error);
-            throw new Error('Failed to create inscription transaction: ' + error.message);
-        }
-    }
-
-    /**
      * Get transaction status
      * @param {string} txid - Transaction ID
      * @returns {Promise<Object>} Transaction status
      */
     async getTransactionStatus(txid) {
         try {
-            const status = await this.bsv.getTransaction(txid);
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${txid}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch transaction status');
+            }
+            
+            const data = await response.json();
             return {
-                confirmed: status.confirmations > 0,
-                confirmations: status.confirmations,
-                timestamp: status.time
+                confirmed: data.confirmations > 0,
+                confirmations: data.confirmations || 0,
+                timestamp: data.time || Date.now()
             };
         } catch (error) {
             console.error('Failed to get transaction status:', error);
@@ -257,6 +207,176 @@ export class BSVService {
         } catch (error) {
             console.error('Failed to fetch block hash:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Create and broadcast inscription transaction
+     * @param {Object} inscriptionData - The inscription data
+     * @param {File} file - The video file
+     * @returns {Promise<string>} Transaction ID
+     */
+    async createInscriptionTransaction(inscriptionData, file) {
+        try {
+            if (!this.wallet) {
+                throw new Error('Wallet not connected');
+            }
+
+            console.log('Creating inscription transaction...');
+            console.log('Inscription data:', inscriptionData);
+            console.log('File:', file);
+
+            // Read file content
+            const fileContent = await file.arrayBuffer();
+            const fileBytes = new Uint8Array(fileContent);
+            console.log('File content loaded, size:', fileBytes.length, 'bytes');
+
+            // Prepare inscription data
+            const data = JSON.stringify(inscriptionData);
+            console.log('Serialized data:', data);
+            
+            // Create transaction
+            console.log('Creating transaction...');
+            const tx = new Transaction();
+            console.log('Transaction created:', tx);
+
+            // Calculate fee based on total size
+            const totalSize = fileBytes.length + data.length;
+            console.log('Total size:', totalSize);
+            const feeInfo = await this.calculateFee(totalSize);
+            console.log('Fee info:', feeInfo);
+
+            // Get UTXOs with retry
+            console.log('Getting UTXOs...');
+            let utxos;
+            try {
+                utxos = await this.wallet.getUtxos();
+                console.log('UTXOs:', utxos);
+                if (!utxos || utxos.length === 0) {
+                    throw new Error('No UTXOs available. Please fund your wallet.');
+                }
+            } catch (error) {
+                if (error.message.includes('429') || error.message.includes('rate limit')) {
+                    throw new Error('Rate limited by API. Please wait a moment and try again.');
+                }
+                throw error;
+            }
+
+            // Create data output using OP_FALSE OP_RETURN
+            console.log('Building data output...');
+            const dataBuffer = Buffer.from(data, 'utf8');
+            const scriptBinary = [0x00, 0x6a]; // OP_FALSE OP_RETURN
+            const dataBytes = Array.from(dataBuffer);
+            const fileDataBytes = Array.from(fileBytes);
+            const script = Script.fromBinary([...scriptBinary, ...dataBytes, ...fileDataBytes]);
+            console.log('Data script created:', script);
+
+            // Build transaction
+            console.log('Building complete transaction...');
+            
+            // Add inputs from UTXOs
+            console.log('Adding inputs to transaction...');
+            console.log('Total UTXOs to process:', utxos.length);
+            let totalInput = 0;
+            
+            for (const utxo of utxos) {
+                console.log('Processing UTXO:', utxo);
+                console.log('UTXO details:', {
+                    txId: utxo.txId,
+                    outputIndex: utxo.outputIndex,
+                    satoshis: utxo.satoshis,
+                    hasScript: !!utxo.script,
+                    hasUnlockingTemplate: !!utxo.unlockingScriptTemplate,
+                    hasSourceTransaction: !!utxo.sourceTransaction
+                });
+
+                const input = {
+                    sourceTXID: utxo.txId,
+                    sourceOutputIndex: utxo.outputIndex,
+                    sourceSatoshis: utxo.satoshis,
+                    script: utxo.script,
+                    unlockingScriptTemplate: utxo.unlockingScriptTemplate
+                };
+
+                if (utxo.sourceTransaction) {
+                    input.sourceTransaction = utxo.sourceTransaction;
+                }
+
+                tx.addInput(input);
+                totalInput += utxo.satoshis;
+                console.log('Running total input:', totalInput);
+            }
+
+            console.log('Final total input:', totalInput);
+
+            // Add OP_RETURN output
+            console.log('Adding OP_RETURN output...');
+            tx.addOutput({
+                lockingScript: script,
+                satoshis: 0
+            });
+            console.log('Added OP_RETURN output');
+
+            // Add change output
+            console.log('Calculating change...');
+            const changeAmount = totalInput - feeInfo.fee;
+            console.log('Change calculation:', { totalInput, fee: feeInfo.fee, changeAmount });
+            
+            if (changeAmount > 0) {
+                console.log('Creating change output script...');
+                const pubKey = this.wallet.privateKey.toPublicKey();
+                const p2pkh = new this.bsv.P2PKH();
+                const lockingScript = p2pkh.lock(pubKey.toAddress());
+                console.log('Change script created:', lockingScript);
+
+                console.log('Adding change output...');
+                tx.addOutput({
+                    lockingScript: lockingScript,
+                    satoshis: changeAmount
+                });
+                console.log('Added change output');
+            }
+
+            // Skip fee computation if source transactions are not available
+            const hasAllSourceTransactions = tx.inputs.every(input => !!input.sourceTransaction);
+            if (!hasAllSourceTransactions) {
+                console.log('Skipping fee computation as not all source transactions are available');
+            } else {
+                console.log('Computing fee...');
+                await tx.fee();
+                console.log('Fee computed');
+            }
+
+            // Sign transaction
+            console.log('Signing transaction...');
+            try {
+                await tx.sign(this.wallet.privateKey);
+                console.log('Transaction signed:', tx);
+            } catch (error) {
+                if (error.message.includes('sourceSatoshis') || error.message.includes('sourceTransaction')) {
+                    throw new Error('Failed to sign transaction: Missing source transaction data. Please try again.');
+                }
+                throw error;
+            }
+
+            // Broadcast transaction
+            console.log('Broadcasting transaction...');
+            try {
+                const txid = await this.wallet.broadcastTransaction(tx);
+                console.log('Transaction broadcast successful. TXID:', txid);
+                return txid;
+            } catch (error) {
+                if (error.message.includes('429') || error.message.includes('rate limit')) {
+                    throw new Error('Rate limited by API. Please wait a moment and try again.');
+                }
+                throw error;
+            }
+        } catch (error) {
+            console.error('Detailed error in createInscriptionTransaction:', error);
+            if (error.message === 'Wallet not connected') {
+                throw error;
+            }
+            throw new Error('Failed to create inscription transaction: ' + error.message);
         }
     }
 } 

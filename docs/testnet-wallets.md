@@ -30,3 +30,12 @@ To fund these wallets:
 - Never use these private keys on mainnet
 - Keep a minimum balance for testing transactions
 - Standard fee rate: 1 sat/KB 
+
+## Inscription Verification
+To verify an inscription, use the `verify-inscription.mjs` script.
+
+```bash
+node scripts/verify-inscription.mjs <txid>
+```
+
+- first transaction hash: 1d0bb09fe68d003df0438441381d521b437df601dc156e8b809a1168477e9ad6
