@@ -138,26 +138,49 @@ export class BSVService {
      * @returns {Promise<Object>} Fee calculations
      */
     async calculateFee(dataSize) {
-        // Convert bytes to kilobytes
-        const sizeInKb = dataSize / 1024;
+        // Calculate total transaction size:
+        // 1. Transaction version (4 bytes)
+        // 2. Input count (1-9 bytes)
+        // 3. Typical P2PKH input (148 bytes)
+        // 4. Output count (1-9 bytes)
+        // 5. OP_FALSE OP_RETURN (2 bytes)
+        // 6. PUSHDATA4 overhead for metadata (5 bytes)
+        // 7. PUSHDATA4 overhead for video (5 bytes)
+        // 8. P2PKH change output (34 bytes)
+        // 9. nLockTime (4 bytes)
+        // 10. Additional buffer for signature variations (10 bytes)
+        const txOverhead = 4 + 1 + 148 + 1 + 2 + 5 + 5 + 34 + 4 + 10;
+        const totalSize = dataSize + txOverhead;
         
-        // Calculate fee based on size rounding rules:
-        // 0.0 kb to 1.4999... kb = 1 sat
-        // 1.5 kb to 2.4999... kb = 2 sat
-        // 2.5 kb to 3.4999... kb = 3 sat
-        // etc.
-        const roundedKb = Math.max(1, Math.floor(sizeInKb + 0.5));
-        const fee = roundedKb; // Fee is same as rounded KB (1 sat/KB)
+        // Convert to KB and ensure we round up to the next KB boundary
+        const sizeInKb = totalSize / 1024;
+        const roundedKb = Math.ceil(sizeInKb);
+        
+        // Calculate fee to ensure slightly above 1 sat/KB
+        // Add a small fraction (0.02) to ensure we're always above 1 sat/KB
+        const fee = Math.ceil(roundedKb + 0.02);
 
         // Add size information
         const feeInfo = {
-            sizeBytes: dataSize,
+            sizeBytes: totalSize,
             sizeKb: sizeInKb,
             roundedKb: roundedKb,
             rate: this.feeRate,
             fee: fee,
-            bsv: fee / 100000000
+            bsv: fee / 100000000,
+            overhead: txOverhead,
+            effectiveRate: (fee * 1024) / totalSize
         };
+
+        console.log('Fee calculation details:', {
+            dataSize,
+            overhead: txOverhead,
+            totalSize,
+            sizeKb: sizeInKb,
+            roundedKb,
+            fee,
+            effectiveRate: (fee * 1024) / totalSize
+        });
 
         return feeInfo;
     }
@@ -231,6 +254,23 @@ export class BSVService {
             const fileBytes = new Uint8Array(fileContent);
             console.log('File content loaded, size:', fileBytes.length, 'bytes');
 
+            // Validate file size (BSV has a max transaction size of ~100MB)
+            const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+            if (fileBytes.length > MAX_FILE_SIZE) {
+                throw new Error(`File size (${fileBytes.length} bytes) exceeds maximum allowed size (${MAX_FILE_SIZE} bytes)`);
+            }
+
+            // Validate video format
+            if (fileBytes.length < 8) {
+                throw new Error('Invalid video file: too small to be a valid MP4');
+            }
+            
+            // Check for MP4 signature (ftyp)
+            const signature = Buffer.from(fileBytes.slice(4, 8)).toString();
+            if (signature !== 'ftyp') {
+                throw new Error('Invalid video format: not a valid MP4 file');
+            }
+
             // Prepare inscription data
             const data = JSON.stringify(inscriptionData);
             console.log('Serialized data:', data);
@@ -264,12 +304,91 @@ export class BSVService {
 
             // Create data output using OP_FALSE OP_RETURN
             console.log('Building data output...');
-            const dataBuffer = Buffer.from(data, 'utf8');
-            const scriptBinary = [0x00, 0x6a]; // OP_FALSE OP_RETURN
-            const dataBytes = Array.from(dataBuffer);
-            const fileDataBytes = Array.from(fileBytes);
-            const script = Script.fromBinary([...scriptBinary, ...dataBytes, ...fileDataBytes]);
-            console.log('Data script created:', script);
+            
+            // Convert metadata to buffer
+            const metadataBuffer = Buffer.from(data, 'utf8');
+            console.log('Metadata size:', metadataBuffer.length, 'bytes');
+
+            // Create script chunks
+            const scriptParts = [];
+            
+            // Add OP_FALSE OP_RETURN
+            scriptParts.push(Buffer.from([0x00, 0x6a])); // OP_FALSE OP_RETURN
+            
+            // Add metadata with PUSHDATA4
+            const metadataLenBuffer = Buffer.alloc(5);
+            metadataLenBuffer[0] = 0x4e; // PUSHDATA4 opcode
+            metadataLenBuffer.writeUInt32LE(metadataBuffer.length, 1);
+            console.log('Metadata PUSHDATA4:', metadataLenBuffer);
+            
+            // Create complete metadata chunk
+            const metadataChunk = Buffer.concat([metadataLenBuffer, metadataBuffer]);
+            scriptParts.push(metadataChunk);
+
+            // Add video data with PUSHDATA4
+            const videoLenBuffer = Buffer.alloc(5);
+            videoLenBuffer[0] = 0x4e; // PUSHDATA4 opcode
+            videoLenBuffer.writeUInt32LE(fileBytes.length, 1);
+            console.log('Video PUSHDATA4:', videoLenBuffer);
+            
+            // Create complete video chunk
+            const videoBuffer = Buffer.from(fileBytes);
+            const videoChunk = Buffer.concat([videoLenBuffer, videoBuffer]);
+            scriptParts.push(videoChunk);
+
+            // Combine all parts into final script
+            const scriptBuffer = Buffer.concat(scriptParts);
+            console.log('Script structure:');
+            console.log('- OP_FALSE OP_RETURN:', scriptParts[0].length, 'bytes');
+            console.log('- Metadata chunk:', scriptParts[1].length, 'bytes');
+            console.log('- Video chunk:', scriptParts[2].length, 'bytes');
+            console.log('Total script size:', scriptBuffer.length, 'bytes');
+
+            // Verify script structure before proceeding
+            let pos = 0;
+            // Verify OP_FALSE OP_RETURN
+            if (scriptBuffer[0] !== 0x00 || scriptBuffer[1] !== 0x6a) {
+                throw new Error('Invalid script structure: OP_FALSE OP_RETURN not found');
+            }
+            pos += 2;
+
+            // Verify metadata chunk
+            if (scriptBuffer[pos] !== 0x4e) {
+                throw new Error('Invalid script structure: Metadata PUSHDATA4 not found');
+            }
+            const metadataLength = scriptBuffer.readUInt32LE(pos + 1);
+            if (metadataLength !== metadataBuffer.length) {
+                throw new Error('Invalid script structure: Metadata length mismatch');
+            }
+            pos += 5 + metadataLength;
+
+            // Verify video chunk
+            if (scriptBuffer[pos] !== 0x4e) {
+                throw new Error('Invalid script structure: Video PUSHDATA4 not found');
+            }
+            const videoLength = scriptBuffer.readUInt32LE(pos + 1);
+            if (videoLength !== fileBytes.length) {
+                throw new Error('Invalid script structure: Video length mismatch');
+            }
+            pos += 5;
+
+            // Verify video data integrity
+            const videoData = scriptBuffer.slice(pos, pos + videoLength);
+            if (videoData.length !== fileBytes.length) {
+                throw new Error('Invalid script structure: Video data length mismatch');
+            }
+            
+            // Verify video header
+            const videoHeader = videoData.slice(4, 8).toString();
+            if (videoHeader !== 'ftyp') {
+                throw new Error('Invalid script structure: Video data corruption detected');
+            }
+
+            // Create script from buffer
+            const script = Script.fromBinary(new Uint8Array(scriptBuffer));
+            console.log('Script created successfully');
+            console.log('Script type:', script.constructor.name);
+            console.log('Script chunks:', script.chunks ? script.chunks.length : 'N/A');
 
             // Build transaction
             console.log('Building complete transaction...');

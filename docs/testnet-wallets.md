@@ -38,4 +38,6 @@ To verify an inscription, use the `verify-inscription.mjs` script.
 node scripts/verify-inscription.mjs <txid>
 ```
 
-- first transaction hash: 1d0bb09fe68d003df0438441381d521b437df601dc156e8b809a1168477e9ad6
+- first transaction hash: bac0c81eca6239fa5ab9ac2cccf72dde96b4a2a8c0d7a079992b27b70dfaf459
+- second transaction hash: 8eeb73e61e343ff4f9d56dbf9c090c9d7c40aea6bec22c1f247ddd343876eae6
+- third (final optimized) transaction hash: 78ec47dcbce5fa62a0c7a2fa2f9badad47f065a3c572621826796f714eaa0bd8
