@@ -1,23 +1,27 @@
-import * as bsvSdk from '@bsv/sdk';
+import { PrivateKey, P2PKH, Transaction } from '@bsv/sdk';
 
 /**
  * Simple testnet wallet service for development
  * This is a temporary solution for testing purposes
  */
 export class TestnetWallet {
-    constructor() {
-        // Static testnet private key
-        this.privateKey = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy';
-        // Hardcoded wallet address
-        this.address = 'n2SqMQ3vsUq6d1MYX8rpyY3m78aQi6bLLJ';
+    constructor(wifKey = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy') {
+        this.privateKey = PrivateKey.fromWif(wifKey);
+        this.network = 'testnet';
+        this.address = null;
         this.initialize();
     }
 
     initialize() {
         try {
-            // Verify the private key is valid
-            const privKey = bsvSdk.PrivateKey.fromWif(this.privateKey);
-            // We're using the hardcoded address instead of deriving it
+            // Convert private key to address
+            const pubKey = this.privateKey.toPublicKey();
+            // Create P2PKH script
+            const p2pkh = new P2PKH(pubKey);
+            // Get locking script
+            const lockingScript = p2pkh.lockingScript;
+            // Get address from public key
+            this.address = pubKey.toAddress(this.network);
             console.log('Testnet wallet initialized with address:', this.address);
         } catch (error) {
             console.error('Failed to initialize testnet wallet:', error);
@@ -29,7 +33,7 @@ export class TestnetWallet {
     }
 
     getPrivateKey() {
-        return this.privateKey;
+        return this.privateKey.toWif();
     }
 
     // Mock methods to match BSV wallet interface
@@ -46,5 +50,5 @@ export class TestnetWallet {
     }
 }
 
-// Create a singleton instance
+// Create default testnet wallet instance
 export const testnetWallet = new TestnetWallet(); 

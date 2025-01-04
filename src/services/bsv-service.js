@@ -27,8 +27,8 @@ export class BSVService {
      */
     async connect() {
         try {
-            // Initialize BSV testnet connection
-            await this.bsv.initialize({ network: this.network });
+            // Initialize BSV SDK
+            this.bsv = bsvSdk;
             this.connected = true;
             return true;
         } catch (error) {
