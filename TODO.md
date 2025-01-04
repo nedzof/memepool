@@ -116,20 +116,35 @@
   - [x] State updates
 
 ## 7. BSV Testnet Verification 🔄
-- [ ] Test complete inscription flow
-  - [ ] Video upload and processing
-  - [ ] Transaction creation and broadcast
-  - [ ] Content verification
+- [x] Test complete inscription flow
+  - [x] Video upload and processing
+  - [x] Transaction creation and broadcast
+  - [x] Content verification
 - [ ] Test ownership transfer
-  - [ ] Transfer between test accounts
-  - [ ] Verification of ownership change
-  - [ ] Recovery after transfer
-- [ ] Monitor and optimize
-  - [ ] Transaction fees
-  - [ ] Processing times
-  - [ ] Network interactions
+  - [ ] Create minimal transfer transaction (no video re-inscription)
+  - [ ] Verify UTXO chain for ownership tracking
+  - [ ] Test ownership verification through UTXO history
+  - [ ] Implement and test recovery after transfer
+- [x] Monitor and optimize
+  - [x] Transaction fees
+  - [x] Processing times
+  - [x] Network interactions
 
-## 8. Documentation
+## 8. Recovery Service Update
+- [ ] Update recovery service for new inscription format
+  - [ ] Modify script parsing for OP_FALSE OP_RETURN + PUSHDATA4
+  - [ ] Add video data chunk handling
+  - [ ] Update verification process for new format
+- [ ] Implement ownership history tracking
+  - [ ] UTXO chain analysis
+  - [ ] Transfer history recording
+  - [ ] Current owner determination
+- [ ] Add transfer-aware recovery
+  - [ ] Track ownership changes
+  - [ ] Maintain transfer history
+  - [ ] Update ownership status
+
+## 9. Documentation
 - [ ] Technical documentation
   - [ ] Architecture overview
   - [ ] API endpoints
@@ -137,10 +152,12 @@
   - [ ] Fee calculation formulas
   - [ ] Content ID format specification
   - [ ] Recovery procedures
+  - [ ] Ownership transfer protocol
 - [ ] User documentation
   - [ ] Upload guidelines
   - [ ] Supported formats
   - [ ] Fee estimation guide
+  - [ ] Ownership transfer guide
   - [ ] Troubleshooting guide
 - [ ] Testing documentation
   - [ ] Test scenarios
@@ -149,17 +166,21 @@
 - [ ] Recovery documentation
   - [ ] Blockchain data extraction
   - [ ] Content reindexing process
+  - [ ] Ownership history tracking
   - [ ] Database reconstruction
   - [ ] Service restoration steps
 
-## 9. E2E Tests
+## 10. E2E Tests
 - [ ] Complete upload-to-inscription flow
 - [ ] Ownership transfer process
+  - [ ] Transfer between wallets
+  - [ ] Ownership verification
+  - [ ] Transfer history tracking
 - [ ] Error scenarios
 - [ ] Performance testing
 - [ ] Network resilience testing
 
-## 10. Final Integration
+## 11. Final Integration
 - [ ] Code review and cleanup
   - [ ] Performance optimization
   - [ ] Code documentation
@@ -168,6 +189,7 @@
   - [ ] Input validation
   - [ ] Transaction security
   - [ ] Access control
+  - [ ] Ownership verification
 - [ ] Deployment preparation
   - [ ] Environment configuration
   - [ ] Migration plan
@@ -183,4 +205,6 @@
 - Maximum file size: 100MB
 - Network fees vary based on file size (1 sat/KB)
 - Content IDs should be blockchain-derived for recovery
-- All essential data must be recoverable from blockchain 
+- All essential data must be recoverable from blockchain
+- Ownership transfers use minimal transactions (no video re-inscription)
+- Ownership is tracked through UTXO chain 
