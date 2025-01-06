@@ -156,9 +156,9 @@ export class BSVService {
         const sizeInKb = totalSize / 1024;
         const roundedKb = Math.ceil(sizeInKb);
         
-        // Calculate fee to ensure slightly above 1 sat/KB
-        // Add a small fraction (0.02) to ensure we're always above 1 sat/KB
-        const fee = Math.ceil(roundedKb + 0.02);
+        // Calculate fee to ensure at least 1 sat/KB
+        // We multiply by 1.1 to ensure we're comfortably above 1 sat/KB
+        const fee = Math.ceil(roundedKb * 1.1);
 
         // Add size information
         const feeInfo = {
@@ -436,21 +436,31 @@ export class BSVService {
             });
             console.log('Added OP_RETURN output');
 
-            // Add change output
+            // Add inscription holder output (minimal amount)
+            console.log('Adding inscription holder output...');
+            const inscriptionAmount = 100; // 100 satoshis for the inscription (above dust limit, enough for future transfers)
+            const pubKey = this.wallet.privateKey.toPublicKey();
+            const p2pkh = new this.bsv.P2PKH();
+            const lockingScript = p2pkh.lock(pubKey.toAddress());
+            tx.addOutput({
+                lockingScript: lockingScript,
+                satoshis: inscriptionAmount
+            });
+            console.log('Added inscription holder output with', inscriptionAmount, 'satoshis');
+
+            // Add change output if needed
             console.log('Calculating change...');
-            const changeAmount = totalInput - feeInfo.fee;
-            console.log('Change calculation:', { totalInput, fee: feeInfo.fee, changeAmount });
+            const changeAmount = totalInput - inscriptionAmount - feeInfo.fee;
+            console.log('Change calculation:', { totalInput, inscriptionAmount, fee: feeInfo.fee, changeAmount });
             
             if (changeAmount > 0) {
                 console.log('Creating change output script...');
-                const pubKey = this.wallet.privateKey.toPublicKey();
-                const p2pkh = new this.bsv.P2PKH();
-                const lockingScript = p2pkh.lock(pubKey.toAddress());
-                console.log('Change script created:', lockingScript);
+                const changeScript = p2pkh.lock(pubKey.toAddress());
+                console.log('Change script created:', changeScript);
 
                 console.log('Adding change output...');
                 tx.addOutput({
-                    lockingScript: lockingScript,
+                    lockingScript: changeScript,
                     satoshis: changeAmount
                 });
                 console.log('Added change output');
@@ -496,6 +506,63 @@ export class BSVService {
                 throw error;
             }
             throw new Error('Failed to create inscription transaction: ' + error.message);
+        }
+    }
+
+    /**
+     * Get transaction information
+     * @param {string} txid - Transaction ID
+     * @returns {Promise<Object>} Transaction information
+     */
+    async getTransactionInfo(txid) {
+        try {
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${txid}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch transaction info');
+            }
+            
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Failed to get transaction info:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Check if a transaction output is unspent
+     * @param {string} txid - Transaction ID
+     * @param {number} outputIndex - Output index
+     * @returns {Promise<boolean>} True if output is unspent
+     */
+    async isOutputUnspent(txid, outputIndex) {
+        try {
+            // First get the address from the transaction output
+            const txInfo = await this.getTransactionInfo(txid);
+            const output = txInfo.vout[outputIndex];
+            if (!output) {
+                throw new Error('Output not found');
+            }
+
+            // Get unspent outputs for the address
+            const address = output.scriptPubKey.addresses[0];
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/address/${address}/unspent`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to check output status');
+            }
+            
+            const unspentOutputs = await response.json();
+            
+            // Check if our output is in the unspent list
+            return unspentOutputs.some(utxo => 
+                utxo.tx_hash === txid && 
+                utxo.tx_pos === outputIndex
+            );
+        } catch (error) {
+            console.error('Failed to check output status:', error);
+            throw error;
         }
     }
 } 

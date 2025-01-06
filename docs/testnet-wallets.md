@@ -10,7 +10,7 @@ This document contains the details of the testnet wallets used for development a
 ## Secondary Wallet
 - **Address**: moRTGUhu38rtCFys4YBPaGc4WgvfwB1PSK
 - **Private Key (WIF)**: cNfsPtqN2bMRS7vH5qd8tR8GMvgXyL5BjnGAKgZ8DYEiCrCCQcP6
-- **Initial Balance**: 0.00000000 BSV (0 satoshis)
+- **Initial Balance**: 0.00199808 BSV (199,808 satoshis)
 
 ## Usage
 These wallets are used for:
@@ -18,12 +18,6 @@ These wallets are used for:
 2. Testing the ownership transfer protocol
 3. Verifying transaction confirmations
 4. Testing the recovery process
-
-## Funding
-To fund these wallets:
-1. Visit https://faucet.bitcoincloud.net
-2. Enter the wallet address
-3. Request test BSV
 
 ## Important Notes
 - These are testnet wallets, only for development and testing

@@ -1,5 +1,6 @@
-import { BSVService } from './bsv-service';
-import { TransactionVerificationService } from './transaction-verification-service';
+import { BSVService } from './bsv-service.js';
+import { TransactionVerificationService } from './transaction-verification-service.js';
+import { InscriptionSecurityService } from './inscription-security-service.js';
 
 /**
  * Service for handling ownership transfers of inscriptions
@@ -8,7 +9,7 @@ export class OwnershipTransferService {
     constructor(bsvService, verificationService) {
         this.bsvService = bsvService || new BSVService();
         this.verificationService = verificationService || new TransactionVerificationService(this.bsvService);
-        this.MIN_CONFIRMATIONS = 6;
+        this.securityService = new InscriptionSecurityService(this.bsvService, this.verificationService);
     }
 
     /**
@@ -23,24 +24,95 @@ export class OwnershipTransferService {
                 throw new Error('Wallet not connected');
             }
 
-            // Verify current ownership
-            const currentAddress = await this.bsvService.getWalletAddress();
-            const isOwner = await this.verificationService.validateOwnership(currentAddress, inscriptionTxId);
-            if (!isOwner) {
-                throw new Error('Not the current owner of the inscription');
+            const senderAddress = await this.bsvService.getWalletAddress();
+
+            // Validate transfer parameters
+            await this.securityService.validateTransferParams({
+                txid: inscriptionTxId,
+                senderAddress,
+                recipientAddress
+            });
+
+            // Verify ownership and security checks
+            const securityCheck = await this.securityService.verifyOwnershipForTransfer(
+                inscriptionTxId,
+                senderAddress
+            );
+
+            // Request transfer confirmation
+            const confirmed = await this.securityService.confirmTransfer(
+                securityCheck.inscriptionData,
+                recipientAddress
+            );
+
+            if (!confirmed) {
+                throw new Error('Transfer cancelled by user');
             }
 
-            // Create transfer transaction
-            const tx = new this.bsvService.bsv.Transaction()
-                .from(await this.bsvService.wallet.getUtxos())
-                .to(recipientAddress, 0) // Transfer with 0 satoshis
-                .change(currentAddress)
-                .fee(1); // Minimum fee of 1 satoshi
+            // Get UTXOs
+            const utxos = await this.bsvService.wallet.getUtxos();
+            if (!utxos || utxos.length === 0) {
+                throw new Error('No UTXOs available');
+            }
 
-            // Sign and broadcast transaction
-            const signedTx = await this.bsvService.wallet.signTransaction(tx);
-            const txid = await this.bsvService.wallet.broadcastTransaction(signedTx);
+            // Find the inscription UTXO
+            const inscriptionUtxo = utxos.find(utxo => utxo.txId === inscriptionTxId);
+            if (!inscriptionUtxo) {
+                throw new Error('Inscription UTXO not found');
+            }
 
+            // Create transaction
+            const tx = new this.bsvService.bsv.Transaction();
+
+            // Add the inscription input
+            if (!inscriptionUtxo.sourceTransaction) {
+                // If source transaction is not available, fetch it
+                const txHex = await this.bsvService.wallet.fetchWithRetry(
+                    `https://api.whatsonchain.com/v1/bsv/test/tx/${inscriptionUtxo.txId}/hex`
+                );
+                const txData = await txHex.text();
+                inscriptionUtxo.sourceTransaction = this.bsvService.bsv.Transaction.fromHex(txData);
+            }
+
+            tx.addInput({
+                sourceTXID: inscriptionUtxo.txId,
+                sourceOutputIndex: inscriptionUtxo.outputIndex,
+                sourceSatoshis: inscriptionUtxo.satoshis,
+                script: inscriptionUtxo.script,
+                unlockingScriptTemplate: inscriptionUtxo.unlockingScriptTemplate,
+                sourceTransaction: inscriptionUtxo.sourceTransaction
+            });
+
+            // Calculate amounts
+            const transferAmount = this.securityService.config.minInscriptionValue;
+            const fee = 1; // 1 satoshi fee
+            const changeAmount = inscriptionUtxo.satoshis - transferAmount - fee;
+
+            // Create P2PKH script for recipient
+            const p2pkh = new this.bsvService.bsv.P2PKH();
+            const recipientScript = p2pkh.lock(recipientAddress);
+
+            // Add recipient output with the inscription
+            tx.addOutput({
+                lockingScript: recipientScript,
+                satoshis: transferAmount
+            });
+            console.log('Added recipient output with', transferAmount, 'satoshis');
+
+            // Add change output back to sender if there's change
+            if (changeAmount > 0) {
+                const senderScript = p2pkh.lock(senderAddress);
+                tx.addOutput({
+                    lockingScript: senderScript,
+                    satoshis: changeAmount
+                });
+            }
+
+            // Sign transaction
+            await tx.sign(this.bsvService.wallet.privateKey);
+
+            // Broadcast transaction
+            const txid = await this.bsvService.wallet.broadcastTransaction(tx);
             return txid;
         } catch (error) {
             console.error('Failed to create transfer transaction:', error);
@@ -58,7 +130,7 @@ export class OwnershipTransferService {
         try {
             // Check transaction confirmations
             const status = await this.bsvService.getTransactionStatus(transferTxId);
-            if (status.confirmations < this.MIN_CONFIRMATIONS) {
+            if (status.confirmations < this.securityService.config.minConfirmations) {
                 return false;
             }
 
@@ -80,10 +152,10 @@ export class OwnershipTransferService {
         try {
             const status = await this.bsvService.getTransactionStatus(transferTxId);
             return {
-                confirmed: status.confirmations >= this.MIN_CONFIRMATIONS,
+                confirmed: status.confirmations >= this.securityService.config.minConfirmations,
                 confirmations: status.confirmations,
                 timestamp: status.timestamp,
-                complete: status.confirmations >= this.MIN_CONFIRMATIONS
+                complete: status.confirmations >= this.securityService.config.minConfirmations
             };
         } catch (error) {
             console.error('Failed to get transfer status:', error);

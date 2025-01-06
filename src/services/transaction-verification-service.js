@@ -76,20 +76,19 @@ export class TransactionVerificationService {
      */
     async validateOwnership(address, txid) {
         try {
-            const txInfo = await this.blockchainService.getTransactionInfo(txid);
-            
-            // Check if the address is the recipient of the inscription
-            const inscriptionOutput = txInfo.vout.find(output => 
-                output.scriptPubKey.addresses?.includes(address)
+            // Get all unspent outputs for the address
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/address/${address}/unspent`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch unspent outputs');
+            }
+            const unspentOutputs = await response.json();
+
+            // Check if any of the unspent outputs are from our inscription transaction
+            const ownsInscription = unspentOutputs.some(utxo => 
+                utxo.tx_hash === txid && utxo.value > 0
             );
 
-            if (!inscriptionOutput) {
-                return false;
-            }
-
-            // Check if the inscription output has been spent
-            const isUnspent = await this.blockchainService.isOutputUnspent(txid, inscriptionOutput.n);
-            return isUnspent;
+            return ownsInscription;
         } catch (error) {
             throw new Error(`Failed to validate ownership: ${error.message}`);
         }
