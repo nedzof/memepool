@@ -8,7 +8,7 @@ export class InscriptionSecurityService {
     constructor(config = {}) {
         this.config = {
             minConfirmations: 1,
-            minInscriptionValue: 100, // satoshis
+            minInscriptionValue: 1, // Changed to 1 satoshi
             ...config
         };
     }
@@ -214,6 +214,86 @@ export class InscriptionSecurityService {
             ...this.config,
             ...newConfig
         };
+    }
+
+    /**
+     * Check if a UTXO contains an inscription
+     * @param {string} txid - Transaction ID to check
+     * @returns {Promise<boolean>} True if UTXO contains an inscription
+     */
+    async hasInscription(txid) {
+        try {
+            // Get raw transaction
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${txid}/hex`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch transaction data');
+            }
+            
+            const txHex = await response.text();
+            
+            // Check for our protection marker in P2PKH outputs (6a044d454d45 = OP_RETURN + push 4 + "MEME")
+            const hasProtectionMarker = txHex.includes('6a044d454d45');
+            if (hasProtectionMarker) {
+                console.log('Found protection marker in transaction');
+                return true;
+            }
+            
+            // Check for OP_FALSE OP_RETURN pattern (006a)
+            const hasOpReturn = txHex.includes('006a');
+            if (!hasOpReturn) {
+                return false;
+            }
+
+            // If we find OP_RETURN, verify it's our inscription format
+            try {
+                await this.verifyInscriptionFormat(txid);
+                return true;
+            } catch (error) {
+                // If verification fails, it's not our inscription format
+                return false;
+            }
+        } catch (error) {
+            console.error('Error checking for inscription:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Check if a UTXO is protected by our marker
+     * @param {string} txid - Transaction ID to check
+     * @returns {Promise<boolean>} True if UTXO has protection marker
+     */
+    async hasProtectionMarker(txid) {
+        try {
+            const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${txid}/hex`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch transaction data');
+            }
+            
+            const txHex = await response.text();
+            return txHex.includes('6a044d454d45'); // OP_RETURN + push 4 + "MEME"
+        } catch (error) {
+            console.error('Error checking for protection marker:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Filter UTXOs to exclude those containing inscriptions
+     * @param {Array} utxos - Array of UTXOs to filter
+     * @returns {Promise<Array>} Filtered UTXOs
+     */
+    async filterInscriptionUtxos(utxos) {
+        const filteredUtxos = [];
+        
+        for (const utxo of utxos) {
+            const hasInscription = await this.hasInscription(utxo.txId);
+            if (!hasInscription) {
+                filteredUtxos.push(utxo);
+            }
+        }
+        
+        return filteredUtxos;
     }
 }
 

@@ -1,6 +1,7 @@
 import { Script, Transaction, OP } from '@bsv/sdk';
 import * as bsvSdk from '@bsv/sdk';
 import { testnetWallet } from './testnet-wallet.js';
+import { InscriptionSecurityService } from './inscription-security-service.js';
 
 /**
  * Service for handling BSV testnet operations
@@ -11,6 +12,7 @@ export class BSVService {
         this.connected = false;
         this.wallet = null;
         this.bsv = bsvSdk;
+        this.securityService = new InscriptionSecurityService();
         
         // Standard fee rate (1 sat/kb)
         this.feeRate = 1;
@@ -291,9 +293,18 @@ export class BSVService {
             let utxos;
             try {
                 utxos = await this.wallet.getUtxos();
-                console.log('UTXOs:', utxos);
+                console.log('Total UTXOs found:', utxos.length);
                 if (!utxos || utxos.length === 0) {
                     throw new Error('No UTXOs available. Please fund your wallet.');
+                }
+
+                // Filter out UTXOs that contain inscriptions
+                console.log('Filtering out inscription UTXOs...');
+                utxos = await this.securityService.filterInscriptionUtxos(utxos);
+                console.log('Available UTXOs after filtering:', utxos.length);
+
+                if (utxos.length === 0) {
+                    throw new Error('No suitable UTXOs available. All UTXOs contain inscriptions.');
                 }
             } catch (error) {
                 if (error.message.includes('429') || error.message.includes('rate limit')) {
@@ -301,6 +312,39 @@ export class BSVService {
                 }
                 throw error;
             }
+
+            // Calculate total amount needed
+            const inscriptionAmount = 1; // 1 satoshi for the inscription holder
+            const totalNeeded = inscriptionAmount + feeInfo.fee;
+            console.log('Total amount needed:', totalNeeded, 'satoshis');
+
+            // Sort UTXOs by amount (ascending)
+            utxos.sort((a, b) => a.satoshis - b.satoshis);
+
+            // Find optimal UTXO(s)
+            let selectedUtxos = [];
+            let totalInput = 0;
+
+            // First try to find a single UTXO that covers the amount
+            const singleUtxo = utxos.find(utxo => utxo.satoshis >= totalNeeded);
+            if (singleUtxo) {
+                selectedUtxos = [singleUtxo];
+                totalInput = singleUtxo.satoshis;
+            } else {
+                // If no single UTXO is sufficient, select minimal UTXOs needed
+                for (const utxo of utxos) {
+                    selectedUtxos.push(utxo);
+                    totalInput += utxo.satoshis;
+                    if (totalInput >= totalNeeded) break;
+                }
+            }
+
+            if (totalInput < totalNeeded) {
+                throw new Error(`Insufficient funds. Need ${totalNeeded} satoshis but only have ${totalInput}`);
+            }
+
+            console.log('Selected UTXOs:', selectedUtxos);
+            console.log('Total input:', totalInput);
 
             // Create data output using OP_FALSE OP_RETURN
             console.log('Building data output...');
@@ -344,89 +388,22 @@ export class BSVService {
             console.log('- Video chunk:', scriptParts[2].length, 'bytes');
             console.log('Total script size:', scriptBuffer.length, 'bytes');
 
-            // Verify script structure before proceeding
-            let pos = 0;
-            // Verify OP_FALSE OP_RETURN
-            if (scriptBuffer[0] !== 0x00 || scriptBuffer[1] !== 0x6a) {
-                throw new Error('Invalid script structure: OP_FALSE OP_RETURN not found');
-            }
-            pos += 2;
-
-            // Verify metadata chunk
-            if (scriptBuffer[pos] !== 0x4e) {
-                throw new Error('Invalid script structure: Metadata PUSHDATA4 not found');
-            }
-            const metadataLength = scriptBuffer.readUInt32LE(pos + 1);
-            if (metadataLength !== metadataBuffer.length) {
-                throw new Error('Invalid script structure: Metadata length mismatch');
-            }
-            pos += 5 + metadataLength;
-
-            // Verify video chunk
-            if (scriptBuffer[pos] !== 0x4e) {
-                throw new Error('Invalid script structure: Video PUSHDATA4 not found');
-            }
-            const videoLength = scriptBuffer.readUInt32LE(pos + 1);
-            if (videoLength !== fileBytes.length) {
-                throw new Error('Invalid script structure: Video length mismatch');
-            }
-            pos += 5;
-
-            // Verify video data integrity
-            const videoData = scriptBuffer.slice(pos, pos + videoLength);
-            if (videoData.length !== fileBytes.length) {
-                throw new Error('Invalid script structure: Video data length mismatch');
-            }
-            
-            // Verify video header
-            const videoHeader = videoData.slice(4, 8).toString();
-            if (videoHeader !== 'ftyp') {
-                throw new Error('Invalid script structure: Video data corruption detected');
-            }
-
             // Create script from buffer
             const script = Script.fromBinary(new Uint8Array(scriptBuffer));
             console.log('Script created successfully');
-            console.log('Script type:', script.constructor.name);
-            console.log('Script chunks:', script.chunks ? script.chunks.length : 'N/A');
 
-            // Build transaction
-            console.log('Building complete transaction...');
-            
-            // Add inputs from UTXOs
+            // Add selected inputs
             console.log('Adding inputs to transaction...');
-            console.log('Total UTXOs to process:', utxos.length);
-            let totalInput = 0;
-            
-            for (const utxo of utxos) {
-                console.log('Processing UTXO:', utxo);
-                console.log('UTXO details:', {
-                    txId: utxo.txId,
-                    outputIndex: utxo.outputIndex,
-                    satoshis: utxo.satoshis,
-                    hasScript: !!utxo.script,
-                    hasUnlockingTemplate: !!utxo.unlockingScriptTemplate,
-                    hasSourceTransaction: !!utxo.sourceTransaction
-                });
-
-                const input = {
+            for (const utxo of selectedUtxos) {
+                tx.addInput({
                     sourceTXID: utxo.txId,
                     sourceOutputIndex: utxo.outputIndex,
                     sourceSatoshis: utxo.satoshis,
                     script: utxo.script,
-                    unlockingScriptTemplate: utxo.unlockingScriptTemplate
-                };
-
-                if (utxo.sourceTransaction) {
-                    input.sourceTransaction = utxo.sourceTransaction;
-                }
-
-                tx.addInput(input);
-                totalInput += utxo.satoshis;
-                console.log('Running total input:', totalInput);
+                    unlockingScriptTemplate: utxo.unlockingScriptTemplate,
+                    sourceTransaction: utxo.sourceTransaction
+                });
             }
-
-            console.log('Final total input:', totalInput);
 
             // Add OP_RETURN output
             console.log('Adding OP_RETURN output...');
@@ -436,17 +413,25 @@ export class BSVService {
             });
             console.log('Added OP_RETURN output');
 
-            // Add inscription holder output (minimal amount)
+            // Add inscription holder output (1 satoshi)
             console.log('Adding inscription holder output...');
-            const inscriptionAmount = 100; // 100 satoshis for the inscription (above dust limit, enough for future transfers)
             const pubKey = this.wallet.privateKey.toPublicKey();
             const p2pkh = new this.bsv.P2PKH();
-            const lockingScript = p2pkh.lock(pubKey.toAddress());
+            
+            // Create special locking script with marker for inscription holder
+            const standardLockingScript = p2pkh.lock(pubKey.toAddress());
+            // Add OP_RETURN after P2PKH with 'MEME' marker (4d454d45 in hex)
+            const markerScript = Buffer.concat([
+                Buffer.from(standardLockingScript.toBinary()),
+                Buffer.from([0x6a, 0x04, 0x4d, 0x45, 0x4d, 0x45]) // OP_RETURN + push 4 bytes + "MEME"
+            ]);
+            const lockingScript = Script.fromBinary(new Uint8Array(markerScript));
+            
             tx.addOutput({
                 lockingScript: lockingScript,
                 satoshis: inscriptionAmount
             });
-            console.log('Added inscription holder output with', inscriptionAmount, 'satoshis');
+            console.log('Added inscription holder output with', inscriptionAmount, 'satoshis and protection marker');
 
             // Add change output if needed
             console.log('Calculating change...');
@@ -464,16 +449,6 @@ export class BSVService {
                     satoshis: changeAmount
                 });
                 console.log('Added change output');
-            }
-
-            // Skip fee computation if source transactions are not available
-            const hasAllSourceTransactions = tx.inputs.every(input => !!input.sourceTransaction);
-            if (!hasAllSourceTransactions) {
-                console.log('Skipping fee computation as not all source transactions are available');
-            } else {
-                console.log('Computing fee...');
-                await tx.fee();
-                console.log('Fee computed');
             }
 
             // Sign transaction
