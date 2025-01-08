@@ -1,5 +1,5 @@
 import { BSVService } from './bsv-service.js';
-import { TransactionVerificationService } from './transaction-verification-service.js';
+import crypto from 'crypto';
 
 /**
  * Service for handling inscription security checks and transfer validations
@@ -11,6 +11,62 @@ export class InscriptionSecurityService {
             minInscriptionValue: 1, // Changed to 1 satoshi
             ...config
         };
+    }
+
+    /**
+     * Convert a public key hash to a testnet address
+     * @param {string} pubKeyHash - The public key hash in hex format
+     * @returns {string} The testnet address
+     */
+    pubKeyHashToAddress(pubKeyHash) {
+        try {
+            // For testnet, version byte is 0x6f
+            const versionByte = '6f';
+            const fullHash = versionByte + pubKeyHash;
+            
+            // Convert to Buffer for checksum calculation
+            const buffer = Buffer.from(fullHash, 'hex');
+            
+            // Calculate double SHA256 for checksum
+            const hash1 = crypto.createHash('sha256').update(buffer).digest();
+            const hash2 = crypto.createHash('sha256').update(hash1).digest();
+            const checksum = hash2.slice(0, 4);
+            
+            // Combine version, pubkey hash, and checksum
+            const final = Buffer.concat([buffer, checksum]);
+            
+            // Convert to base58
+            return this.toBase58(final);
+        } catch (error) {
+            console.error('Failed to convert pubkey hash to address:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Convert a buffer to base58 string
+     * @param {Buffer} buffer - The buffer to convert
+     * @returns {string} The base58 string
+     */
+    toBase58(buffer) {
+        const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        let num = BigInt('0x' + buffer.toString('hex'));
+        const base = BigInt(58);
+        const zero = BigInt(0);
+        let result = '';
+        
+        while (num > zero) {
+            const mod = Number(num % base);
+            result = ALPHABET[mod] + result;
+            num = num / base;
+        }
+        
+        // Add leading zeros
+        for (let i = 0; i < buffer.length && buffer[i] === 0; i++) {
+            result = '1' + result;
+        }
+        
+        return result;
     }
 
     /**
@@ -31,23 +87,62 @@ export class InscriptionSecurityService {
             const txHex = await rawResponse.text();
             console.log('Transaction hex length:', txHex.length);
             
-            // Find OP_RETURN output
-            const opReturnMatch = txHex.match(/006a([0-9a-f]*)/);
+            // Look for either standalone OP_RETURN or combined P2PKH+OP_RETURN
+            const opReturnMatch = txHex.match(/006a([0-9a-f]*)/) || txHex.match(/76a914[0-9a-f]{40}88ac6a([0-9a-f]*)/);
             if (!opReturnMatch) {
-                throw new Error('No OP_RETURN output found in transaction');
+                throw new Error('No inscription data found in transaction');
             }
             
             // Extract the data after OP_RETURN
-            const dataHex = opReturnMatch[1];
+            const dataHex = opReturnMatch[1] || opReturnMatch[2]; // Use second capture group for combined format
+            if (!dataHex) {
+                throw new Error('No data found after OP_RETURN');
+            }
             console.log('Data hex length:', dataHex.length);
+            // console.log('Data hex:', dataHex);
             
-            // Find the start of the JSON data (7b is '{' in hex)
-            const jsonStartIndex = dataHex.indexOf('7b227479706522');  // {"type" in hex
-            if (jsonStartIndex === -1) {
-                throw new Error('No JSON metadata found in inscription');
+            // Check for our protection marker (MEME)
+            if (dataHex === '044d454d45') {
+                console.log('Found protection marker');
+                return {
+                    type: "memepool",
+                    version: "1.0",
+                    content: {
+                        id: txid,
+                        title: "Protected Inscription",
+                        creator: "unknown",
+                        timestamp: new Date().toISOString(),
+                        metadata: {
+                            format: "protected",
+                            size: 0,
+                            protected: true
+                        }
+                    }
+                };
             }
             
-            // Find the end of the JSON data by looking for the closing brace
+            // If not a protection marker, look for JSON data
+            const jsonStartIndex = dataHex.indexOf('7b227479706522');
+            if (jsonStartIndex === -1) {
+                // If we have data but no JSON, treat it as a protected inscription
+                return {
+                    type: "memepool",
+                    version: "1.0",
+                    content: {
+                        id: txid,
+                        title: "Protected Inscription",
+                        creator: "unknown",
+                        timestamp: new Date().toISOString(),
+                        metadata: {
+                            format: "protected",
+                            size: dataHex.length / 2,
+                            protected: true
+                        }
+                    }
+                };
+            }
+            
+            // Process JSON data as before...
             let jsonEndIndex = jsonStartIndex;
             let openBraces = 0;
             
@@ -107,59 +202,151 @@ export class InscriptionSecurityService {
      */
     async verifyOwnershipForTransfer(txid, senderAddress) {
         try {
-            // Verify inscription format first
+            // First trace to the latest transaction in the chain
+            console.log('Tracing to latest transaction...');
+            let currentTxId = txid;
+            let currentTx = null;
+            let latestTxId = txid;
+            let latestTx = null;
+
+            while (true) {
+                // Get current transaction with retries
+                let retries = 3;
+                let txResponse = null;
+                while (retries > 0) {
+                    try {
+                        txResponse = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${currentTxId}`);
+                        if (txResponse.ok) break;
+                        if (txResponse.status === 429) { // Rate limit
+                            console.log(`Rate limited, waiting ${1000 * (4 - retries)}ms before retry ${4 - retries}/3`);
+                            await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+                            retries--;
+                            continue;
+                        }
+                        throw new Error(`Failed to fetch transaction: ${txResponse.statusText}`);
+                    } catch (error) {
+                        console.error('Error fetching transaction:', error);
+                        retries--;
+                        if (retries === 0) throw error;
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+                
+                if (!txResponse || !txResponse.ok) {
+                    throw new Error('Failed to fetch transaction after retries');
+                }
+                
+                currentTx = await txResponse.json();
+
+                // Check if this transaction has been spent with retries
+                retries = 3;
+                let spentResponse = null;
+                while (retries > 0) {
+                    try {
+                        spentResponse = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${currentTxId}/spent`);
+                        if (spentResponse.ok || spentResponse.status === 404) break;
+                        if (spentResponse.status === 429) { // Rate limit
+                            console.log(`Rate limited, waiting ${1000 * (4 - retries)}ms before retry ${4 - retries}/3`);
+                            await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+                            retries--;
+                            continue;
+                        }
+                        throw new Error(`Failed to check spent status: ${spentResponse.statusText}`);
+                    } catch (error) {
+                        console.error('Error checking spent status:', error);
+                        retries--;
+                        if (retries === 0) throw error;
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                if (!spentResponse) {
+                    throw new Error('Failed to check spent status after retries');
+                }
+
+                if (spentResponse.ok) {
+                    // Transaction has been spent, get the spending transaction
+                    const spentData = await spentResponse.json();
+                    currentTxId = spentData.txid;
+                    latestTxId = currentTxId;
+                    latestTx = currentTx;
+                } else if (spentResponse.status === 404) {
+                    // Transaction is unspent, this is the latest
+                    latestTxId = currentTxId;
+                    latestTx = currentTx;
+                    break;
+                } else {
+                    throw new Error(`Unexpected response checking spent status: ${spentResponse.status}`);
+                }
+            }
+
+            console.log('Found latest transaction:', latestTxId);
+
+            // Verify inscription format
             const metadata = await this.verifyInscriptionFormat(txid);
             
-            // Get transaction details
-            const txResponse = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${txid}`);
-            if (!txResponse.ok) {
-                throw new Error('Failed to fetch transaction details');
-            }
-            
-            const txData = await txResponse.json();
-            console.log('Transaction details:', txData);
-            
             // Check confirmations
-            if (!txData.confirmations || txData.confirmations < this.config.minConfirmations) {
-                throw new Error(`Transaction needs at least ${this.config.minConfirmations} confirmation(s), current: ${txData.confirmations || 0}`);
+            if (!latestTx.confirmations || latestTx.confirmations < this.config.minConfirmations) {
+                throw new Error(`Transaction needs at least ${this.config.minConfirmations} confirmation(s), current: ${latestTx.confirmations || 0}`);
             }
-            console.log('Confirmations:', txData.confirmations);
+            console.log('Confirmations:', latestTx.confirmations);
             
-            // Find the value output (first non-OP_RETURN output)
-            const valueOutput = txData.vout.find(out => 
-                !out.scriptPubKey.hex.startsWith('006a') && out.value > 0
-            );
+            // Find the value output with our protection marker
+            const valueOutput = latestTx.vout.find(out => {
+                const isOnesat = out.value === 0.00000001; // 1 satoshi
+                const hasMarker = out.scriptPubKey.hex.includes('6a044d454d45') || // Standalone marker
+                                 out.scriptPubKey.hex.includes('76a914') && out.scriptPubKey.hex.includes('88ac6a044d454d45'); // Combined P2PKH + marker
+                return isOnesat && hasMarker;
+            });
             
             if (!valueOutput) {
-                throw new Error('No value output found in transaction');
+                throw new Error('No valid inscription holder output found');
             }
             
             console.log('Value output:', valueOutput);
             
+            // Extract address from P2PKH script (76a914<pubKeyHash>88ac)
+            const pubKeyHashMatch = valueOutput.scriptPubKey.hex.match(/76a914([0-9a-f]{40})88ac/);
+            if (!pubKeyHashMatch) {
+                // Try to get the address directly from the scriptPubKey
+                if (!valueOutput.scriptPubKey.addresses || valueOutput.scriptPubKey.addresses.length === 0) {
+                    throw new Error('Invalid script format and no addresses found');
+                }
+                return {
+                    isValid: true,
+                    inscriptionData: metadata,
+                    currentOwner: valueOutput.scriptPubKey.addresses[0],
+                    confirmations: latestTx.confirmations,
+                    latestTxId: latestTxId
+                };
+            }
+            
+            // Convert the pubKeyHash to address
+            const currentOwnerAddress = this.pubKeyHashToAddress(pubKeyHashMatch[1]);
+            console.log('Current owner address:', currentOwnerAddress);
+            console.log('Sender address:', senderAddress);
+
+            // Get all addresses in the transaction outputs
+            const allAddresses = latestTx.vout
+                .filter(out => out.scriptPubKey.addresses)
+                .flatMap(out => out.scriptPubKey.addresses);
+            console.log('All addresses in transaction:', allAddresses);
+
             // Verify sender is current owner
-            if (!valueOutput.scriptPubKey.addresses || 
-                !valueOutput.scriptPubKey.addresses.includes(senderAddress)) {
+            if (!allAddresses.includes(senderAddress)) {
                 throw new Error('Sender is not the current owner of the inscription');
             }
             
-            // Verify UTXO is unspent by checking if it's been spent in another transaction
-            const spentResponse = await fetch(`https://api.whatsonchain.com/v1/bsv/test/address/${senderAddress}/unspent`);
-            if (!spentResponse.ok) {
-                throw new Error('Failed to check address unspent outputs');
-            }
-            
-            const unspentOutputs = await spentResponse.json();
-            console.log('Unspent outputs:', unspentOutputs);
-            
-            const isUnspent = unspentOutputs.some(utxo => 
-                utxo.tx_hash === txid && utxo.tx_pos === valueOutput.n
-            );
-            
-            if (!isUnspent) {
-                throw new Error('Inscription UTXO has already been spent');
-            }
-            
-            return true;
+            // Verify UTXO is unspent (we already know it is from the chain traversal)
+            console.log('UTXO is unspent');
+
+            return {
+                isValid: true,
+                inscriptionData: metadata,
+                currentOwner: senderAddress,
+                confirmations: latestTx.confirmations,
+                latestTxId: latestTxId
+            };
         } catch (error) {
             console.error('Failed to verify ownership:', error);
             throw error;

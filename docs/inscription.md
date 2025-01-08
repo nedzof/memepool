@@ -39,6 +39,38 @@
    - Creator signature
    - Format details
 
+## Transfer Protection Mechanism
+
+The inscription transfer protocol includes a protection mechanism to prevent accidental spending of inscription UTXOs:
+
+1. Protection Marker
+   - Each inscription UTXO includes a special marker: `OP_RETURN "MEME"` (hex: `6a044d454d45`)
+   - This marker is appended to the standard P2PKH script
+   - Makes the output "nonstandard" to prevent accidental spending
+
+2. Transfer Process
+   - Original inscription UTXO is consumed
+   - New UTXO is created for recipient with:
+     - 1 satoshi value
+     - P2PKH script locking to recipient's address
+     - Protection marker appended
+   - Change (if any) returned to sender
+
+3. Ownership Verification
+   - Current owner determined by tracing UTXO chain
+   - Each transfer maintains protection marker
+   - Original creator preserved in inscription metadata
+   - Ownership history traceable through blockchain
+
+4. Security Measures
+   - Minimum confirmations required for transfer
+   - Ownership verification before transfer
+   - UTXO spending status verification
+   - Protection marker verification
+   - Transaction format validation
+
+## Script Format
+
 ## 2. Inscription Process
 
 ### Content Preparation

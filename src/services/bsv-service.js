@@ -540,4 +540,60 @@ export class BSVService {
             throw error;
         }
     }
+
+    /**
+     * Convert a public key hash to a testnet address
+     * @param {string} pubKeyHash - The public key hash in hex format
+     * @returns {Promise<string>} The testnet address
+     */
+    async pubKeyHashToAddress(pubKeyHash) {
+        try {
+            // For testnet, version byte is 0x6f
+            const versionByte = '6f';
+            const fullHash = versionByte + pubKeyHash;
+            
+            // Convert to Buffer for checksum calculation
+            const buffer = Buffer.from(fullHash, 'hex');
+            
+            // Calculate double SHA256 for checksum
+            const hash1 = await crypto.subtle.digest('SHA-256', buffer);
+            const hash2 = await crypto.subtle.digest('SHA-256', new Uint8Array(hash1));
+            const checksum = Buffer.from(hash2).slice(0, 4);
+            
+            // Combine version, pubkey hash, and checksum
+            const final = Buffer.concat([buffer, checksum]);
+            
+            // Convert to base58
+            return this.toBase58(final);
+        } catch (error) {
+            console.error('Error converting pubKeyHash to address:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Convert a buffer to base58 string
+     * @param {Buffer} buffer - The buffer to convert
+     * @returns {string} The base58 string
+     */
+    toBase58(buffer) {
+        const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        let num = BigInt('0x' + buffer.toString('hex'));
+        const base = BigInt(58);
+        const zero = BigInt(0);
+        let result = '';
+        
+        while (num > zero) {
+            const mod = Number(num % base);
+            result = ALPHABET[mod] + result;
+            num = num / base;
+        }
+        
+        // Add leading zeros
+        for (let i = 0; i < buffer.length && buffer[i] === 0; i++) {
+            result = '1' + result;
+        }
+        
+        return result;
+    }
 } 

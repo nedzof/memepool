@@ -56,7 +56,18 @@ export class TestnetWallet {
                 }
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error(`Response error (${response.status}):`, errorText);
+                    
+                    // Try to parse as JSON for more details
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        console.error('Parsed error details:', errorJson);
+                    } catch (e) {
+                        // Error text wasn't JSON, that's fine
+                    }
+
+                    throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
                 }
 
                 return response;
@@ -186,6 +197,16 @@ export class TestnetWallet {
 
             const result = await response.text();
             console.log('Broadcast result:', result);
+
+            // If we got an error response, try to parse it
+            if (!response.ok) {
+                try {
+                    const errorData = JSON.parse(result);
+                    throw new Error(`Broadcast failed: ${errorData.message || result}`);
+                } catch (e) {
+                    throw new Error(`Broadcast failed: ${result}`);
+                }
+            }
             
             // The API can return the txid in multiple formats:
             // 1. JSON object with txid field: { txid: "hash" }
@@ -218,6 +239,22 @@ export class TestnetWallet {
             throw new Error(`Invalid response format from broadcast API: ${result}`);
         } catch (error) {
             console.error('Failed to broadcast transaction:', error);
+            // Log transaction details for debugging
+            console.log('Transaction details:', {
+                version: tx.version,
+                inputCount: tx.inputs.length,
+                outputCount: tx.outputs.length,
+                inputs: tx.inputs.map(input => ({
+                    txid: input.sourceTXID,
+                    vout: input.sourceOutputIndex,
+                    satoshis: input.sourceSatoshis,
+                    script: input.script ? input.script.toHex() : null
+                })),
+                outputs: tx.outputs.map(output => ({
+                    satoshis: output.satoshis,
+                    script: output.lockingScript ? output.lockingScript.toHex() : null
+                }))
+            });
             throw error;
         }
     }

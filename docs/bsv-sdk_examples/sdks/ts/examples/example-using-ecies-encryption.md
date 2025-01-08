@@ -1,2 +1,0 @@
-# Example: Using ECIES Encryption\*
-

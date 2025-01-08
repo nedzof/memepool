@@ -46,25 +46,38 @@ The script will output:
 **File**: `scripts/test-ownership-transfer.mjs`
 
 ### Purpose
-Tests the transfer of an inscription from the primary wallet to a secondary wallet on the testnet.
+Tests the transfer of an inscription from one wallet to another on the testnet, including protection mechanisms.
 
 ### Usage
 ```bash
-node scripts/test-ownership-transfer.mjs
+node scripts/test-ownership-transfer.mjs <inscription-txid>
 ```
 
-### Configuration
-The script uses two predefined testnet wallets:
-- Primary wallet: `cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy`
-- Secondary wallet: `cNfsPtqN2bMRS7vH5qd8tR8GMvgXyL5BjnGAKgZ8DYEiCrCCQcP6`
+### Parameters
+- `inscription-txid`: Transaction ID of the inscription to transfer
+
+### Process
+1. Verifies inscription security:
+   - Traces transaction chain to find latest owner
+   - Verifies inscription format
+   - Checks confirmation count
+   - Validates UTXO status
+   - Verifies protection marker
+
+2. Creates transfer transaction:
+   - Consumes inscription UTXO
+   - Creates new protected output for recipient
+   - Includes protection marker in recipient's output
+   - Returns change to sender if needed
+
+3. Broadcasts transaction and provides verification commands
 
 ### Output
 The script will show:
-- Primary and secondary wallet addresses
-- Current ownership verification
+- Security check results
 - Transfer transaction creation
-- Transfer status monitoring
-- Final ownership verification
+- New transaction ID
+- Commands for verifying the transfer
 
 ### Notes
 - Requires 6 confirmations for transfer completion
@@ -76,28 +89,32 @@ The script will show:
 **File**: `scripts/verify-inscription.mjs`
 
 ### Purpose
-Verifies an inscription's content, format, and ownership on the BSV testnet.
+Verifies an inscription's content, format, ownership, and protection status.
 
 ### Usage
 ```bash
 node scripts/verify-inscription.mjs <txid>
 ```
 
-### Parameters
-- `txid`: Transaction ID of the inscription to verify
+### Process
+1. Traces transaction chain:
+   - Forward to find current owner
+   - Backward to find original inscription
 
-### Example
-```bash
-node scripts/verify-inscription.mjs 78ec47dcbce5fa62a0c7a2fa2f9badad47f065a3c572621826796f714eaa0bd8
-```
+2. Verifies:
+   - Inscription format and content
+   - Protection marker presence
+   - Current ownership
+   - Creator information
+   - Video data integrity
 
 ### Output
-The script provides detailed information about:
-- Transaction status and confirmations
+- Transaction details
 - Inscription metadata
 - Video data analysis
-- Current ownership
-- Fee analysis
+- Current owner information
+- Creator verification
+- Protection status
 
 ### Notes
 - Extracts and saves the video file for verification
@@ -110,29 +127,25 @@ The script provides detailed information about:
 **File**: `scripts/verify-ownership.mjs`
 
 ### Purpose
-Traces and verifies the current owner of an inscription by following the transaction chain.
+Traces and verifies the current owner of an inscription through the UTXO chain.
 
 ### Usage
 ```bash
-node scripts/verify-ownership.mjs <txid> [expected-owner]
+node scripts/verify-ownership.mjs <txid>
 ```
 
-### Parameters
-- `txid`: Transaction ID of the inscription to check
-- `expected-owner` (optional): Address to verify against current ownership
-
-### Example
-```bash
-node scripts/verify-ownership.mjs 78ec47dcbce5fa62a0c7a2fa2f9badad47f065a3c572621826796f714eaa0bd8
-```
+### Process
+1. Traces UTXO chain to latest transaction
+2. Extracts owner from P2PKH script
+3. Verifies protection marker
+4. Shows ownership history
 
 ### Output
-The script shows:
-- Initial owner address
-- Transfer history (if any)
 - Current owner address
-- Current owner's balance
-- Transaction chain details
+- Transaction confirmations
+- Protection status
+- Balance information
+- Ownership history
 
 ### Notes
 - Follows the UTXO chain to find current ownership

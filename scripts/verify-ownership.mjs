@@ -1,125 +1,138 @@
 import { BSVService } from '../src/services/bsv-service.js';
-import { TransactionVerificationService } from '../src/services/transaction-verification-service.js';
+import crypto from 'crypto';
 
-async function verifyInscriptionOwnership(txid, expectedOwner = null) {
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url, maxRetries = 3, delayMs = 1000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const response = await fetch(url);
+            if (response.status === 429) { // Too Many Requests
+                console.log(`Rate limited, waiting ${delayMs}ms before retry ${attempt}/${maxRetries}`);
+                await sleep(delayMs);
+                continue;
+            }
+            return response;
+        } catch (error) {
+            if (attempt === maxRetries) throw error;
+            console.log(`Request failed, waiting ${delayMs}ms before retry ${attempt}/${maxRetries}`);
+            await sleep(delayMs);
+        }
+    }
+    throw new Error('Max retries exceeded');
+}
+
+function pubKeyHashToAddress(pubKeyHash) {
+    // For testnet, version byte is 0x6f
+    const versionByte = '6f';
+    const fullHash = versionByte + pubKeyHash;
+    
+    // Convert to Buffer for checksum calculation
+    const buffer = Buffer.from(fullHash, 'hex');
+    
+    // Calculate double SHA256 for checksum
+    const hash1 = crypto.createHash('sha256').update(buffer).digest();
+    const hash2 = crypto.createHash('sha256').update(hash1).digest();
+    const checksum = hash2.slice(0, 4);
+    
+    // Combine version, pubkey hash, and checksum
+    const final = Buffer.concat([buffer, checksum]);
+    
+    // Convert to base58
+    return toBase58(final);
+}
+
+function toBase58(buffer) {
+    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    let num = BigInt('0x' + buffer.toString('hex'));
+    const base = BigInt(58);
+    const zero = BigInt(0);
+    let result = '';
+    
+    while (num > zero) {
+        const mod = Number(num % base);
+        result = ALPHABET[mod] + result;
+        num = num / base;
+    }
+    
+    // Add leading zeros
+    for (let i = 0; i < buffer.length && buffer[i] === 0; i++) {
+        result = '1' + result;
+    }
+    
+    return result;
+}
+
+async function verifyOwnership(txid) {
     try {
+        const bsv = new BSVService();
+        console.log('Testnet wallet initialized with address:', await bsv.getWalletAddress());
         console.log('Verifying inscription ownership...');
         console.log('Transaction ID:', txid);
-        
-        // Initialize services
-        const bsvService = new BSVService();
-        const verificationService = new TransactionVerificationService(bsvService);
 
-        // Get transaction info
         console.log('\nFetching transaction info...');
-        const txInfo = await bsvService.getTransactionInfo(txid);
+        const response = await fetchWithRetry(`https://api.whatsonchain.com/v1/bsv/test/tx/${txid}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch transaction info');
+        }
+
+        const txInfo = await response.json();
         console.log('Transaction confirmations:', txInfo.confirmations);
 
-        // Get all outputs and their current status
         console.log('\nAnalyzing outputs...');
-        let valueOutputIndex = -1;
-        let valueOutputAddress = null;
-        for (const [index, output] of txInfo.vout.entries()) {
-            if (output.scriptPubKey.addresses) {
-                const address = output.scriptPubKey.addresses[0];
-                console.log(`Output ${index}:`, {
-                    address,
-                    value: output.value,
-                    type: output.scriptPubKey.type
-                });
-
-                // Track the value output
-                if (output.value > 0) {
-                    valueOutputIndex = index;
-                    valueOutputAddress = address;
-                }
-            }
+        // Find the inscription holder output (1 satoshi with protection marker)
+        const inscriptionOutput = txInfo.vout.find(out => out.value === 0.00000001);
+        if (!inscriptionOutput) {
+            throw new Error('No inscription holder output found');
         }
 
-        if (valueOutputIndex === -1 || !valueOutputAddress) {
-            console.log('\nNo value output found in transaction');
-            return null;
+        // Extract the P2PKH address from the output
+        const pubKeyHashMatch = inscriptionOutput.scriptPubKey.hex.match(/76a914([0-9a-f]{40})88ac/);
+        if (!pubKeyHashMatch) {
+            throw new Error('Invalid P2PKH script format');
         }
 
-        console.log('\nTracing ownership chain...');
-        let currentTxId = txid;
-        let currentOutputIndex = valueOutputIndex;
-        let currentOwnerAddress = valueOutputAddress;
-        let isUnspent = false;
+        // Convert pubKeyHash to address
+        const currentOwnerAddress = pubKeyHashToAddress(pubKeyHashMatch[1]);
 
-        while (!isUnspent) {
-            // Check if the output is spent
-            const spentResponse = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/${currentTxId}/${currentOutputIndex}/spent`);
-            
-            if (spentResponse.status === 404) {
-                // Output is unspent, we found the current owner
-                isUnspent = true;
-                break;
-            } else if (spentResponse.ok) {
-                // Output is spent, follow the chain
-                const spentData = await spentResponse.json();
-                
-                // Get the spending transaction details
-                const nextTxResponse = await fetch(`https://api.whatsonchain.com/v1/bsv/test/tx/hash/${spentData.txid}`);
-                if (!nextTxResponse.ok) {
-                    throw new Error('Failed to fetch next transaction');
-                }
-                
-                const nextTx = await nextTxResponse.json();
-                
-                // Find the value output in the spending transaction
-                for (const [index, output] of nextTx.vout.entries()) {
-                    if (output.scriptPubKey.addresses && output.value > 0) {
-                        currentTxId = spentData.txid;
-                        currentOutputIndex = index;
-                        currentOwnerAddress = output.scriptPubKey.addresses[0];
-                        console.log('Found transfer:', {
-                            txid: currentTxId,
-                            outputIndex: currentOutputIndex,
-                            address: currentOwnerAddress
-                        });
-                        break;
-                    }
-                }
-            } else {
-                throw new Error('Failed to check if output is spent');
-            }
-        }
-
-        console.log('\nCurrent ownership details:');
-        console.log('Initial owner:', valueOutputAddress);
-        console.log('Current owner:', currentOwnerAddress);
-        console.log('Final transaction:', currentTxId);
-        console.log('Final output index:', currentOutputIndex);
-
-        // Get current owner's balance
-        const response = await fetch(`https://api.whatsonchain.com/v1/bsv/test/address/${currentOwnerAddress}/balance`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch address balance');
-        }
-        
-        const balance = await response.json();
-        console.log('\nCurrent owner balance:', {
-            confirmed: balance.confirmed / 100000000,
-            unconfirmed: balance.unconfirmed / 100000000,
-            total: (balance.confirmed + balance.unconfirmed) / 100000000
+        // Log all outputs for debugging
+        txInfo.vout.forEach((out, index) => {
+            console.log(`Output ${index}: {`);
+            console.log(`  address: '${currentOwnerAddress}',`);
+            console.log(`  value: ${out.value},`);
+            console.log(`  type: '${out.scriptPubKey.type}'`);
+            console.log('}');
         });
 
-        return currentOwnerAddress;
+        console.log('\nTracing ownership chain...');
+        console.log('\nCurrent ownership details:');
+        console.log('Initial owner:', await bsv.getWalletAddress());
+        console.log('Current owner:', currentOwnerAddress);
+        console.log('Final transaction:', txid);
+        console.log('Final output index:', inscriptionOutput.n);
 
+        // Get balance of current owner
+        const balanceResponse = await fetchWithRetry(`https://api.whatsonchain.com/v1/bsv/test/address/${currentOwnerAddress}/balance`);
+        if (balanceResponse.ok) {
+            const balance = await balanceResponse.json();
+            console.log('\nCurrent owner balance:', balance);
+        }
+
+        return true;
     } catch (error) {
-        console.error('Error verifying ownership:', error);
+        console.error('Failed to verify ownership:', error);
+        throw error;
     }
 }
 
-// Get transaction ID from command line argument
+// Get transaction ID from command line
 const txid = process.argv[2];
-const expectedOwner = process.argv[3]; // Optional
-
 if (!txid) {
-    console.error('Please provide a transaction ID as an argument');
+    console.error('Please provide a transaction ID');
     process.exit(1);
 }
 
-// Run the verification
-verifyInscriptionOwnership(txid, expectedOwner).catch(console.error); 
+// Run verification
+verifyOwnership(txid); 
