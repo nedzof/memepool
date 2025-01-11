@@ -1,6 +1,6 @@
 import { Script, Transaction, PrivateKey, PublicKey, P2PKH } from '@bsv/sdk'
 import * as bsvSdk from '@bsv/sdk'
-import { testnetWallet } from './testnet-wallet'
+import { TestnetWallet } from './testnet-wallet'
 import { InscriptionSecurityService } from './inscription-security-service'
 import { BSVError } from '../types'
 import type { 
@@ -68,7 +68,7 @@ export class BSVService implements IBSVService {
 
     // Auto-connect testnet wallet in development, but not in test mode
     if (process.env.NODE_ENV !== 'production' && !isTestMode) {
-      this.wallet = testnetWallet as unknown as WalletProvider
+      this.wallet = new TestnetWallet() as unknown as WalletProvider
       this.connected = true
     }
   }
@@ -91,7 +91,7 @@ export class BSVService implements IBSVService {
       }
 
       if (process.env.NODE_ENV === 'development') {
-        this.wallet = testnetWallet as unknown as WalletProvider
+        this.wallet = new TestnetWallet() as unknown as WalletProvider
         const address = await this.wallet.getAddress()
         if (!address) throw new BSVError('Failed to get wallet address', 'WALLET_ADDRESS_ERROR')
         return address

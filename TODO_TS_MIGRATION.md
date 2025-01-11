@@ -21,18 +21,18 @@
   - [x] Add SDK type definitions
   - [x] Implement error types
   - [x] Add service interface
-  - [ ] Update unit tests
+  - [x] Update unit tests
 
 ### Testnet Wallet Service
-- [ ] Migrate `testnet-wallet.js` to TypeScript
-  - [ ] Define wallet types
-  - [ ] Add balance types
-  - [ ] Implement transaction types
-  - [ ] Add service interface
-  - [ ] Update unit tests
-  - [ ] Add comprehensive wallet state types
-  - [ ] Implement UTXO tracking types
-  - [ ] Add network interaction types
+- [x] Migrate `testnet-wallet.js` to TypeScript
+  - [x] Define wallet types
+  - [x] Add balance types
+  - [x] Implement transaction types
+  - [x] Add service interface
+  - [x] Update unit tests
+  - [x] Add comprehensive wallet state types
+  - [x] Implement UTXO tracking types
+  - [x] Add network interaction types
 
 ### Inscription Service
 - [ ] Migrate `inscription-service.js` to TypeScript
@@ -51,12 +51,37 @@
   - [ ] Update unit tests
 
 ### Inscription Security Service
-- [ ] Migrate `inscription-security-service.js` to TypeScript
-  - [ ] Define security check types
-  - [ ] Add validation types
-  - [ ] Implement error types
-  - [ ] Add service interface
-  - [ ] Update unit tests
+- [x] Migrate `inscription-security-service.js` to TypeScript
+  - [x] Define security check types
+  - [x] Add validation types
+  - [x] Implement error types
+  - [x] Add service interface
+  - [x] Update unit tests
+
+## Next Priority Steps:
+1. Begin Inscription Service migration:
+   - [ ] Review existing inscription data structures
+   - [ ] Plan type hierarchy for inscriptions
+   - [ ] Implement core inscription types
+   - [ ] Migrate service implementation
+
+2. Ownership Transfer Service migration:
+   - [ ] Define transfer types
+   - [ ] Add ownership validation types
+   - [ ] Implement UTXO types
+   - [ ] Add service interface
+
+3. Documentation updates:
+   - [x] Document BSV Service types and interfaces
+   - [x] Document Testnet Wallet Service types
+   - [ ] Document Inscription Security Service types
+   - [ ] Add usage examples for all migrated services
+
+4. Test coverage improvements:
+   - [ ] Add edge case tests for BSV Service
+   - [ ] Add edge case tests for Testnet Wallet Service
+   - [ ] Add edge case tests for Inscription Security Service
+   - [ ] Improve type coverage in all tests
 
 ## 3. Recovery Service Implementation
 - [ ] Create recovery service architecture

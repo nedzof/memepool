@@ -38,6 +38,150 @@ interface SignedTransaction {
 }
 ```
 
+## BSV SDK Types
+
+### SDK Transaction Types
+```typescript
+interface SDKTransactionInput {
+  sourceTransaction?: Transaction        // Optional source transaction
+  sourceTransactionHash: string         // Transaction ID being spent
+  sourceOutputIndex: number             // Output index being spent
+  unlockingScript?: Script              // Optional unlocking script
+  unlockingScriptTemplate?: P2PKH       // Optional P2PKH template
+  sequence?: number                     // Optional sequence number
+}
+
+interface SDKTransactionOutput {
+  lockingScript: Script                // Locking script
+  satoshis: number                    // Amount in satoshis
+  change?: boolean                    // Whether this is a change output
+}
+
+interface SDKTransaction {
+  addInput(input: SDKTransactionInput): SDKTransaction
+  addOutput(output: SDKTransactionOutput): SDKTransaction
+  sign(privateKey?: PrivateKey): Promise<SDKTransaction>
+  toHex(): string
+  fee(): Promise<number>
+}
+```
+
+### Wallet Provider Interface
+```typescript
+interface WalletProvider {
+  getAddress(): Promise<string>                              // Get wallet address
+  getBalance(): Promise<number>                              // Get wallet balance
+  signTransaction(tx: SDKTransaction): Promise<SignedTransaction>  // Sign a transaction
+  privateKey: PrivateKey                                     // Wallet's private key
+}
+```
+
+## Testnet Wallet Types
+
+### UTXO Management
+```typescript
+interface WhatsOnChainUTXO {
+  tx_hash: string     // Transaction hash
+  tx_pos: number      // Output position
+  value: number       // Amount in satoshis
+}
+
+interface FormattedUTXO {
+  txId: string                     // Transaction ID
+  outputIndex: number              // Output index
+  satoshis: number                 // Amount in satoshis
+  script: Script                   // Locking script
+  unlockingTemplate: UnlockingTemplate  // Template for unlocking
+  sourceTransaction?: Transaction       // Optional source transaction
+}
+```
+
+### Transaction Templates
+```typescript
+interface UnlockingTemplate {
+  sign: (tx: Transaction, inputIndex: number) => Promise<Script>  // Sign input
+  estimateLength: () => Promise<number>                          // Estimate script length
+}
+
+interface ExtendedTransaction extends Transaction {
+  inputs: Array<TransactionInput & {
+    sourceSatoshis?: number   // Input amount
+    satoshis?: number         // Alternative amount field
+    value?: number            // Another alternative amount field
+  }>
+}
+```
+
+### Network Types
+```typescript
+interface FetchOptions extends RequestInit {
+  headers?: Record<string, string>  // Custom headers
+}
+
+interface TransactionStatus {
+  confirmed: boolean        // Whether transaction is confirmed
+  confirmations: number     // Number of confirmations
+  timestamp: number         // Transaction timestamp
+}
+```
+
+## Error Types
+```typescript
+class BSVError extends Error {
+  constructor(message: string, public code: string) {
+    super(message)
+    this.name = 'BSVError'
+  }
+}
+
+class InscriptionError extends Error {
+  constructor(message: string, public code: string) {
+    super(message)
+    this.name = 'InscriptionError'
+  }
+}
+
+class ValidationError extends Error {
+  constructor(message: string, public errors: string[]) {
+    super(message)
+    this.name = 'ValidationError'
+  }
+}
+
+class TransferError extends Error {
+  constructor(message: string, public code: string) {
+    super(message)
+    this.name = 'TransferError'
+  }
+}
+```
+
+## Service Interfaces
+
+### BSV Service
+```typescript
+interface BSVService {
+  getUTXOs(address: string): Promise<UTXO[]>
+  createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Promise<SignedTransaction>
+  broadcastTransaction(transaction: SignedTransaction): Promise<string>
+  getTransactionDetails(txid: string): Promise<TransactionStatus>
+  estimateFee(inputs: number, outputs: number): number
+  getNetworkConfig(): NetworkConfig
+}
+```
+
+### Testnet Wallet Service
+```typescript
+class TestnetWallet {
+  constructor(wifKey?: string)
+  getAddress(): string
+  getPrivateKey(): string
+  getUtxos(): Promise<FormattedUTXO[]>
+  signTransaction(tx: Transaction): Promise<Transaction>
+  broadcastTransaction(tx: Transaction): Promise<string>
+}
+```
+
 ### Wallet Types
 ```typescript
 interface WalletKeys {
