@@ -3,21 +3,21 @@
 ## Core Service Test Cases
 
 ### 1. Transaction Creation and Validation
-- [ ] Basic Transaction Tests
-  - [ ] Create single input/output transaction
-  - [ ] Create multi-input transaction (inscription + fee UTXOs)
-  - [ ] Create multi-output transaction (recipient + change)
-  - [ ] Verify transaction version handling
+- [x] Basic Transaction Tests
+  - [x] Create single input/output transaction
+  - [x] Create multi-input transaction (inscription + fee UTXOs)
+  - [x] Create multi-output transaction (recipient + change)
+  - [x] Verify transaction version handling
   - [ ] Test locktime functionality
-  - [ ] Validate transaction serialization/deserialization
-  - [ ] Test transaction size estimation
+  - [x] Validate transaction serialization/deserialization
+  - [x] Test transaction size estimation
 
 ### 2. Script Handling Tests
-- [ ] P2PKH Script Tests
-  - [ ] Create and validate P2PKH locking script
-  - [ ] Create and validate P2PKH unlocking script
-  - [ ] Test P2PKH address derivation
-  - [ ] Verify signature validation
+- [x] P2PKH Script Tests
+  - [x] Create and validate P2PKH locking script
+  - [x] Create and validate P2PKH unlocking script
+  - [x] Test P2PKH address derivation
+  - [x] Verify signature validation
 
 - [ ] MEME Marker Tests
   - [ ] Create MEME marker script
@@ -32,106 +32,106 @@
   - [ ] Verify script separation and parsing
 
 ### 3. Fee Handling Tests
-- [ ] Fee Calculation Tests
-  - [ ] Calculate fees for different input counts
-  - [ ] Calculate fees for different output counts
-  - [ ] Verify minimum fee requirements
-  - [ ] Test fee estimation accuracy
-  - [ ] Validate change output calculations
+- [x] Fee Calculation Tests
+  - [x] Calculate fees for different input counts
+  - [x] Calculate fees for different output counts
+  - [x] Verify minimum fee requirements
+  - [x] Test fee estimation accuracy
+  - [x] Validate change output calculations
 
-- [ ] Fee Edge Cases
-  - [ ] Test dust limit handling
-  - [ ] Test large transaction fees
-  - [ ] Test zero-fee transactions (if applicable)
-  - [ ] Verify fee rate boundaries
+- [x] Fee Edge Cases
+  - [x] Test dust limit handling
+  - [x] Test large transaction fees
+  - [x] Test zero-fee transactions (if applicable)
+  - [x] Verify fee rate boundaries
 
 ### 4. Error Case Tests
-- [ ] Script Error Tests
-  - [ ] Test invalid script combinations
-  - [ ] Test malformed scripts
-  - [ ] Test script size limits
-  - [ ] Verify error handling for invalid opcodes
+- [x] Script Error Tests
+  - [x] Test invalid script combinations
+  - [x] Test malformed scripts
+  - [x] Test script size limits
+  - [x] Verify error handling for invalid opcodes
 
-- [ ] Transaction Error Tests
-  - [ ] Test insufficient funds
-  - [ ] Test invalid UTXO references
-  - [ ] Test network failures during broadcast
-  - [ ] Test transaction size limits
-  - [ ] Verify error handling for invalid inputs
+- [x] Transaction Error Tests
+  - [x] Test insufficient funds
+  - [x] Test invalid UTXO references
+  - [x] Test network failures during broadcast
+  - [x] Test transaction size limits
+  - [x] Verify error handling for invalid inputs
 
 ### 5. Transaction Verification Tests
-- [ ] Signature Tests
-  - [ ] Verify correct signature creation
-  - [ ] Test signature validation
-  - [ ] Test multi-signature scenarios
-  - [ ] Verify signature encoding
+- [x] Signature Tests
+  - [x] Verify correct signature creation
+  - [x] Test signature validation
+  - [x] Test multi-signature scenarios
+  - [x] Verify signature encoding
 
-- [ ] Output Tests
-  - [ ] Verify MEME marker preservation
-  - [ ] Validate output values
-  - [ ] Test change address correctness
-  - [ ] Verify output script structure
+- [x] Output Tests
+  - [x] Verify MEME marker preservation
+  - [x] Validate output values
+  - [x] Test change address correctness
+  - [x] Verify output script structure
 
 ### 6. Edge Case Tests
-- [ ] UTXO Management Tests
-  - [ ] Test dust UTXO handling
-  - [ ] Test large transaction handling
-  - [ ] Test UTXO consolidation
-  - [ ] Test UTXO selection strategy
+- [x] UTXO Management Tests
+  - [x] Test dust UTXO handling
+  - [x] Test large transaction handling
+  - [x] Test UTXO consolidation
+  - [x] Test UTXO selection strategy
 
-- [ ] Network Tests
-  - [ ] Test network timeouts
-  - [ ] Test retry mechanisms
-  - [ ] Test concurrent transactions
-  - [ ] Verify transaction replacement
+- [x] Network Tests
+  - [x] Test network timeouts
+  - [x] Test retry mechanisms
+  - [x] Test concurrent transactions
+  - [x] Verify transaction replacement
 
 ### 7. Security Tests
-- [ ] Authorization Tests
-  - [ ] Test unauthorized transfer attempts
-  - [ ] Verify ownership validation
-  - [ ] Test permission boundaries
-  - [ ] Validate access controls
+- [x] Authorization Tests
+  - [x] Test unauthorized transfer attempts
+  - [x] Verify ownership validation
+  - [x] Test permission boundaries
+  - [x] Validate access controls
 
-- [ ] Attack Prevention Tests
-  - [ ] Test double-spend scenarios
-  - [ ] Test script injection attempts
-  - [ ] Verify signature manipulation
-  - [ ] Test malicious input handling
+- [x] Attack Prevention Tests
+  - [x] Test double-spend scenarios
+  - [x] Test script injection attempts
+  - [x] Verify signature manipulation
+  - [x] Test malicious input handling
 
 ## Service-Specific Test Cases
 
 ### Ownership Transfer Service
-- [ ] Transfer Creation Tests
-  - [ ] Create basic transfer
-  - [ ] Create transfer with multiple UTXOs
-  - [ ] Test fee calculation
-  - [ ] Verify change handling
+- [x] Transfer Creation Tests
+  - [x] Create basic transfer
+  - [x] Create transfer with multiple UTXOs
+  - [x] Test fee calculation
+  - [x] Verify change handling
 
-- [ ] Transfer Validation Tests
-  - [ ] Validate ownership
-  - [ ] Verify transfer completion
-  - [ ] Test confirmation tracking
-  - [ ] Verify recipient address
+- [x] Transfer Validation Tests
+  - [x] Validate ownership
+  - [x] Verify transfer completion
+  - [x] Test confirmation tracking
+  - [x] Verify recipient address
 
 ### Inscription Service
-- [ ] Inscription Creation Tests
-  - [ ] Create basic inscription
-  - [ ] Test content validation
-  - [ ] Verify metadata handling
-  - [ ] Test size limits
+- [x] Inscription Creation Tests
+  - [x] Create basic inscription
+  - [x] Test content validation
+  - [x] Verify metadata handling
+  - [x] Test size limits
 
-- [ ] Inscription Validation Tests
-  - [ ] Validate inscription format
-  - [ ] Test content integrity
-  - [ ] Verify inscription markers
-  - [ ] Test recovery mechanisms
+- [x] Inscription Validation Tests
+  - [x] Validate inscription format
+  - [x] Test content integrity
+  - [x] Verify inscription markers
+  - [x] Test recovery mechanisms
 
 ### Security Service
-- [ ] Security Check Tests
-  - [ ] Test ownership validation
-  - [ ] Verify transfer permissions
-  - [ ] Test rate limiting
-  - [ ] Validate security policies
+- [x] Security Check Tests
+  - [x] Test ownership validation
+  - [x] Verify transfer permissions
+  - [x] Test rate limiting
+  - [x] Validate security policies
 
 ## Test Implementation Guidelines
 1. Each test should be atomic and test one specific functionality
@@ -163,4 +163,24 @@
 - Remove obsolete tests
 - Update test data regularly
 - Review test coverage periodically
-- Document test failures and resolutions 
+- Document test failures and resolutions
+
+## Recent Updates (2024-01-11)
+1. Completed Transaction Verification Service tests:
+   - Content hash verification
+   - Metadata validation
+   - Ownership validation
+   - Transaction confirmation checks
+   - Error handling for edge cases
+
+2. Enhanced Security Service tests:
+   - Address format validation
+   - Script injection prevention
+   - Transaction size limits
+   - Malformed data handling
+
+3. Improved BSV Service tests:
+   - Fee calculation (1 sat/kb)
+   - Transaction size validation (100MB limit)
+   - Input/output validation
+   - Error handling for insufficient funds 

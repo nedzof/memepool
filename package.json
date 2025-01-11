@@ -16,6 +16,7 @@
     "qrcode": "^1.5.4",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "scrypt-ts": "^1.4.4",
     "stream-browserify": "^3.0.0",
     "tiny-secp256k1": "^2.2.3",
     "uuid": "^9.0.1",

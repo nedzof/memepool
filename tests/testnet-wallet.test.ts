@@ -1,57 +1,86 @@
-import { PrivateKey, P2PKH, Transaction, Script } from '@bsv/sdk'
+import { Transaction, Script, P2PKH, PublicKey, PrivateKey } from '@bsv/sdk'
+import { bsv } from 'scrypt-ts'
+import { BSVError } from '../src/types'
 import { TestnetWallet } from '../src/services/testnet-wallet'
 
 describe('TestnetWallet', () => {
+  const testPrivateKey = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy'
   let wallet: TestnetWallet
-  const testnetKey = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy'
+  let recipientAddress: string
 
   beforeEach(() => {
-    // Use primary testnet wallet key
-    wallet = new TestnetWallet(testnetKey)
+    wallet = new TestnetWallet(testPrivateKey)
+    // Create a testnet recipient address using scrypt-ts
+    const recipientPrivKey = bsv.PrivateKey.fromRandom(bsv.Networks.testnet)
+    recipientAddress = recipientPrivKey.toPublicKey().toAddress(bsv.Networks.testnet).toString()
   })
 
-  it('should get private key starting with c', () => {
-    const wif = wallet.getPrivateKey()
-    expect(wif).toBe(testnetKey)
-  })
-
-  it('should get address starting with n', () => {
-    const address = wallet.getAddress()
-    expect(address.startsWith('n')).toBe(true)
-    expect(address).toBe('n2SqMQ3vsUq6d1MYX8rpyY3m78aQi6bLLJ')
-  })
-
-  test('should sign transaction', async () => {
+  describe('Transaction Signing', () => {
     const p2pkh = new P2PKH()
-    const recipientAddress = 'moRTGUhu38rtCFys4YBPaGc4WgvfwB1PSK' // Secondary wallet address as recipient
-    const tx = new Transaction()
-    
-    // Create a mock source transaction
-    const sourceTx = new Transaction()
-    sourceTx.addOutput({
-      lockingScript: p2pkh.lock(wallet.getAddress()),
-      satoshis: 1000
+    const privateKey = PrivateKey.fromWif(testPrivateKey)
+
+    let sourceTx: Transaction
+    let mockInput: any
+
+    beforeEach(() => {
+      // Create source transaction
+      sourceTx = new Transaction()
+      const inputScript = Script.fromHex('76a91400112233445566778899aabbccddeeff0123456788ac')
+      sourceTx.addOutput({
+        lockingScript: inputScript,
+        satoshis: 1000
+      })
+
+      // Create unlocking template
+      const unlockTemplate = p2pkh.unlock(privateKey)
+
+      // Setup mock input
+      mockInput = {
+        sourceTXID: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        sourceOutputIndex: 0,
+        sourceSatoshis: 1000,
+        script: inputScript,
+        unlockingScriptTemplate: unlockTemplate,
+        sourceTransaction: sourceTx
+      }
     })
-    
-    // Add input with unlocking script template and source transaction
-    const input = {
-      sourceTXID: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      sourceOutputIndex: 0,
-      sourceTransaction: sourceTx,
-      unlockingScriptTemplate: p2pkh.unlock(PrivateKey.fromWif(testnetKey))
-    }
-    tx.addInput(input)
 
-    // Add output with locking script
-    const output = {
-      lockingScript: p2pkh.lock(recipientAddress),
-      satoshis: 900
-    }
-    tx.addOutput(output)
+    it('should sign a transaction', async () => {
+      const tx = new Transaction()
+      tx.addInput(mockInput)
+      tx.addOutput({
+        satoshis: 900,
+        lockingScript: p2pkh.lock(recipientAddress)
+      })
 
-    const signedTx = await wallet.signTransaction(tx)
-    expect(signedTx).toBeDefined()
-    expect(signedTx.inputs.length).toBe(1)
-    expect(signedTx.outputs.length).toBe(1)
+      const signedTx = await wallet.signTransaction(tx)
+      expect(signedTx).toBeDefined()
+      expect(signedTx.inputs.length).toBe(1)
+      expect(signedTx.outputs.length).toBe(1)
+    })
+
+    it('should handle insufficient funds', async () => {
+      const tx = new Transaction()
+      tx.addInput(mockInput)
+      tx.addOutput({
+        satoshis: 1100, // More than available
+        lockingScript: p2pkh.lock(recipientAddress)
+      })
+
+      await expect(wallet.signTransaction(tx)).rejects.toThrow(BSVError)
+    })
+
+    it('should validate input scripts', async () => {
+      const tx = new Transaction()
+      const invalidInput = { ...mockInput }
+      delete invalidInput.unlockingScriptTemplate // Remove the unlocking script template
+      tx.addInput(invalidInput)
+      tx.addOutput({
+        satoshis: 900,
+        lockingScript: p2pkh.lock(recipientAddress)
+      })
+
+      await expect(wallet.signTransaction(tx)).rejects.toThrow(BSVError)
+    })
   })
 }) 

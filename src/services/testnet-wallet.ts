@@ -221,6 +221,34 @@ export class TestnetWallet {
   async signTransaction(tx: Transaction): Promise<Transaction> {
     console.log('Starting transaction signing...')
     try {
+      // Validate inputs and check for insufficient funds
+      let totalInput = 0
+      let totalOutput = 0
+
+      // Check inputs
+      for (const input of tx.inputs) {
+        if (!input.unlockingScriptTemplate) {
+          throw new BSVError('VALIDATION_ERROR', 'Unlocking script template is required')
+        }
+        if (!input.sourceSatoshis) {
+          throw new BSVError('VALIDATION_ERROR', 'Input satoshis must be defined')
+        }
+        totalInput += input.sourceSatoshis
+      }
+
+      // Calculate total output amount
+      for (const output of tx.outputs) {
+        if (!output.satoshis) {
+          throw new BSVError('VALIDATION_ERROR', 'Output satoshis must be defined')
+        }
+        totalOutput += output.satoshis
+      }
+
+      // Check for insufficient funds
+      if (totalInput < totalOutput) {
+        throw new BSVError('INSUFFICIENT_FUNDS', `Total input (${totalInput}) is less than total output (${totalOutput})`)
+      }
+
       // Sign all inputs using the SDK's sign() method
       await tx.sign()
       console.log('Transaction signed successfully')

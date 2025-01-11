@@ -128,10 +128,12 @@ export class BSVService implements BSVServiceInterface {
   async createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Promise<SignedTransaction> {
     try {
       const tx = new Transaction()
+      let totalInput = 0
+      let totalOutput = 0
       
       // Add inputs
       for (const input of inputs) {
-        if (!input.script) {
+        if (!input.script || !input.unlockingScriptTemplate) {
           throw new BSVError('VALIDATION_ERROR', 'Script must be defined for inputs')
         }
         
@@ -152,6 +154,7 @@ export class BSVService implements BSVServiceInterface {
         }
 
         tx.addInput(txInput as any)
+        totalInput += input.sourceSatoshis
       }
 
       // Add outputs
@@ -168,14 +171,22 @@ export class BSVService implements BSVServiceInterface {
         }
 
         tx.addOutput(txOutput as any)
+        totalOutput += output.satoshis
       }
 
-      // Calculate fee and sign
-      await tx.fee()
-      await tx.sign()
-
-      // Calculate actual fee based on transaction size
+      // Calculate fee
       const fee = this.estimateFee(inputs.length, outputs.length)
+
+      // Validate transaction
+      if (totalOutput + fee > totalInput) {
+        const remainingFunds = totalInput - totalOutput
+        if (remainingFunds < fee) {
+          throw new BSVError('TX_CREATE_ERROR', `Insufficient funds for fee. Required: ${fee}, Available: ${remainingFunds}`)
+        }
+      }
+
+      // Sign transaction
+      await tx.sign()
 
       return {
         tx,
@@ -184,13 +195,52 @@ export class BSVService implements BSVServiceInterface {
         fee
       }
     } catch (error) {
+      if (error instanceof BSVError) {
+        throw error
+      }
       console.error('Failed to create transaction:', error)
       throw new BSVError('TX_CREATE_ERROR', 'Failed to create transaction')
     }
   }
 
+  estimateFee(inputCount: number, outputCount: number): number {
+    const getVarIntSize = (i: number): number => {
+      if (i > 2 ** 32) return 9
+      if (i > 2 ** 16) return 5
+      if (i > 253) return 3
+      return 1
+    }
+
+    // Base transaction size
+    let size = 4 // version
+    size += getVarIntSize(inputCount) // number of inputs
+    size += inputCount * (40 + 108) // txid(32) + vout(4) + sequence(4) + typical P2PKH script size
+    size += getVarIntSize(outputCount) // number of outputs
+    size += outputCount * (8 + 25) // value(8) + typical P2PKH output script size
+    size += 4 // locktime
+
+    // Check size limit (100MB = 100 * 1024 * 1024 bytes)
+    const MAX_TX_SIZE = 100 * 1024 * 1024
+    if (size > MAX_TX_SIZE) {
+      throw new BSVError('TX_CREATE_ERROR', 'Transaction size exceeds maximum limit of 100MB')
+    }
+
+    // Calculate fee at 1 sat/kb rate (rounded up to nearest satoshi)
+    return Math.ceil(size / 1024)
+  }
+
   async broadcastTransaction(transaction: SignedTransaction): Promise<string> {
-    return this.wallet.broadcastTransaction(transaction.tx)
+    try {
+      if (!transaction || !transaction.tx) {
+        throw new BSVError('VALIDATION_ERROR', 'Invalid transaction')
+      }
+      return await this.wallet.broadcastTransaction(transaction.tx)
+    } catch (error) {
+      if (error instanceof BSVError) {
+        throw error
+      }
+      throw new BSVError('BROADCAST_ERROR', 'Failed to broadcast transaction')
+    }
   }
 
   async getTransactionStatus(txid: string): Promise<{ confirmations: number; timestamp: number }> {
@@ -208,24 +258,6 @@ export class BSVService implements BSVServiceInterface {
       console.error('Failed to get transaction details:', error)
       throw new BSVError('TX_DETAILS_ERROR', 'Failed to get transaction details')
     }
-  }
-
-  estimateFee(inputs: number, outputs: number): number {
-    // Calculate total transaction size:
-    // 1. Transaction version (4 bytes)
-    // 2. Input count (1-9 bytes)
-    // 3. Typical P2PKH input (148 bytes per input)
-    // 4. Output count (1-9 bytes)
-    // 5. P2PKH output (34 bytes per output)
-    // 6. nLockTime (4 bytes)
-    const txOverhead = 4 + 1 + (148 * inputs) + 1 + (34 * outputs) + 4
-    
-    // Convert to KB and ensure we round up to the next KB boundary
-    const sizeInKb = txOverhead / 1024
-    const roundedKb = Math.ceil(sizeInKb)
-    
-    // Calculate fee to ensure at least 1 sat/KB
-    return Math.ceil(roundedKb * this.feeRate * 1.1) // Add 10% buffer
   }
 
   getNetworkConfig(): NetworkConfig {
