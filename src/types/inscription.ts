@@ -1,84 +1,79 @@
-import type { UTXO, TransactionMetadata, SignedTransaction } from './bsv'
+import { Script } from '@bsv/sdk';
+
+export type InscriptionContentType = 'video/mp4' | 'video/webm' | 'video/quicktime';
+
+export interface VideoChunk {
+  sequenceNumber: number;
+  totalChunks: number;
+  data: Buffer;
+  checksum: string;
+  previousChunkTxid?: string;
+}
+
+export interface ChunkMetadata {
+  total: number;
+  size: number;
+  references: string[];
+}
+
+export interface ChunkTracking {
+  txids: string[];
+  currentChunk: number;
+  isComplete: boolean;
+}
 
 export interface InscriptionContent {
-  type: 'video/mp4' | 'video/webm' | 'video/quicktime'
-  data: Buffer
-  size: number
-  duration?: number
-  width?: number
-  height?: number
+  type: InscriptionContentType;
+  data: Buffer | VideoChunk[];
+  size: number;
+  duration: number;
+  width: number;
+  height: number;
+  chunks?: ChunkMetadata;
 }
 
 export interface InscriptionMetadata {
-  title: string
-  description?: string
-  creator: string
-  createdAt: number
-  tags?: string[]
-  attributes?: Record<string, string | number | boolean>
+  title: string;
+  creator: string;
+  createdAt: number;
+  attributes: {
+    blockHash?: string;
+    bitrate?: number;
+    format?: string;
+    dimensions?: string;
+    [key: string]: unknown;
+  };
+}
+
+export interface InscriptionLocation {
+  txid: string;
+  vout: number;
+  script: Script;
+  satoshis: number;
+  height: number;
+}
+
+export interface InscriptionTransaction {
+  txid: string;
+  confirmations: number;
+  timestamp: number;
+  fee: number;
+  blockHeight: number;
+  chunks?: ChunkTracking;
 }
 
 export interface Inscription {
-  id: string
-  content: InscriptionContent
-  metadata: InscriptionMetadata
-  owner: string
-  location: UTXO
-  transaction: TransactionMetadata
-  history: InscriptionHistory[]
-}
-
-export interface InscriptionHistory {
-  txid: string
-  previousOwner: string
-  newOwner: string
-  timestamp: number
-  blockHeight?: number
+  id: string;
+  content: InscriptionContent;
+  metadata: InscriptionMetadata;
+  owner: string;
+  location: InscriptionLocation;
+  transaction: InscriptionTransaction;
+  history: InscriptionTransaction[];
 }
 
 export interface InscriptionValidation {
-  isValid: boolean
-  errors?: string[]
-  warnings?: string[]
-}
-
-export interface InscriptionTransfer {
-  inscription: Inscription
-  fromAddress: string
-  toAddress: string
-  fee: number
-  timestamp: number
-  status?: InscriptionTransferStatus
-  transaction?: SignedTransaction
-}
-
-export interface InscriptionTransferStatus {
-  state: 'pending' | 'processing' | 'completed' | 'failed'
-  confirmations: number
-  error?: string
-  lastUpdated: number
-}
-
-export interface InscriptionTransferValidation extends InscriptionValidation {
-  hasValidSource: boolean
-  hasValidDestination: boolean
-  hasSufficientFunds: boolean
-  isAuthorized: boolean
-  estimatedFee: number
-}
-
-export interface InscriptionTransferResult {
-  transfer: InscriptionTransfer
-  transaction: SignedTransaction
-  txid: string
-  status: InscriptionTransferStatus
-  validation: InscriptionTransferValidation
-}
-
-export interface InscriptionIndexEntry {
-  id: string
-  owner: string
-  location: UTXO
-  metadata: InscriptionMetadata
-  contentHash: string
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
 } 

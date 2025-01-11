@@ -13,18 +13,62 @@
   "version": "1.0",
   "content": {
     "id": "unique_content_id",
+    "type": "video/mp4",
+    "data": "<video_data_buffer>",
+    "size": 1000000,
+    "duration": 120,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "metadata": {
     "title": "Content Title",
     "creator": "creator_address",
-    "timestamp": "ISO8601_timestamp",
-    "metadata": {
-      "format": "image/jpeg|video/mp4",
-      "size": "bytes",
-      "duration": "seconds",
-      "dimensions": "width x height"
+    "createdAt": 1673432100000,
+    "attributes": {
+      "format": "video/mp4",
+      "bitrate": 5000000,
+      "dimensions": "1920x1080"
     }
   }
 }
 ```
+
+### Video Data Handling
+The video data is handled in the following way:
+
+1. **Data Storage**
+   - Full video data is stored in the blockchain using `OP_RETURN` outputs
+   - For videos larger than the maximum transaction size:
+     - Data is split into chunks
+     - Each chunk is stored in a separate transaction
+     - Chunks are linked using transaction references
+     - The first transaction contains the metadata and references to chunks
+
+2. **Transaction Structure**
+   ```
+   Transaction 1 (Metadata + First Chunk):
+   - Input: Funding UTXO
+   - Outputs:
+     1. OP_RETURN: Metadata + First chunk of video data
+     2. P2PKH: Change (if any)
+     3. Protection Marker: 1 sat UTXO with MEME marker
+
+   Transaction 2..N (Additional Chunks):
+   - Input: Previous chunk's change UTXO
+   - Outputs:
+     1. OP_RETURN: Next chunk of video data
+     2. P2PKH: Change (if any)
+   ```
+
+3. **Chunk Management**
+   - Maximum chunk size: ~100KB per transaction
+   - Each chunk includes:
+     - Sequence number
+     - Total chunks count
+     - Previous chunk reference
+     - Checksum for data integrity
 
 ### Content Types
 1. **Supported Formats**

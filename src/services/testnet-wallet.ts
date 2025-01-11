@@ -1,6 +1,6 @@
 import { PrivateKey, P2PKH, Transaction, Script, PublicKey } from '@bsv/sdk'
-import { BSVError } from '@/types'
-import type { TransactionInput } from '@/types'
+import { BSVError } from '../types'
+import type { UnlockingTemplate, UTXO } from '../types/bsv'
 
 interface WhatsOnChainUTXO {
   tx_hash: string
@@ -12,28 +12,6 @@ interface FetchOptions extends RequestInit {
   headers?: Record<string, string>
 }
 
-interface UnlockingTemplate {
-  sign: (tx: Transaction, inputIndex: number) => Promise<Script>
-  estimateLength: () => Promise<number>
-}
-
-interface FormattedUTXO {
-  txId: string
-  outputIndex: number
-  satoshis: number
-  script: Script
-  unlockingTemplate: UnlockingTemplate
-  sourceTransaction?: Transaction
-}
-
-interface ExtendedTransaction extends Transaction {
-  inputs: Array<TransactionInput & {
-    sourceSatoshis?: number
-    satoshis?: number
-    value?: number
-  }>
-}
-
 /**
  * Simple testnet wallet service for development
  * This is a temporary solution for testing purposes
@@ -43,7 +21,7 @@ export class TestnetWallet {
   private network: 'testnet'
   private address: string | null
   
-  constructor(wifKey = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy') {
+  constructor(wifKey: string = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy') {
     this.privateKey = PrivateKey.fromWif(wifKey)
     this.network = 'testnet'
     this.address = null
@@ -55,23 +33,23 @@ export class TestnetWallet {
       // Convert private key to address
       const pubKey = this.privateKey.toPublicKey()
       // Get address from public key
-      this.address = pubKey.toAddress()
+      this.address = pubKey.toAddress('testnet')
       console.log('Testnet wallet initialized with address:', this.address)
     } catch (error) {
       console.error('Failed to initialize testnet wallet:', error)
-      throw new BSVError('Failed to initialize testnet wallet', 'WALLET_INIT_ERROR')
+      throw new BSVError('WALLET_INIT_ERROR', 'Failed to initialize testnet wallet')
     }
   }
 
   getAddress(): string {
     if (!this.address) {
-      throw new BSVError('Wallet not initialized', 'WALLET_NOT_INITIALIZED')
+      throw new BSVError('WALLET_NOT_INITIALIZED', 'Wallet not initialized')
     }
     return this.address
   }
 
   getPrivateKey(): string {
-    return this.privateKey.toWif()
+    return this.privateKey.toWif([0xef]);
   }
 
   // Utility function for API calls with retry logic
@@ -110,10 +88,7 @@ export class TestnetWallet {
             // Error text wasn't JSON, that's fine
           }
 
-          throw new BSVError(
-            `HTTP error! status: ${response.status}, details: ${errorText}`,
-            'API_ERROR'
-          )
+          throw new BSVError('API_ERROR', `HTTP error! status: ${response.status}, details: ${errorText}`)
         }
 
         return response
@@ -124,11 +99,16 @@ export class TestnetWallet {
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
-    throw new BSVError('Max retries exceeded', 'MAX_RETRIES_ERROR')
+    throw new BSVError('MAX_RETRIES_ERROR', 'Max retries exceeded')
+  }
+
+  private async lock(pubKey: PublicKey): Promise<Script> {
+    const p2pkh = new P2PKH()
+    return p2pkh.lock(pubKey.toAddress(this.network))
   }
 
   // Get UTXOs from testnet
-  async getUtxos(): Promise<FormattedUTXO[]> {
+  async getUtxos(): Promise<UTXO[]> {
     try {
       const address = this.getAddress()
       console.log('Fetching UTXOs for address:', address)
@@ -144,23 +124,6 @@ export class TestnetWallet {
       // Create P2PKH script for our address
       const pubKey = this.privateKey.toPublicKey()
       const p2pkh = new P2PKH()
-      const lockingScript = p2pkh.lock(pubKey.toAddress())
-
-      // Create unlocking template
-      const unlockingTemplate: UnlockingTemplate = {
-        sign: async (tx: Transaction, inputIndex: number) => {
-          const input = (tx as ExtendedTransaction).inputs[inputIndex]
-          if (!input.sourceSatoshis) {
-            throw new BSVError('Missing sourceSatoshis', 'INVALID_INPUT')
-          }
-          const sigtype = 0x41 // SIGHASH_ALL | SIGHASH_FORKID
-          const signature = this.privateKey.sign(tx.toHex())
-          const pubKey = this.privateKey.toPublicKey()
-          const pubKeyHex = pubKey.toString()
-          return Script.fromASM(`${signature.toString('hex')} ${pubKeyHex}`)
-        },
-        estimateLength: async () => 108 // Approximate length of signature + pubkey
-      }
 
       // Transform WhatsOnChain UTXO format to BSV SDK format and fetch source transactions
       const formattedUtxos = await Promise.all(utxos.map(async utxo => {
@@ -173,24 +136,77 @@ export class TestnetWallet {
           const txHex = await txResponse.text()
           const sourceTransaction = Transaction.fromHex(txHex)
 
+          // Create unlocking template
+          const unlockingTemplate: UnlockingTemplate = {
+            script: Script.fromHex(''),
+            satoshis: utxo.value,
+            sign: async (tx: Transaction, inputIndex: number) => {
+              const input = tx.inputs[inputIndex]
+              if (!input.satoshis) {
+                throw new BSVError('VALIDATION_ERROR', 'Input satoshis must be defined')
+              }
+
+              const pubKey = this.privateKey.toPublicKey()
+              const p2pkh = new P2PKH()
+              const lockingScript = p2pkh.lock(pubKey)
+              const sigtype = 0x41 // SIGHASH_ALL | SIGHASH_FORKID
+              const preimage = tx.getSignaturePreimage(inputIndex, lockingScript, input.satoshis, sigtype)
+              const signature = this.privateKey.sign(preimage)
+              
+              const unlockingScript = Script.fromHex('')
+              unlockingScript.add(signature.toBuffer())
+              unlockingScript.add(pubKey.toBuffer())
+              
+              ;(input as any).script = unlockingScript
+              return unlockingScript
+            },
+            estimateLength: () => 108 // Approximate length of signature + pubkey
+          }
+
           return {
             txId: utxo.tx_hash,
             outputIndex: utxo.tx_pos,
             satoshis: utxo.value,
-            script: lockingScript,
-            unlockingTemplate,
+            script: p2pkh.lock(pubKey), // Create new locking script for each UTXO
+            unlockingTemplate: unlockingTemplate,
             sourceTransaction
-          }
+          } as UTXO
         } catch (error) {
           console.warn(`Error fetching source transaction ${utxo.tx_hash}:`, error)
+          // Create unlocking template for error case
+          const unlockingTemplate: UnlockingTemplate = {
+            script: Script.fromHex(''),
+            satoshis: utxo.value,
+            sign: async (tx: Transaction, inputIndex: number) => {
+              const input = tx.inputs[inputIndex]
+              if (!input.satoshis) {
+                throw new BSVError('VALIDATION_ERROR', 'Input satoshis must be defined')
+              }
+
+              const pubKey = this.privateKey.toPublicKey()
+              const p2pkh = new P2PKH()
+              const lockingScript = p2pkh.lock(pubKey)
+              const sigtype = 0x41 // SIGHASH_ALL | SIGHASH_FORKID
+              const preimage = tx.getSignaturePreimage(inputIndex, lockingScript, input.satoshis, sigtype)
+              const signature = this.privateKey.sign(preimage)
+              
+              const unlockingScript = Script.fromHex('')
+              unlockingScript.add(signature.toBuffer())
+              unlockingScript.add(pubKey.toBuffer())
+              
+              ;(input as any).script = unlockingScript
+              return unlockingScript
+            },
+            estimateLength: () => 108 // Approximate length of signature + pubkey
+          }
           // Continue without source transaction
           return {
             txId: utxo.tx_hash,
             outputIndex: utxo.tx_pos,
             satoshis: utxo.value,
-            script: lockingScript,
-            unlockingTemplate
-          }
+            script: p2pkh.lock(pubKey), // Create new locking script for each UTXO
+            unlockingTemplate: unlockingTemplate
+          } as UTXO
         }
       }))
 
@@ -198,55 +214,20 @@ export class TestnetWallet {
       return formattedUtxos
     } catch (error) {
       console.error('Failed to get UTXOs:', error)
-      throw new BSVError(
-        `Failed to get UTXOs: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'UTXO_FETCH_ERROR'
-      )
+      throw new BSVError('UTXO_FETCH_ERROR', `Failed to get UTXOs: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
   async signTransaction(tx: Transaction): Promise<Transaction> {
+    console.log('Starting transaction signing...')
     try {
-      console.log('Starting transaction signing...')
-      console.log('Transaction inputs:', tx.inputs)
-      
-      // Sign all inputs with our private key
-      const extendedTx = tx as ExtendedTransaction
-      
-      for (let i = 0; i < extendedTx.inputs.length; i++) {
-        const input = extendedTx.inputs[i]
-        console.log(`Processing input ${i}:`, input)
-        
-        if (!input.sourceSatoshis) {
-          console.log(`Input ${i} missing sourceSatoshis, attempting to set from input...`)
-          const satoshis = input.satoshis || input.value
-          console.log(`Found satoshis value for input ${i}:`, satoshis)
-          
-          if (!satoshis) {
-            console.error(`No satoshis value found for input ${i}`)
-            throw new BSVError(`Input ${i} missing satoshis value`, 'INVALID_INPUT')
-          }
-          
-          input.sourceSatoshis = satoshis
-          console.log(`Set sourceSatoshis for input ${i}:`, input.sourceSatoshis)
-        }
-        
-        console.log(`Signing input ${i} with sourceSatoshis:`, input.sourceSatoshis)
-        const signature = this.privateKey.sign(tx.toHex())
-        const pubKey = this.privateKey.toPublicKey()
-        const pubKeyHex = pubKey.toString()
-        input.script = Script.fromASM(`${signature.toString('hex')} ${pubKeyHex}`)
-        console.log(`Successfully signed input ${i}`)
-      }
-      
-      console.log('All inputs signed successfully')
+      // Sign all inputs using the SDK's sign() method
+      await tx.sign()
+      console.log('Transaction signed successfully')
       return tx
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to sign transaction:', error)
-      throw new BSVError(
-        `Failed to sign transaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'SIGNING_ERROR'
-      )
+      throw new BSVError('SIGNING_ERROR', `Failed to sign transaction: ${error.message}`)
     }
   }
 
@@ -275,9 +256,9 @@ export class TestnetWallet {
       if (!response.ok) {
         try {
           const errorData = JSON.parse(result)
-          throw new BSVError(`Broadcast failed: ${errorData.message || result}`, 'BROADCAST_ERROR')
+          throw new BSVError('BROADCAST_ERROR', `Broadcast failed: ${errorData.message || result}`)
         } catch (e) {
-          throw new BSVError(`Broadcast failed: ${result}`, 'BROADCAST_ERROR')
+          throw new BSVError('BROADCAST_ERROR', `Broadcast failed: ${result}`)
         }
       }
       
@@ -309,13 +290,10 @@ export class TestnetWallet {
         }
       }
 
-      throw new BSVError(`Invalid response format from broadcast API: ${result}`, 'INVALID_RESPONSE')
+      throw new BSVError('INVALID_RESPONSE', `Invalid response format from broadcast API: ${result}`)
     } catch (error) {
       console.error('Failed to broadcast transaction:', error)
-      throw new BSVError(
-        `Failed to broadcast transaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'BROADCAST_ERROR'
-      )
+      throw new BSVError('BROADCAST_ERROR', `Failed to broadcast transaction: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 } 

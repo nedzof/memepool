@@ -1,50 +1,73 @@
-import { Script, Transaction, PrivateKey, PublicKey } from '@bsv/sdk'
+import { Transaction, Script, PublicKey, PrivateKey, Signature } from '@bsv/sdk';
+import { SignedTransaction } from './services';
 
-export interface UTXO {
-  txid: string
-  vout: number
-  script: string
-  satoshis: number
-  height?: number
-  confirmations?: number
+export interface TransactionOutput {
+  satoshis: number;
+  lockingScript: Script;
+  change?: boolean;
 }
 
 export interface TransactionInput {
-  sourceTransactionHash: string
-  sourceOutputIndex: number
+  sourceTXID: string;
+  sourceOutputIndex: number;
+  sourceSatoshis: number;
+  script: Script;
+  unlockingScriptTemplate?: UnlockingTemplate;
+  sourceTransaction?: Transaction;
+}
+
+export interface UnlockingTemplate {
   script: Script
-  sequence?: number
-}
-
-export interface TransactionOutput {
-  lockingScript: Script
   satoshis: number
-  change?: boolean
+  sign(tx: Transaction, inputIndex: number): Promise<Script>
+  estimateLength(): number
 }
 
-export interface SignedTransaction {
-  tx: Transaction
-  inputs: TransactionInput[]
-  outputs: TransactionOutput[]
-  fee: number
+export interface WalletProvider {
+  privateKey: PrivateKey;
+  fetchWithRetry(url: string, options?: RequestInit): Promise<Response>;
+  getUtxos(): Promise<UTXO[]>;
+  broadcastTransaction(tx: Transaction): Promise<string>;
 }
 
-export interface WalletKeys {
-  privateKey: PrivateKey
-  publicKey: PublicKey
-  address: string
+export interface UTXO {
+  txId: string;
+  outputIndex: number;
+  script: Script;
+  satoshis: number;
+  sourceTransaction?: Transaction;
+  unlockingTemplate?: UnlockingTemplate;
 }
 
-export interface TransactionMetadata {
-  txid: string
-  blockHeight?: number
-  confirmations: number
-  timestamp?: number
-  fee: number
+export interface TransactionStatus {
+  confirmations: number;
+  timestamp: number;
 }
 
+export interface BSVServiceInterface {
+  wallet: WalletProvider;
+  getWalletAddress(): Promise<string>;
+  getTransactionStatus(txid: string): Promise<TransactionStatus>;
+  getTransaction(txid: string): Promise<Transaction>;
+  createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Promise<SignedTransaction>;
+  broadcastTransaction(transaction: SignedTransaction): Promise<string>;
+  connect(): Promise<boolean>;
+  connectWallet(): Promise<string>;
+  getUTXOs(address: string): Promise<UTXO[]>;
+  estimateFee(inputs: number, outputs: number): number;
+  getNetworkConfig(): NetworkConfig;
+}
+
+// Network types
 export interface NetworkConfig {
-  network: 'mainnet' | 'testnet'
-  apiEndpoint: string
-  feePerKb: number
+  network: 'mainnet' | 'testnet';
+  apiEndpoint: string;
+  feePerKb: number;
+}
+
+// Wallet types
+export interface WalletKeys {
+  privateKey: PrivateKey;
+  publicKey: PublicKey;
+  address: string;
 } 
