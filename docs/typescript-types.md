@@ -24,12 +24,20 @@ interface TransactionInput {
   script: Script                 // Unlocking script
   unlockingScriptTemplate?: UnlockingTemplate  // Optional unlocking template
   sourceTransaction?: Transaction // Optional source transaction
+  sequenceNumber?: number        // Optional sequence number for locktime
 }
 
 interface TransactionOutput {
   lockingScript: Script         // Locking script
   satoshis: number             // Amount in satoshis
   change?: boolean             // Whether this is a change output
+}
+
+interface Transaction {
+  version: number              // Transaction version
+  lockTime?: number           // Optional locktime (block height or timestamp)
+  inputs: TransactionInput[]   // Array of inputs
+  outputs: TransactionOutput[] // Array of outputs
 }
 
 interface SignedTransaction {
@@ -47,6 +55,58 @@ interface UnlockingTemplate {
   satoshis: number
   sign(tx: Transaction, inputIndex: number): Promise<Script>
   estimateLength(): number
+}
+```
+
+### Script Types
+```typescript
+interface Script {
+  toHex(): string
+  fromHex(hex: string): Script
+  add(data: Buffer): Script
+  clone(): Script
+}
+
+interface MEMEMarkerScript extends Script {
+  readonly MARKER: string     // MEME marker constant
+  validate(): boolean        // Validates MEME marker structure
+  getPosition(): number     // Gets marker position in script
+}
+
+interface CombinedScriptTemplate {
+  createScript(address: string): Script
+  validate(script: Script): boolean
+  estimateSize(): number
+  separateComponents(script: Script): {
+    p2pkhScript: Script
+    markerScript: MEMEMarkerScript
+  }
+}
+
+interface P2PKHTemplate {
+  lock(address: string): Script
+  unlock(privateKey: PrivateKey): UnlockingTemplate
+}
+```
+
+### Locktime Types
+```typescript
+enum LocktimeType {
+  BLOCK_HEIGHT = 'block_height',  // Locktime is a block height
+  TIMESTAMP = 'timestamp'         // Locktime is a Unix timestamp
+}
+
+interface LocktimeConfig {
+  type: LocktimeType
+  value: number                  // Block height or timestamp
+  sequence?: number             // Optional sequence number
+}
+
+interface LocktimeValidation {
+  isValid: boolean
+  errors: string[]
+  currentHeight?: number        // Current block height if relevant
+  currentTime?: number         // Current timestamp if relevant
 }
 ```
 

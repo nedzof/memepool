@@ -59,31 +59,42 @@
   - [x] Update unit tests
 
 ## Next Priority Steps:
-1. Begin Inscription Service migration:
-   - [x] Review existing inscription data structures
-   - [x] Plan type hierarchy for inscriptions
-   - [x] Implement core inscription types
-   - [x] Migrate service implementation
+1. Script Migration (Priority)
+   - [ ] Convert core testing scripts
+     - [ ] Migrate `test-inscription.mjs` to TypeScript
+     - [ ] Migrate `test-ownership-transfer.mjs` to TypeScript
+     - [ ] Add type safety to test utilities
+     - [ ] Implement proper error handling
+   - [ ] Update script documentation
+     - [ ] Add TypeScript usage examples
+     - [ ] Document type patterns
+     - [ ] Update troubleshooting guide
 
-2. Begin Ownership Transfer Service migration:
-   - [x] Define transfer types
-   - [x] Add ownership validation types
-   - [x] Implement UTXO types
-   - [x] Add service interface
+2. Additional Script Migration
+   - [ ] Convert remaining test scripts
+     - [ ] Convert `test-security-checks.mjs`
+     - [ ] Convert `test-video-transfer.ts`
+     - [ ] Convert `verify-inscription.mjs`
+     - [ ] Convert `verify-ownership.mjs`
 
 3. Documentation updates:
    - [x] Document BSV Service types and interfaces
    - [x] Document Testnet Wallet Service types
    - [x] Document Inscription Security Service types
    - [x] Document Inscription Service types
+   - [ ] Update typescript-types.md with:
+     - [ ] Locktime functionality types
+     - [ ] MEME marker script types
+     - [ ] Combined script template types
+     - [ ] Enhanced error types
    - [ ] Add usage examples for all migrated services
 
 4. Test coverage improvements:
-   - [ ] Add edge case tests for BSV Service
-   - [ ] Add edge case tests for Testnet Wallet Service
-   - [ ] Add edge case tests for Inscription Security Service
+   - [x] Add edge case tests for BSV Service
+   - [x] Add edge case tests for Testnet Wallet Service
+   - [x] Add edge case tests for Inscription Security Service
    - [x] Add edge case tests for Inscription Service
-   - [ ] Improve type coverage in all tests
+   - [x] Improve type coverage in all tests
 
 ## 3. Recovery Service Implementation
 - [ ] Create recovery service architecture

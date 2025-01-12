@@ -252,6 +252,15 @@ export class TestnetWallet {
         throw new BSVError('INSUFFICIENT_FUNDS', `Total input (${totalInput}) is less than total output (${totalOutput})`)
       }
 
+      // Validate locktime if set
+      if (tx.lockTime > 0) {
+        // Check if any input has sequence number that would disable locktime
+        const hasValidSequence = tx.inputs.some(input => (input.sequenceNumber || 0xffffffff) < 0xffffffff)
+        if (!hasValidSequence) {
+          throw new BSVError('VALIDATION_ERROR', 'Locktime is set but all inputs have max sequence number')
+        }
+      }
+
       // Sign all inputs using the SDK's sign() method
       await tx.sign()
       console.log('Transaction signed successfully')

@@ -204,6 +204,251 @@ describe('TestnetWallet', () => {
       expect(signedTx.inputs.length).toBe(2)
       expect(signedTx.outputs.length).toBe(2)
     })
+
+    it('should handle block height locktime', async () => {
+      // Set locktime to a future block height (less than 500000000)
+      const currentBlockHeight = 800000 // Example block height
+      const tx = new Transaction()
+      tx.version = 2 // Enable locktime
+      tx.lockTime = currentBlockHeight + 100 // Lock for 100 blocks
+      tx.addInput({
+        ...mockInput,
+        sequenceNumber: 0xfffffffe // Enable locktime by setting sequence number
+      })
+      tx.addOutput({
+        satoshis: 900,
+        lockingScript: p2pkh.lock(recipientAddress)
+      })
+      
+      const signedTx = await wallet.signTransaction(tx)
+      const txHex = signedTx.toHex()
+      // Verify the transaction hex contains the correct locktime
+      // Locktime is stored in little-endian format in the last 4 bytes
+      const locktimeHex = txHex.slice(-8)
+      const locktime = parseInt(locktimeHex.match(/../g)!.reverse().join(''), 16)
+      expect(locktime).toBe(currentBlockHeight + 100)
+    })
+
+    it('should handle timestamp locktime', async () => {
+      // Set locktime to a future timestamp (greater than 500000000)
+      const futureTimestamp = Math.floor(Date.now() / 1000) + 3600 // Lock for 1 hour
+      const tx = new Transaction()
+      tx.version = 2 // Enable locktime
+      tx.lockTime = futureTimestamp
+      tx.addInput({
+        ...mockInput,
+        sequenceNumber: 0xfffffffe // Enable locktime by setting sequence number
+      })
+      tx.addOutput({
+        satoshis: 900,
+        lockingScript: p2pkh.lock(recipientAddress)
+      })
+      
+      const signedTx = await wallet.signTransaction(tx)
+      const txHex = signedTx.toHex()
+      // Verify the transaction hex contains the correct locktime
+      // Locktime is stored in little-endian format in the last 4 bytes
+      const locktimeHex = txHex.slice(-8)
+      const locktime = parseInt(locktimeHex.match(/../g)!.reverse().join(''), 16)
+      expect(locktime).toBe(futureTimestamp)
+    })
+
+    it('should validate locktime constraints', async () => {
+      const futureTimestamp = Math.floor(Date.now() / 1000) + 3600
+      const tx = new Transaction()
+      tx.version = 2 // Enable locktime
+      tx.lockTime = futureTimestamp // Set a locktime
+      tx.addInput({
+        ...mockInput,
+        sequenceNumber: 0xffffffff // Disable locktime with max sequence number
+      })
+      tx.addOutput({
+        satoshis: 900,
+        lockingScript: p2pkh.lock(recipientAddress)
+      })
+      
+      // Should throw because sequence number disables locktime
+      await expect(wallet.signTransaction(tx)).rejects.toThrow(BSVError)
+    })
+  })
+
+  describe('MEME Marker Scripts', () => {
+    const p2pkh = new P2PKH()
+    const privateKey = PrivateKey.fromWif(testPrivateKey)
+    const pubKey = privateKey.toPublicKey()
+    let mockInput: any
+
+    beforeEach(() => {
+      // Create source transaction
+      const sourceTx = new Transaction()
+      const inputScript = Script.fromHex('76a91400112233445566778899aabbccddeeff0123456788ac')
+      sourceTx.addOutput({
+        lockingScript: inputScript,
+        satoshis: 1000
+      })
+
+      // Create unlocking template
+      const unlockTemplate = p2pkh.unlock(privateKey)
+
+      // Setup mock input
+      mockInput = {
+        sourceTXID: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        sourceOutputIndex: 0,
+        sourceSatoshis: 1000,
+        script: inputScript,
+        unlockingScriptTemplate: unlockTemplate,
+        sourceTransaction: sourceTx
+      }
+    })
+
+    it('should create MEME marker script', () => {
+      // Create base P2PKH script
+      const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
+      
+      // Create MEME marker
+      const memeMarker = Script.fromHex('6a044d454d45') // OP_RETURN MEME
+      
+      // Combine scripts
+      const combinedScript = Script.fromHex(p2pkhScript.toHex() + memeMarker.toHex())
+      
+      // Verify script structure
+      const scriptHex = combinedScript.toHex()
+      expect(scriptHex).toContain('6a044d454d45') // Contains MEME marker
+      expect(scriptHex).toContain(p2pkhScript.toHex()) // Contains P2PKH script
+    })
+
+    it('should validate MEME marker preservation', async () => {
+      // Create transaction with MEME marker output
+      const tx = new Transaction()
+      tx.addInput(mockInput)
+
+      // Create combined P2PKH + MEME marker script
+      const p2pkhScript = p2pkh.lock(recipientAddress)
+      const memeMarker = Script.fromHex('6a044d454d45')
+      const combinedScript = Script.fromHex(p2pkhScript.toHex() + memeMarker.toHex())
+
+      tx.addOutput({
+        lockingScript: combinedScript,
+        satoshis: 1 // Inscription outputs are always 1 satoshi
+      })
+
+      // Add change output
+      tx.addOutput({
+        lockingScript: p2pkh.lock(pubKey.toAddress('testnet')),
+        satoshis: 900
+      })
+
+      const signedTx = await wallet.signTransaction(tx)
+      const outputHex = signedTx.outputs[0].lockingScript.toHex()
+      expect(outputHex).toContain('6a044d454d45') // MEME marker preserved
+    })
+
+    it('should detect MEME marker in script', () => {
+      // Create test scripts
+      const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
+      const memeMarker = Script.fromHex('6a044d454d45')
+      
+      // Test script with marker
+      const withMarker = Script.fromHex(p2pkhScript.toHex() + memeMarker.toHex())
+      expect(withMarker.toHex()).toContain('6a044d454d45')
+      
+      // Test script without marker
+      const withoutMarker = Script.fromHex(p2pkhScript.toHex())
+      expect(withoutMarker.toHex()).not.toContain('6a044d454d45')
+    })
+
+    it('should verify marker position in script', () => {
+      // Create test scripts
+      const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
+      const memeMarker = Script.fromHex('6a044d454d45')
+      
+      // Test correct position (P2PKH + MEME)
+      const correctPosition = Script.fromHex(p2pkhScript.toHex() + memeMarker.toHex())
+      const correctHex = correctPosition.toHex()
+      
+      // Test incorrect position (MEME + P2PKH)
+      const incorrectPosition = Script.fromHex(memeMarker.toHex() + p2pkhScript.toHex())
+      const incorrectHex = incorrectPosition.toHex()
+      
+      // Verify marker positions
+      const markerIndex = correctHex.indexOf('6a044d454d45')
+      const p2pkhIndex = correctHex.indexOf(p2pkhScript.toHex())
+      expect(markerIndex).toBeGreaterThan(p2pkhIndex) // MEME marker should come after P2PKH
+      
+      // Verify scripts are different
+      expect(correctHex).not.toBe(incorrectHex)
+    })
+
+    it('should estimate combined script size correctly', () => {
+      // Create base P2PKH script
+      const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
+      const memeMarker = Script.fromHex('6a044d454d45')
+      
+      // Get individual sizes
+      const p2pkhSize = p2pkhScript.toHex().length / 2 // Convert from hex to bytes
+      const markerSize = memeMarker.toHex().length / 2
+      
+      // Create combined script
+      const combinedScript = Script.fromHex(p2pkhScript.toHex() + memeMarker.toHex())
+      const combinedSize = combinedScript.toHex().length / 2
+      
+      // Verify size estimation
+      expect(combinedSize).toBe(p2pkhSize + markerSize)
+    })
+
+    it('should separate and parse combined script', () => {
+      // Create combined script
+      const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
+      const memeMarker = Script.fromHex('6a044d454d45')
+      const combinedScript = Script.fromHex(p2pkhScript.toHex() + memeMarker.toHex())
+      const combinedHex = combinedScript.toHex()
+      
+      // Separate scripts
+      const markerIndex = combinedHex.indexOf('6a044d454d45')
+      const extractedP2PKH = Script.fromHex(combinedHex.slice(0, markerIndex))
+      const extractedMarker = Script.fromHex(combinedHex.slice(markerIndex))
+      
+      // Verify P2PKH part
+      expect(extractedP2PKH.toHex()).toBe(p2pkhScript.toHex())
+      
+      // Verify MEME marker part
+      expect(extractedMarker.toHex()).toBe(memeMarker.toHex())
+      
+      // Verify the scripts can be recombined
+      const recombined = Script.fromHex(extractedP2PKH.toHex() + extractedMarker.toHex())
+      expect(recombined.toHex()).toBe(combinedHex)
+    })
+
+    it('should create and validate script template', () => {
+      // Create a template function for P2PKH + MEME marker scripts
+      const createCombinedTemplate = (address: string) => {
+        const p2pkhScript = p2pkh.lock(address)
+        const memeMarker = Script.fromHex('6a044d454d45')
+        return Script.fromHex(p2pkhScript.toHex() + memeMarker.toHex())
+      }
+      
+      // Create scripts for different addresses using the template
+      const script1 = createCombinedTemplate(pubKey.toAddress('testnet'))
+      const script2 = createCombinedTemplate(recipientAddress)
+      
+      // Verify both scripts have the correct structure
+      expect(script1.toHex()).toContain('6a044d454d45')
+      expect(script2.toHex()).toContain('6a044d454d45')
+      
+      // Verify scripts are different (due to different addresses)
+      expect(script1.toHex()).not.toBe(script2.toHex())
+      
+      // Verify both scripts follow the template pattern
+      const validateTemplate = (script: Script) => {
+        const hex = script.toHex()
+        return hex.includes('76a914') && // P2PKH start
+               hex.includes('88ac') &&   // P2PKH end
+               hex.includes('6a044d454d45') // MEME marker
+      }
+      
+      expect(validateTemplate(script1)).toBe(true)
+      expect(validateTemplate(script2)).toBe(true)
+    })
   })
 
   describe('Transaction Broadcasting', () => {

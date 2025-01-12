@@ -21,6 +21,8 @@ declare module '@bsv/sdk' {
     static fromHex(hex: string): Transaction
     inputs: TransactionInput[]
     outputs: TransactionOutput[]
+    version: number
+    lockTime: number
     addInput(input: TransactionInput): void
     addOutput(output: TransactionOutput): void
     sign(): Promise<void>
@@ -41,6 +43,7 @@ declare module '@bsv/sdk' {
     sourceTransaction?: Transaction
     unlockingScriptTemplate?: UnlockingTemplate
     satoshis?: number
+    sequenceNumber?: number
   }
 
   export interface TransactionOutput {

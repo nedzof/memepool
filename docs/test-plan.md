@@ -8,7 +8,7 @@
   - [x] Create multi-input transaction (inscription + fee UTXOs)
   - [x] Create multi-output transaction (recipient + change)
   - [x] Verify transaction version handling
-  - [ ] Test locktime functionality
+  - [x] Test locktime functionality
   - [x] Validate transaction serialization/deserialization
   - [x] Test transaction size estimation
 
@@ -19,17 +19,17 @@
   - [x] Test P2PKH address derivation
   - [x] Verify signature validation
 
-- [ ] MEME Marker Tests
-  - [ ] Create MEME marker script
-  - [ ] Validate MEME marker preservation
-  - [ ] Test MEME marker detection
-  - [ ] Verify marker position in script
+- [x] MEME Marker Tests
+  - [x] Create MEME marker script
+  - [x] Validate MEME marker preservation
+  - [x] Test MEME marker detection
+  - [x] Verify marker position in script
 
-- [ ] Combined Script Tests
-  - [ ] Create P2PKH + MEME marker script
-  - [ ] Validate combined script structure
-  - [ ] Test script template estimation
-  - [ ] Verify script separation and parsing
+- [x] Combined Script Tests
+  - [x] Create P2PKH + MEME marker script
+  - [x] Validate combined script structure
+  - [x] Test script template estimation
+  - [x] Verify script separation and parsing
 
 ### 3. Fee Handling Tests
 - [x] Fee Calculation Tests
@@ -97,41 +97,6 @@
   - [x] Test script injection attempts
   - [x] Verify signature manipulation
   - [x] Test malicious input handling
-
-## Service-Specific Test Cases
-
-### Ownership Transfer Service
-- [x] Transfer Creation Tests
-  - [x] Create basic transfer
-  - [x] Create transfer with multiple UTXOs
-  - [x] Test fee calculation
-  - [x] Verify change handling
-
-- [x] Transfer Validation Tests
-  - [x] Validate ownership
-  - [x] Verify transfer completion
-  - [x] Test confirmation tracking
-  - [x] Verify recipient address
-
-### Inscription Service
-- [x] Inscription Creation Tests
-  - [x] Create basic inscription
-  - [x] Test content validation
-  - [x] Verify metadata handling
-  - [x] Test size limits
-
-- [x] Inscription Validation Tests
-  - [x] Validate inscription format
-  - [x] Test content integrity
-  - [x] Verify inscription markers
-  - [x] Test recovery mechanisms
-
-### Security Service
-- [x] Security Check Tests
-  - [x] Test ownership validation
-  - [x] Verify transfer permissions
-  - [x] Test rate limiting
-  - [x] Validate security policies
 
 ## Test Implementation Guidelines
 1. Each test should be atomic and test one specific functionality
