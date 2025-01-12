@@ -184,15 +184,25 @@ interface InscriptionContent {
 }
 
 interface InscriptionMetadata {
-  title: string
-  creator: string
-  createdAt: number
-  attributes: {
-    blockHash?: string
-    bitrate?: number
-    format?: string
-    dimensions?: string
-    [key: string]: unknown
+  type: string
+  version: string
+  content: {
+    type: string
+    size: number
+    duration: number
+    width: number
+    height: number
+  }
+  metadata: {
+    title: string
+    creator: string
+    createdAt: number
+    attributes: {
+      blockHash: string
+      bitrate: number
+      format: string
+      dimensions: string
+    }
   }
 }
 ```

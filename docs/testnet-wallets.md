@@ -26,24 +26,22 @@ These wallets are used for:
 - Standard fee rate: 1 sat/KB 
 
 ## Inscription Verification
-To verify an inscription, use the `verify-inscription.mjs` script.
+To verify an inscription, use the `verify-inscription.ts` script:
 
 ```bash
-node scripts/verify-inscription.mjs <txid>
+tsx scripts/verify-inscription.ts <txid>
 ```
 
-- first transaction hash: bac0c81eca6239fa5ab9ac2cccf72dde96b4a2a8c0d7a079992b27b70dfaf459
-- second transaction hash: 8eeb73e61e343ff4f9d56dbf9c090c9d7c40aea6bec22c1f247ddd343876eae6
-- third (final optimized) transaction hash: 78ec47dcbce5fa62a0c7a2fa2f9badad47f065a3c572621826796f714eaa0bd8
-- fourth (including protection marker and 1 satoshi for inscription holder) transaction hash: 214cc2bcbd6772056065db2e038e4b3084431637815a175407f8cef4c04c812c
-- fifth transaction hash: f096b7d72ba6c4a7fcfb990c28c51d355d070fb7161a2064cb2224086bf46091
-- sixth transaction hash: a6ce195e3ab6b847a459841894abb4ea582c458bde5be3279f2c835d364d05c2
+Example transaction hashes for testing:
+- Latest verified transaction: 2234d0dc08b84f1a4e9fbae89a96411ed56c8f04b8c687543e0382e2be258f06
 
-## Ownership Transfer
-To transfer ownership of an inscription, use the `test-ownership-transfer.mjs` script.
+## Testing Scripts
+The following TypeScript scripts are available for testing:
 
-```bash
-node scripts/test-ownership-transfer.mjs <txid>
-```
+1. `test-inscription.ts` - Create and broadcast a new inscription
+2. `verify-inscription.ts` - Verify an existing inscription
+3. `test-ownership-transfer.ts` - Test ownership transfer of an inscription
 
-- first transaction hash: 
+All scripts use the testnet network and require the appropriate wallet credentials.
+
+- first successful inscription transfer: 

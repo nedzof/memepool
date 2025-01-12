@@ -12,28 +12,44 @@
   "type": "memepool",
   "version": "1.0",
   "content": {
-    "id": "unique_content_id",
     "type": "video/mp4",
-    "data": "<video_data_buffer>",
-    "size": 1000000,
-    "duration": 120,
-    "dimensions": {
-      "width": 1920,
-      "height": 1080
-    }
+    "size": 156843,
+    "duration": 4.01,
+    "width": 854,
+    "height": 480
   },
   "metadata": {
-    "title": "Content Title",
+    "title": "video_title.mp4",
     "creator": "creator_address",
-    "createdAt": 1673432100000,
+    "createdAt": 1736706811212,
     "attributes": {
+      "blockHash": "104349035bb6df3adcbe19ecf82a5536ec8f0872f10d88615fb724475bddc7f7",
+      "bitrate": 312904,
       "format": "video/mp4",
-      "bitrate": 5000000,
-      "dimensions": "1920x1080"
+      "dimensions": "854x480"
     }
   }
 }
 ```
+
+The inscription data structure follows a strict format:
+1. **Root Level**
+   - `type`: Always "memepool" for our inscriptions
+   - `version`: Current version "1.0"
+
+2. **Content Section**
+   - Contains technical details about the video
+   - All fields are required
+   - Size is in bytes
+   - Duration is in seconds
+   - Width and height in pixels
+
+3. **Metadata Section**
+   - Contains descriptive information
+   - `title`: Original filename
+   - `creator`: Creator's BSV address
+   - `createdAt`: Unix timestamp in milliseconds
+   - `attributes`: Additional metadata including format details
 
 ### Video Data Handling
 The video data is handled in the following way:
