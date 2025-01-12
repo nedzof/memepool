@@ -148,7 +148,7 @@ export class TestnetWallet {
 
               const pubKey = this.privateKey.toPublicKey()
               const p2pkh = new P2PKH()
-              const lockingScript = p2pkh.lock(pubKey)
+              const lockingScript = p2pkh.lock(pubKey.toAddress(this.network))
               const sigtype = 0x41 // SIGHASH_ALL | SIGHASH_FORKID
               const preimage = tx.getSignaturePreimage(inputIndex, lockingScript, input.satoshis, sigtype)
               const signature = this.privateKey.sign(preimage)
@@ -167,7 +167,7 @@ export class TestnetWallet {
             txId: utxo.tx_hash,
             outputIndex: utxo.tx_pos,
             satoshis: utxo.value,
-            script: p2pkh.lock(pubKey), // Create new locking script for each UTXO
+            script: p2pkh.lock(pubKey.toAddress(this.network)),
             unlockingTemplate: unlockingTemplate,
             sourceTransaction
           } as UTXO
@@ -185,7 +185,7 @@ export class TestnetWallet {
 
               const pubKey = this.privateKey.toPublicKey()
               const p2pkh = new P2PKH()
-              const lockingScript = p2pkh.lock(pubKey)
+              const lockingScript = p2pkh.lock(pubKey.toAddress(this.network))
               const sigtype = 0x41 // SIGHASH_ALL | SIGHASH_FORKID
               const preimage = tx.getSignaturePreimage(inputIndex, lockingScript, input.satoshis, sigtype)
               const signature = this.privateKey.sign(preimage)
@@ -204,7 +204,7 @@ export class TestnetWallet {
             txId: utxo.tx_hash,
             outputIndex: utxo.tx_pos,
             satoshis: utxo.value,
-            script: p2pkh.lock(pubKey), // Create new locking script for each UTXO
+            script: p2pkh.lock(pubKey.toAddress(this.network)),
             unlockingTemplate: unlockingTemplate
           } as UTXO
         }
@@ -214,6 +214,9 @@ export class TestnetWallet {
       return formattedUtxos
     } catch (error) {
       console.error('Failed to get UTXOs:', error)
+      if (error instanceof BSVError) {
+        throw error
+      }
       throw new BSVError('UTXO_FETCH_ERROR', `Failed to get UTXOs: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
