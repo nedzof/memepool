@@ -399,6 +399,49 @@ export class BSVService implements BSVServiceInterface {
         sourceTransaction: sourceTx
       });
 
+      // Calculate actual data sizes
+      const metadataSize = Buffer.from(JSON.stringify(metadata)).length;
+      const contentSize = content.length;
+      const holderScriptSize = holderScript.toHex().length / 2;
+
+      // Calculate exact output sizes
+      const inscriptionOutputSize = 
+        8 + // satoshis field
+        1 + // varint for script length
+        2 + // OP_FALSE OP_RETURN
+        this.calculatePushDataSize(metadataSize) +
+        metadataSize +
+        this.calculatePushDataSize(contentSize) +
+        contentSize;
+
+      const holderOutputSize = 
+        8 + // satoshis field
+        1 + // varint for script length
+        holderScriptSize;
+
+      const changeOutputSize = 
+        8 + // satoshis field
+        1 + // varint for script length
+        25; // P2PKH script size
+
+      // Calculate total size
+      const totalSize = 
+        4 + // version
+        1 + // input count varint
+        36 + // outpoint (txid + index)
+        1 + // unlocking script length varint
+        107 + // typical P2PKH unlocking script size
+        4 + // sequence
+        1 + // output count varint
+        inscriptionOutputSize +
+        holderOutputSize +
+        changeOutputSize +
+        4; // locktime
+
+      // Calculate fee at 1 sat/kb
+      const fee = Math.ceil(totalSize / 1000);
+      const changeAmount = selectedUtxo.satoshis - 1 - fee;
+
       // Add inscription data output
       const inscriptionScriptParts = [
         '006a', // OP_FALSE OP_RETURN
@@ -410,10 +453,6 @@ export class BSVService implements BSVServiceInterface {
         lockingScript: inscriptionScript,
         satoshis: 0
       });
-
-      // Calculate fee
-      const fee = this.estimateFee(1, 3); // 1 input, 3 outputs
-      const changeAmount = selectedUtxo.satoshis - 1 - fee;
 
       // Generate deterministic inscription ID
       const inscriptionId = this.generateInscriptionId(content, metadata, address);
@@ -449,6 +488,22 @@ export class BSVService implements BSVServiceInterface {
     } catch (error) {
       console.error('Failed to create inscription transaction:', error);
       throw error instanceof BSVError ? error : new BSVError('TX_CREATE_ERROR', 'Failed to create inscription transaction');
+    }
+  }
+
+  /**
+   * Calculate the size needed for a pushdata operation
+   * @private
+   */
+  private calculatePushDataSize(dataSize: number): number {
+    if (dataSize < 0x4c) {
+      return 1; // just the size byte
+    } else if (dataSize <= 0xff) {
+      return 2; // OP_PUSHDATA1 + size byte
+    } else if (dataSize <= 0xffff) {
+      return 3; // OP_PUSHDATA2 + size bytes
+    } else {
+      return 5; // OP_PUSHDATA4 + size bytes
     }
   }
 } 
