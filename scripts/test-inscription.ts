@@ -94,32 +94,30 @@ async function testInscription(filePath: string): Promise<string> {
 
     // Create inscription metadata
     const metadata: InscriptionMetadata = {
-      title: file.name,
-      creator: address,
-      createdAt: Date.now(),
-      attributes: {
-        blockHash: selectedUtxo.txId, // Using selected UTXO's TXID as reference
-        bitrate: 312904,
-        format: file.type,
-        dimensions: '854x480'
+      type: "memepool",
+      version: "1.0",
+      content: {
+        type: file.type,
+        size: file.size,
+        duration: 4.01, // This should be dynamically determined
+        width: 854,
+        height: 480
+      },
+      metadata: {
+        title: file.name,
+        creator: address,
+        createdAt: Date.now(),
+        attributes: {
+          blockHash: selectedUtxo.txId, // Using selected UTXO's TXID as reference
+          bitrate: 312904,
+          format: file.type,
+          dimensions: '854x480'
+        }
       }
     };
 
     // Create inscription data
-    const inscriptionData = {
-      type: "memepool",
-      version: "1.0",
-      content: {
-        ...content,
-        data: content.data instanceof Buffer ? 
-          content.data.toString('base64') : 
-          content.data.map(chunk => ({
-            ...chunk,
-            data: chunk.data.toString('base64')
-          }))
-      },
-      metadata
-    };
+    const inscriptionData = metadata;
 
     // Create inscription transaction
     console.log('\nCreating inscription transaction...');
@@ -156,7 +154,7 @@ async function testInscription(filePath: string): Promise<string> {
 
     // Create inscription object for validation
     const inscription: Inscription = {
-      id: `${file.name.replace(/\.[^/.]+$/, '')}-${Date.now()}-${address.slice(-8)}-${selectedUtxo.txId.slice(-6)}`,
+      txid, // Using the actual transaction ID
       content,
       metadata,
       owner: address,

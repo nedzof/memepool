@@ -227,13 +227,13 @@ interface InscriptionTransaction {
 }
 
 interface Inscription {
-  id: string
-  content: InscriptionContent
-  metadata: InscriptionMetadata
-  owner: string
-  location: InscriptionLocation
-  transaction: InscriptionTransaction
-  history: InscriptionTransaction[]
+  txid: string                    // Primary identifier - transaction ID of the original inscription
+  content: InscriptionContent     // Content data and metadata
+  metadata: InscriptionMetadata   // Inscription metadata
+  owner: string                   // Current owner's address
+  location: InscriptionLocation   // Current UTXO location
+  transaction: InscriptionTransaction  // Transaction details
+  history: InscriptionTransaction[]    // History of transfers
 }
 
 interface InscriptionValidation {

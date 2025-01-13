@@ -61,7 +61,7 @@
 ## Next Priority Steps:
 1. Script Migration (Priority)
    - [ ] Convert core testing scripts
-     - [ ] Migrate `test-inscription.mjs` to TypeScript
+     - [x] Migrate `test-inscription.mjs` to TypeScript
      - [ ] Migrate `test-ownership-transfer.mjs` to TypeScript
      - [ ] Add type safety to test utilities
      - [ ] Implement proper error handling
@@ -74,7 +74,7 @@
    - [ ] Convert remaining test scripts
      - [ ] Convert `test-security-checks.mjs`
      - [ ] Convert `test-video-transfer.ts`
-     - [ ] Convert `verify-inscription.mjs`
+     - [x] Convert `verify-inscription.mjs`
      - [ ] Convert `verify-ownership.mjs`
 
 3. Documentation updates:

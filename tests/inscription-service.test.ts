@@ -155,7 +155,7 @@ describe('InscriptionService', () => {
 
   describe('validateInscription', () => {
     const validInscription: Inscription = {
-      id: 'test-123456-abcdef12-345678',
+      txid: '2234d0dc08b84f1a4e9fbae89a96411ed56c8f04b8c687543e0382e2be258f06',
       content: {
         type: 'video/mp4',
         data: Buffer.from([]),
@@ -165,12 +165,25 @@ describe('InscriptionService', () => {
         height: 1080
       },
       metadata: {
-        title: 'Test Video',
-        creator: 'mzJ9Gi7vvp1NGw4fviWjkHSvYAkHYQM9VA',
-        createdAt: Date.now(),
-        attributes: {
-          format: 'video/mp4',
-          dimensions: '1920x1080'
+        type: 'memepool',
+        version: '1.0',
+        content: {
+          type: 'video/mp4',
+          size: 1000000,
+          duration: 120,
+          width: 1920,
+          height: 1080
+        },
+        metadata: {
+          title: 'Test Video',
+          creator: 'mzJ9Gi7vvp1NGw4fviWjkHSvYAkHYQM9VA',
+          createdAt: Date.now(),
+          attributes: {
+            blockHash: '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254',
+            bitrate: 5000000,
+            format: 'video/mp4',
+            dimensions: '1920x1080'
+          }
         }
       },
       owner: 'mzJ9Gi7vvp1NGw4fviWjkHSvYAkHYQM9VA',
@@ -196,6 +209,13 @@ describe('InscriptionService', () => {
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
       expect(result.warnings).toHaveLength(0)
+    })
+
+    it('should detect missing txid', () => {
+      const invalid = { ...validInscription, txid: '' }
+      const result = inscriptionService.validateInscription(invalid)
+      expect(result.isValid).toBe(false)
+      expect(result.errors).toContain('Missing or invalid transaction ID')
     })
 
     it('should validate chunked inscription', () => {
@@ -237,13 +257,6 @@ describe('InscriptionService', () => {
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
       expect(result.warnings).toHaveLength(0)
-    })
-
-    it('should detect missing ID', () => {
-      const invalid = { ...validInscription, id: '' }
-      const result = inscriptionService.validateInscription(invalid)
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toContain('Missing or invalid inscription ID')
     })
 
     it('should detect missing content', () => {

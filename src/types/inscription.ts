@@ -73,7 +73,7 @@ export interface InscriptionTransaction {
 }
 
 export interface Inscription {
-  id: string;
+  txid: string;
   content: InscriptionContent;
   metadata: InscriptionMetadata;
   owner: string;

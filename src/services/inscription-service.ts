@@ -71,27 +71,38 @@ export class InscriptionService {
     }
 
     const inscriptionMetadata: InscriptionMetadata = {
-      title: file.name,
-      creator: creatorAddress,
-      createdAt: timestamp,
-      attributes: {
-        blockHash,
-        bitrate: metadata.bitrate,
-        format: file.type,
-        dimensions: `${metadata.dimensions.width}x${metadata.dimensions.height}`
+      type: 'memepool',
+      version: '1.0',
+      content: {
+        type: file.type,
+        size: file.size,
+        duration: metadata.duration,
+        width: metadata.dimensions.width,
+        height: metadata.dimensions.height
+      },
+      metadata: {
+        title: file.name,
+        creator: creatorAddress,
+        createdAt: timestamp,
+        attributes: {
+          blockHash,
+          bitrate: metadata.bitrate,
+          format: file.type,
+          dimensions: `${metadata.dimensions.width}x${metadata.dimensions.height}`
+        }
       }
     }
 
     const location: InscriptionLocation = {
-      txid: '',
+      txid: '',  // Will be filled when transaction is created
       vout: 0,
-      script: new Script(), // Empty script until transaction is created
+      script: new Script(),
       satoshis: 1,
       height: 0
     }
 
     const transaction: InscriptionTransaction = {
-      txid: '',
+      txid: '',  // Will be filled when transaction is created
       confirmations: 0,
       timestamp: timestamp,
       fee: 0,
@@ -104,12 +115,7 @@ export class InscriptionService {
     }
 
     return {
-      id: this.generateContentId({
-        fileName: file.name,
-        timestamp,
-        creatorAddress,
-        blockHash
-      }),
+      txid: '',  // Will be filled when transaction is created
       content,
       metadata: inscriptionMetadata,
       owner: creatorAddress,
@@ -210,28 +216,6 @@ export class InscriptionService {
   }
 
   /**
-   * Generates a unique content ID
-   * @param params - Parameters for ID generation
-   * @returns Unique content ID
-   */
-  private generateContentId(params: {
-    fileName: string
-    timestamp: number
-    creatorAddress: string
-    blockHash: string
-  }): string {
-    const { fileName, timestamp, creatorAddress, blockHash } = params
-    
-    // Use deterministic components for the ID
-    const fileComponent = fileName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
-    const timeComponent = timestamp.toString()
-    const addressComponent = creatorAddress.slice(-8) // Use last 8 chars of address
-    const blockComponent = blockHash.slice(-6) // Use last 6 chars of block hash
-    
-    return `${fileComponent}-${timeComponent}-${addressComponent}-${blockComponent}`
-  }
-
-  /**
    * Validates the inscription data structure
    * @param inscription - The inscription data to validate
    * @returns Validation result
@@ -245,8 +229,8 @@ export class InscriptionService {
 
     try {
       // Check required fields
-      if (!inscription.id || typeof inscription.id !== 'string') {
-        validation.errors.push('Missing or invalid inscription ID')
+      if (!inscription.txid || typeof inscription.txid !== 'string' || !/^[0-9a-f]{64}$/i.test(inscription.txid)) {
+        validation.errors.push('Missing or invalid transaction ID')
       }
 
       // Check content
@@ -264,7 +248,9 @@ export class InscriptionService {
         return validation
       }
 
-      if (!inscription.metadata || !inscription.metadata.title || !inscription.metadata.creator) {
+      if (!inscription.metadata || 
+         !inscription.metadata.metadata.title || 
+         !inscription.metadata.metadata.creator) {
         validation.errors.push('Missing required metadata fields')
       }
 
