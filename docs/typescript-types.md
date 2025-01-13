@@ -147,99 +147,156 @@ interface NetworkConfig {
 }
 ```
 
-## Inscription Types
+## Video Types (`src/types/video.ts`)
 
-### Content and Metadata
 ```typescript
-type InscriptionContentType = 'video/mp4' | 'video/webm' | 'video/quicktime'
-
-interface VideoChunk {
-  sequenceNumber: number
-  totalChunks: number
-  data: Buffer
-  checksum: string
-  previousChunkTxid?: string
+export interface VideoMetadata {
+  duration: number;
+  dimensions: {
+    width: number;
+    height: number;
+  };
+  codec: string;
+  bitrate: number;
 }
 
-interface ChunkMetadata {
-  total: number
-  size: number
-  references: string[]
+export interface VideoFile {
+  buffer: Buffer;
+  name: string;
+  size: number;
+  type: string;
 }
 
-interface ChunkTracking {
-  txids: string[]
-  currentChunk: number
-  isComplete: boolean
+export interface VideoFormatValidation {
+  isValid: boolean;
+  format: string;
 }
 
-interface InscriptionContent {
-  type: InscriptionContentType
-  data: Buffer | VideoChunk[]
-  size: number
-  duration: number
-  width: number
-  height: number
-  chunks?: ChunkMetadata
+export interface VideoProcessorOptions {
+  maxDuration?: number;        // Maximum video duration in seconds
+  maxSize?: number;           // Maximum file size in bytes
+  supportedFormats?: string[]; // Supported video formats
 }
 
-interface InscriptionMetadata {
-  type: string
-  version: string
-  content: {
-    type: string
-    size: number
-    duration: number
-    width: number
-    height: number
-  }
-  metadata: {
-    title: string
-    creator: string
-    createdAt: number
-    attributes: {
-      blockHash: string
-      bitrate: number
-      format: string
-      dimensions: string
-    }
-  }
+export interface VideoProcessingResult {
+  metadata: VideoMetadata;
+  buffer: Buffer;             // Video data as buffer
+  format: InscriptionContentType;
+  thumbnail?: string;         // Optional base64 thumbnail
+}
+
+export interface VideoProcessor {
+  verifyFormat(file: File): Promise<VideoFormatValidation>;
+  extractMetadata(file: File): Promise<VideoMetadata>;
+  processVideo(file: File): Promise<VideoProcessingResult>;
+  generateThumbnail(file: File): Promise<string>;
+  cleanup(urls: string[]): void;
 }
 ```
 
-### Inscription Core Types
+## Inscription Types (`src/types/inscription.ts`)
+
 ```typescript
-interface InscriptionLocation {
-  txid: string
-  vout: number
-  script: Script
-  satoshis: number
-  height: number
+export interface InscriptionCreationParams {
+  videoFile: VideoFile;
+  metadata: VideoMetadata;
+  creatorAddress: string;
+  blockHash: string;
 }
 
-interface InscriptionTransaction {
-  txid: string
-  confirmations: number
-  timestamp: number
-  fee: number
-  blockHeight: number
-  chunks?: ChunkTracking
+export type InscriptionContentType = 'video/mp4' | 'video/webm' | 'video/quicktime';
+
+export interface VideoChunk {
+  sequenceNumber: number;
+  totalChunks: number;
+  data: Buffer;
+  checksum: string;
+  previousChunkTxid?: string;
 }
 
-interface Inscription {
-  txid: string                    // Primary identifier - transaction ID of the original inscription
-  content: InscriptionContent     // Content data and metadata
-  metadata: InscriptionMetadata   // Inscription metadata
-  owner: string                   // Current owner's address
-  location: InscriptionLocation   // Current UTXO location
-  transaction: InscriptionTransaction  // Transaction details
-  history: InscriptionTransaction[]    // History of transfers
+export interface ChunkMetadata {
+  total: number;
+  size: number;
+  references: string[];
 }
 
-interface InscriptionValidation {
-  isValid: boolean
-  errors: string[]
-  warnings: string[]
+export interface ChunkTracking {
+  txids: string[];
+  currentChunk: number;
+  isComplete: boolean;
+}
+
+export interface InscriptionContent {
+  type: InscriptionContentType;
+  data: Buffer | VideoChunk[];
+  size: number;
+  duration: number;
+  width: number;
+  height: number;
+  chunks?: ChunkMetadata;
+}
+
+export interface InscriptionMetadata {
+  type: string;
+  version: string;
+  content: {
+    type: string;
+    size: number;
+    duration: number;
+    width: number;
+    height: number;
+  };
+  metadata: {
+    title: string;
+    creator: string;
+    createdAt: number;
+    attributes: {
+      blockHash: string;
+      bitrate: number;
+      format: string;
+      dimensions: string;
+    };
+  };
+}
+
+export interface InscriptionLocation {
+  txid: string;
+  vout: number;
+  script: Script;
+  satoshis: number;
+  height: number;
+  originalInscriptionId?: string;
+}
+
+export interface InscriptionTransaction {
+  txid: string;
+  confirmations: number;
+  timestamp: number;
+  fee: number;
+  blockHeight: number;
+  chunks?: ChunkTracking;
+}
+
+export interface Inscription {
+  txid: string;
+  content: InscriptionContent;
+  metadata: InscriptionMetadata;
+  owner: string;
+  location: InscriptionLocation;
+  transaction: InscriptionTransaction;
+  history: InscriptionTransaction[];
+}
+
+export interface InscriptionValidation {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface InscriptionHolderScript {
+  p2pkhScript: string;
+  memeMarker: string;
+  originalInscriptionId: string;
 }
 ```
 

@@ -12,6 +12,8 @@ import {
   TransactionOutput 
 } from '../types/bsv'
 import { SignedTransaction } from '../types/services'
+import { InscriptionMetadata } from '../types/inscription'
+import crypto from 'crypto'
 
 /**
  * Service for handling BSV blockchain interactions
@@ -227,20 +229,35 @@ export class BSVService implements BSVServiceInterface {
     // Base transaction size
     let size = 4 // version
     size += getVarIntSize(inputCount) // number of inputs
-    size += inputCount * (40 + 108) // txid(32) + vout(4) + sequence(4) + typical P2PKH script size
+    size += inputCount * (32 + 4 + 4) // txid(32) + vout(4) + sequence(4)
+    size += inputCount * 107 // ~107 bytes for typical P2PKH unlocking script (sig + pubkey)
     size += getVarIntSize(outputCount) // number of outputs
-    size += outputCount * (8 + 25) // value(8) + typical P2PKH output script size
     size += 4 // locktime
 
-    // Check size limit (100MB = 100 * 1024 * 1024 bytes)
-    const MAX_TX_SIZE = 100 * 1024 * 1024
-    if (size > MAX_TX_SIZE) {
-      throw new BSVError('TX_CREATE_ERROR', 'Transaction size exceeds maximum limit of 100MB')
-    }
+    // Add size for inscription data output
+    size += 8 // value (0 satoshis)
+    size += 1 // OP_FALSE
+    size += 1 // OP_RETURN
+    size += 5 // PUSHDATA4 opcode + length for metadata
+    size += 200 // Typical metadata size (adjust based on your metadata)
+    size += 5 // PUSHDATA4 opcode + length for content
+    size += 1024 // Initial content chunk (1KB is usually enough for testing)
 
-    // Calculate fee at 1 sat/kb rate (rounded up to nearest satoshi)
-    // Use Math.max to ensure minimum fee of 1 satoshi
-    return Math.max(1, Math.ceil(size / 1024))
+    // Add size for holder script output
+    size += 8 // value (1 satoshi)
+    size += 25 // P2PKH part (76a914{20-bytes-hash}88ac)
+    size += 35 // OP_RETURN + txid (1 + 1 + 32 + 1 bytes)
+    size += 7  // OP_RETURN MEME marker (1 + 1 + 4 + 1 bytes)
+
+    // Add size for change output
+    size += 34 // 8 (value) + 26 (P2PKH script)
+
+    // Calculate fee at exactly 1 sat/kb rate
+    const feeRate = 1.0;
+    const calculatedFee = Math.ceil((size / 1024) * feeRate);
+    
+    // Ensure minimum fee of 300 satoshis
+    return Math.max(300, calculatedFee);
   }
 
   async broadcastTransaction(transaction: SignedTransaction): Promise<string> {
@@ -313,176 +330,125 @@ export class BSVService implements BSVServiceInterface {
   }
 
   /**
-   * Create an inscription transaction with proper data handling
-   * @param inscriptionData The inscription metadata
-   * @param fileData The file data buffer
-   * @returns Promise<string> Transaction ID
+   * Creates a deterministic inscription ID
+   * @param content - Content buffer
+   * @param metadata - Inscription metadata
+   * @param address - Creator's address
+   * @returns Deterministic inscription ID
+   */
+  private generateInscriptionId(
+    content: Buffer,
+    metadata: InscriptionMetadata,
+    address: string
+  ): string {
+    // Create a deterministic ID based on content hash, metadata, and creator
+    const data = Buffer.concat([
+      crypto.createHash('sha256').update(content).digest(),
+      Buffer.from(address),
+      Buffer.from(JSON.stringify({
+        type: metadata.type,
+        content: {
+          type: metadata.content.type,
+          size: metadata.content.size,
+          duration: metadata.content.duration,
+          dimensions: `${metadata.content.width}x${metadata.content.height}`
+        },
+        creator: metadata.metadata.creator
+      }))
+    ]);
+    return crypto.createHash('sha256').update(data).digest('hex');
+  }
+
+  /**
+   * Creates an inscription transaction
+   * @param metadata - Inscription metadata
+   * @param content - Content buffer
+   * @param holderScript - The holder script from inscription service
+   * @returns Transaction ID
    */
   async createInscriptionTransaction(
-    inscriptionData: any,
-    fileData: Buffer
+    metadata: InscriptionMetadata, 
+    content: Buffer,
+    holderScript: Script
   ): Promise<string> {
     try {
-      if (!this.wallet) {
-        throw new BSVError('WALLET_ERROR', 'Wallet not connected')
+      // Get wallet address and UTXOs
+      const address = await this.getWalletAddress();
+      const utxos = await this.wallet.getUtxos();
+
+      if (!utxos.length) {
+        throw new BSVError('NO_UTXOS', 'No UTXOs available');
       }
 
-      console.log('Creating inscription transaction...')
+      // Create transaction
+      const tx = new Transaction();
 
-      // Validate file size (BSV has a max transaction size of ~100MB)
-      const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
-      if (fileData.length > MAX_FILE_SIZE) {
-        throw new BSVError('VALIDATION_ERROR', 
-          `File size (${fileData.length} bytes) exceeds maximum allowed size (${MAX_FILE_SIZE} bytes)`)
-      }
-
-      // Prepare inscription metadata (without the video data)
-      const metadataObj = {
-        ...inscriptionData,
-        content: {
-          ...inscriptionData.content,
-          data: undefined // Remove video data from metadata
-        }
-      }
-      const metadataBuffer = Buffer.from(JSON.stringify(metadataObj), 'utf8')
-      console.log('Metadata size:', metadataBuffer.length, 'bytes')
-      console.log('File size:', fileData.length, 'bytes')
-
-      // Create script parts
-      const scriptParts: Buffer[] = []
-
-      // Add OP_FALSE OP_RETURN
-      scriptParts.push(Buffer.from([0x00, 0x6a])) // OP_FALSE OP_RETURN
-
-      // Add metadata with PUSHDATA4
-      const metadataPush = this.createPushData4(metadataBuffer)
-      scriptParts.push(metadataPush)
-
-      // Add file data with PUSHDATA4
-      const filePush = this.createPushData4(fileData)
-      scriptParts.push(filePush)
-
-      // Combine all parts into final script
-      const scriptBuffer = Buffer.concat(scriptParts)
-      console.log('Script structure:', {
-        opReturn: scriptParts[0].length,
-        metadata: metadataBuffer.length,
-        metadataPushTotal: metadataPush.length,
-        fileData: fileData.length,
-        filePushTotal: filePush.length,
-        total: scriptBuffer.length
-      })
-
-      // Create script from buffer
-      const script = Script.fromHex(scriptBuffer.toString('hex'))
-
-      // Get UTXOs
-      const utxos = await this.wallet.getUtxos()
-      if (!utxos || utxos.length === 0) {
-        throw new BSVError('UTXO_ERROR', 'No UTXOs available')
-      }
-
-      // Calculate total transaction size for fee estimation
-      const dataSize = scriptBuffer.length
-      const inputSize = 148 // P2PKH input size
-      const outputSize = 34 // P2PKH output size
-      const changeOutputSize = 34 // P2PKH change output size
-      const baseSize = 10 // Version (4) + Input count (1) + Output count (1) + Locktime (4)
+      // Add input
+      const selectedUtxo = utxos[0]; // Use first UTXO for simplicity
+      const p2pkh = new P2PKH();
+      const unlockingTemplate = p2pkh.unlock(this.wallet.privateKey);
       
-      // Total size in bytes
-      const totalSize = baseSize + inputSize + dataSize + outputSize + changeOutputSize
-
-      // Calculate fee at slightly above 1 sat/kb to ensure we're never below
-      // Add 1% to the size to account for any potential overhead
-      const adjustedSize = Math.ceil(totalSize * 1.01)
-      const fee = Math.max(Math.ceil(adjustedSize / 1024), 1)
-      console.log('Fee calculation:', {
-        dataSize,
-        totalSize,
-        adjustedSize,
-        feeRate: (fee * 1024 / totalSize).toFixed(4) + ' sat/KB',
-        fee: `${fee} satoshis`
-      })
-
-      const inscriptionAmount = 1 // 1 satoshi for inscription holder
-      const totalNeeded = inscriptionAmount + fee
-
-      // Find suitable UTXO
-      const selectedUtxo = utxos.find(utxo => utxo.satoshis >= totalNeeded)
-      if (!selectedUtxo) {
-        throw new BSVError('INSUFFICIENT_FUNDS', 
-          `Insufficient funds. Need ${totalNeeded} satoshis`)
-      }
-
-      // Get the full source transaction for the UTXO
-      const sourceTransaction = await this.getTransaction(selectedUtxo.txId)
-
-      // Create transaction with proper initialization
-      const tx = new Transaction()
-      tx.version = 1 // Set version explicitly
-
-      // Create unlocking template
-      const pubKey = this.wallet.privateKey.toPublicKey()
-      const p2pkh = new P2PKH()
-      const unlockingTemplate = p2pkh.unlock(this.wallet.privateKey)
-
-      // Add input with full source transaction and proper unlocking template
-      const input = {
+      // Get the source transaction for the input
+      const sourceTx = await this.getTransaction(selectedUtxo.txId);
+      
+      tx.addInput({
         sourceTXID: selectedUtxo.txId,
         sourceOutputIndex: selectedUtxo.outputIndex,
-        satoshis: selectedUtxo.satoshis,
         sourceSatoshis: selectedUtxo.satoshis,
-        sourceTransaction: sourceTransaction,
-        unlockingScriptTemplate: unlockingTemplate
-      }
-      tx.addInput(input as any)
+        unlockingScriptTemplate: unlockingTemplate,
+        sourceTransaction: sourceTx
+      });
 
-      // Add OP_RETURN output with inscription data
+      // Add inscription data output
+      const inscriptionScriptParts = [
+        '006a', // OP_FALSE OP_RETURN
+        this.createPushData4(Buffer.from(JSON.stringify(metadata))).toString('hex'),
+        this.createPushData4(content).toString('hex')
+      ];
+      const inscriptionScript = Script.fromHex(inscriptionScriptParts.join(''));
       tx.addOutput({
-        lockingScript: script,
+        lockingScript: inscriptionScript,
         satoshis: 0
-      })
+      });
 
-      // Create inscription holder output
-      const standardLockingScript = p2pkh.lock(pubKey.toAddress('testnet'))
-      
-      // Create the holder script properly
-      const p2pkhScript = standardLockingScript.toHex()
-      const memeMarker = '6a044d454d45' // OP_RETURN MEME marker
-      const holderScriptHex = p2pkhScript + memeMarker
-      const holderScript = Script.fromHex(holderScriptHex)
+      // Calculate fee
+      const fee = this.estimateFee(1, 3); // 1 input, 3 outputs
+      const changeAmount = selectedUtxo.satoshis - 1 - fee;
 
-      // Add holder output
+      // Generate deterministic inscription ID
+      const inscriptionId = this.generateInscriptionId(content, metadata, address);
+
+      // Create the holder script with the inscription ID
+      const p2pkhScript = p2pkh.lock(address);
+      const holderScriptParts = [
+        p2pkhScript.toHex(), // P2PKH script
+        '6a20' + inscriptionId, // OP_RETURN <32 bytes> for inscription ID
+        '6a044d454d45' // OP_RETURN MEME
+      ];
+      const finalHolderScript = Script.fromHex(holderScriptParts.join(''));
+
+      // Add inscription holder output
       tx.addOutput({
-        lockingScript: holderScript,
-        satoshis: inscriptionAmount
-      })
+        lockingScript: finalHolderScript,
+        satoshis: 1
+      });
 
-      // Add change output if needed
-      const changeAmount = selectedUtxo.satoshis - inscriptionAmount - fee
-      if (changeAmount > 0) {
+      // Add change output if above dust limit
+      if (changeAmount >= 546) {
         tx.addOutput({
-          lockingScript: standardLockingScript,
-          satoshis: changeAmount,
-          change: true
-        })
+          lockingScript: p2pkhScript,
+          satoshis: changeAmount
+        });
       }
 
-      // Sign transaction (no need to call fee() since we calculated it manually)
-      await tx.sign()
+      // Sign and broadcast transaction
+      await tx.sign();
+      const txid = await this.wallet.broadcastTransaction(tx);
 
-      // Broadcast transaction
-      const txid = await this.wallet.broadcastTransaction(tx)
-      console.log('Transaction broadcast successful. TXID:', txid)
-      return txid
-
-    } catch (error: unknown) {
-      console.error('Error in createInscriptionTransaction:', error)
-      if (error instanceof BSVError) {
-        throw error
-      }
-      throw new BSVError('TX_CREATE_ERROR', 
-        `Failed to create inscription transaction: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      return txid;
+    } catch (error) {
+      console.error('Failed to create inscription transaction:', error);
+      throw error instanceof BSVError ? error : new BSVError('TX_CREATE_ERROR', 'Failed to create inscription transaction');
     }
   }
 } 

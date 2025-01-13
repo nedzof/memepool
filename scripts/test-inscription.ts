@@ -7,6 +7,7 @@ import type {
   InscriptionMetadata,
   InscriptionContentType
 } from '../src/types/inscription';
+import { VideoMetadata } from '../src/types/video';
 import { BSVError } from '../src/types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -47,8 +48,8 @@ async function testInscription(filePath: string): Promise<string> {
 
     // Create file with metadata
     console.log('Reading file:', filePath);
-    const file = await createVideoFile(filePath);
-    console.log('File loaded:', file.name, 'Size:', file.size, 'bytes');
+    const videoFile = await createVideoFile(filePath);
+    console.log('File loaded:', videoFile.name, 'Size:', videoFile.size, 'bytes');
 
     // Get latest transaction for block info
     console.log('\nGetting latest transaction...');
@@ -60,12 +61,9 @@ async function testInscription(filePath: string): Promise<string> {
     // Sort UTXOs by value (ascending) to use smallest sufficient UTXO
     utxos.sort((a, b) => a.satoshis - b.satoshis);
 
-    // Calculate minimum required amount (fee will be calculated by BSV service)
-    const inscriptionHolderAmount = 1; // 1 satoshi for inscription holder
-    
-    // Find the smallest UTXO that can cover our needs
-    // Note: Actual fee will be calculated by BSV service
-    const estimatedFee = 1000; // Conservative initial estimate
+    // Calculate minimum required amount
+    const inscriptionHolderAmount = 1;
+    const estimatedFee = 1000;
     const minimumRequired = inscriptionHolderAmount + estimatedFee;
     
     const selectedUtxo = utxos.find(utxo => utxo.satoshis >= minimumRequired);
@@ -82,42 +80,25 @@ async function testInscription(filePath: string): Promise<string> {
       availableForChange: selectedUtxo.satoshis - minimumRequired
     });
 
-    // Create inscription content
-    const content: InscriptionContent = {
-      type: file.type as InscriptionContentType,
-      data: file.buffer,
-      size: file.size,
-      duration: 4.01, // This should be dynamically determined
-      width: 854,
-      height: 480
-    };
-
-    // Create inscription metadata
-    const metadata: InscriptionMetadata = {
-      type: "memepool",
-      version: "1.0",
-      content: {
-        type: file.type,
-        size: file.size,
-        duration: 4.01, // This should be dynamically determined
+    // Create video metadata
+    const videoMetadata: VideoMetadata = {
+      duration: 4.01,
+      dimensions: {
         width: 854,
         height: 480
       },
-      metadata: {
-        title: file.name,
-        creator: address,
-        createdAt: Date.now(),
-        attributes: {
-          blockHash: selectedUtxo.txId, // Using selected UTXO's TXID as reference
-          bitrate: 312904,
-          format: file.type,
-          dimensions: '854x480'
-        }
-      }
+      codec: 'h264',
+      bitrate: 312904
     };
 
     // Create inscription data
-    const inscriptionData = metadata;
+    console.log('\nCreating inscription data...');
+    const inscriptionData = await inscriptionService.createInscriptionData({
+      videoFile,
+      metadata: videoMetadata,
+      creatorAddress: address,
+      blockHash: selectedUtxo.txId
+    });
 
     // Create inscription transaction
     console.log('\nCreating inscription transaction...');
@@ -129,17 +110,19 @@ async function testInscription(filePath: string): Promise<string> {
     });
     console.log('2. Outputs:');
     console.log('   a. OP_RETURN (inscription data): 0 satoshis');
-    console.log('      - OP_FALSE OP_RETURN');
-    console.log('      - PUSHDATA4 [metadata]');
-    console.log('      - PUSHDATA4 [file data]');
     console.log('   b. Inscription holder (nonstandard): 1 satoshi');
     console.log('      - P2PKH script for:', address);
-    console.log('      - OP_RETURN MEME marker (0x6a044d454d45)');
+    console.log('      - Original inscription ID');
+    console.log('      - OP_RETURN MEME marker');
     console.log('   c. Change output (P2PKH): remaining amount minus fee');
 
+    // Create initial transaction with temporary script
     const txid = await bsvService.createInscriptionTransaction(
-      inscriptionData, 
-      Buffer.isBuffer(content.data) ? content.data : Buffer.concat(content.data.map(chunk => chunk.data))
+      inscriptionData.metadata,
+      Buffer.isBuffer(inscriptionData.content.data) 
+        ? inscriptionData.content.data 
+        : Buffer.concat(inscriptionData.content.data.map(chunk => chunk.data)),
+      inscriptionData.holderScript
     );
     console.log('Transaction ID:', txid);
 
@@ -152,25 +135,28 @@ async function testInscription(filePath: string): Promise<string> {
     const status = await bsvService.getTransactionStatus(txid);
     console.log('Transaction status:', status);
 
+    // Get the final holder script with the actual txid
+    const finalHolderScript = inscriptionService.updateHolderScript(address, txid);
+
     // Create inscription object for validation
     const inscription: Inscription = {
-      txid, // Using the actual transaction ID
-      content,
-      metadata,
+      txid,
+      content: inscriptionData.content,
+      metadata: inscriptionData.metadata,
       owner: address,
       location: {
         txid,
-        vout: 0,
-        script: selectedUtxo.script,
+        vout: 1,
+        script: finalHolderScript,
         satoshis: 1,
-        height: 0 // Will be set when transaction is confirmed
+        height: 0
       },
       transaction: {
         txid,
         confirmations: status.confirmations,
         timestamp: status.timestamp,
         fee: 0,
-        blockHeight: 0 // Will be set when transaction is confirmed
+        blockHeight: 0
       },
       history: []
     };
@@ -189,7 +175,8 @@ async function testInscription(filePath: string): Promise<string> {
     if (error instanceof BSVError) {
       console.error('BSV Error during inscription test:', error.message, `(${error.code})`);
     } else {
-      console.error('Error during inscription test:', error);
+      const err = error as Error;
+      console.error('Error during inscription test:', err.message);
     }
     throw error;
   }

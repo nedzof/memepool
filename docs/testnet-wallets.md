@@ -33,7 +33,7 @@ tsx scripts/verify-inscription.ts <txid>
 ```
 
 Example transaction hashes for testing:
-- Latest verified transaction: 2234d0dc08b84f1a4e9fbae89a96411ed56c8f04b8c687543e0382e2be258f06
+- Latest verified transaction: 2a2b08629121d59ee6ee762110668dc2240f9a2120d729dfeb692d5ce6bb25df
 
 ## Testing Scripts
 The following TypeScript scripts are available for testing:

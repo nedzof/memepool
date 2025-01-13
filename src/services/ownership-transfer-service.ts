@@ -9,6 +9,7 @@ interface TransferOptions {
   value?: number;
   preserveScript?: boolean;
   utxoData?: Record<string, any>;
+  originalInscriptionId?: string;
 }
 
 interface TransferStatus {
@@ -124,31 +125,23 @@ export class OwnershipTransferService {
         throw new BSVError('UTXO_ERROR', `UTXO not found for transaction ${inscriptionTxId}`);
       }
 
-      // Fetch source transaction to verify the script
-      const sourceTransaction = await this.fetchSourceTransaction(inscriptionTxId);
-      inscriptionUtxo.sourceTransaction = sourceTransaction;
-
-      // Find the nonstandard output with MEME marker
-      const dataResponse = await this.bsvService.wallet.fetchWithRetry(
-        `https://api.whatsonchain.com/v1/bsv/test/tx/${inscriptionTxId}`
+      // Verify UTXO is unspent
+      const response = await this.bsvService.wallet.fetchWithRetry(
+        `https://api.whatsonchain.com/v1/bsv/test/tx/${inscriptionTxId}/out/0`
       );
-      const txData = await dataResponse.json();
-
-      // Find the output with nonstandard type and MEME marker
-      const inscriptionOutput = txData.vout.find((out: any) => 
-        out.scriptPubKey.type === 'nonstandard' && 
-        out.scriptPubKey.hex.includes('6a044d454d45')
-      );
-
-      if (!inscriptionOutput) {
-        throw new BSVError('INSCRIPTION_ERROR', 'Inscription output not found in transaction');
+      const outputData = await response.json();
+      
+      if (outputData.spent) {
+        throw new BSVError('UTXO_ERROR', 'Inscription holder UTXO is already spent');
       }
 
-      console.log('Found inscription output:', {
-        n: inscriptionOutput.n,
-        value: inscriptionOutput.value,
-        type: inscriptionOutput.scriptPubKey.type
-      });
+      // Extract original inscription ID from script
+      const scriptHex = inscriptionUtxo.script.toHex();
+      const originalInscriptionId = options.originalInscriptionId || this.extractOriginalInscriptionId(scriptHex);
+      
+      if (!originalInscriptionId) {
+        throw new BSVError('INSCRIPTION_ERROR', 'Could not find original inscription ID in holder script');
+      }
 
       // Create new transaction
       const tx = new Transaction();
@@ -160,7 +153,7 @@ export class OwnershipTransferService {
 
       // Create unlocking template with MEME marker preservation
       const unlockingTemplate = {
-        script: Script.fromHex(inscriptionOutput.scriptPubKey.hex),
+        script: Script.fromHex(inscriptionUtxo.script.toHex()),
         satoshis: inscriptionUtxo.satoshis,
         sign: async (tx: Transaction, inputIndex: number): Promise<Script> => {
           const input = tx.inputs[inputIndex];
@@ -168,10 +161,8 @@ export class OwnershipTransferService {
             throw new BSVError('INVALID_INPUT', 'Input satoshis not set');
           }
 
-          // Create signature using SIGHASH_ALL
-          const sigtype = 0x41; // SIGHASH_ALL | SIGHASH_FORKID
-          
-          // Create signature hash using input's locking script
+          // Create signature using SIGHASH_ALL | SIGHASH_FORKID
+          const sigtype = 0x41;
           const preimage = tx.getSignaturePreimage(
             inputIndex,
             input.sourceTransaction?.outputs[input.sourceOutputIndex].lockingScript || Script.fromHex(''),
@@ -183,14 +174,17 @@ export class OwnershipTransferService {
           
           // Create unlocking script: <signature> <pubkey>
           const unlockingScript = new Script();
-          unlockingScript.add(signature.toBuffer());
+          unlockingScript.add(Buffer.concat([
+            signature.toBuffer(),
+            Buffer.from([sigtype]) // Append sighash type
+          ]));
           unlockingScript.add(pubKey.toBuffer());
           
           return unlockingScript;
         },
         estimateLength: () => 107 // Approximate length of signature + pubkey + op_codes
       };
-      
+
       // Add the inscription input
       tx.addInput({
         sourceTXID: inscriptionUtxo.txId,
@@ -201,12 +195,27 @@ export class OwnershipTransferService {
       });
 
       // Get additional UTXOs for fees if needed
-      const feeUtxos = allUtxos.filter((utxo: UTXO) => {
-        return utxo.txId !== inscriptionTxId && !utxo.script.toHex().includes('4d454d45');
-      });
+      const feeUtxos = allUtxos.filter((utxo: UTXO) => 
+        utxo.txId !== inscriptionTxId && !utxo.script.toHex().includes('6a044d454d45')
+      ).sort((a, b) => a.satoshis - b.satoshis); // Sort by value to use smallest UTXOs first
 
-      // Add fee UTXOs if available
+      // Calculate estimated fee
+      const estimatedFee = this.bsvService.estimateFee(
+        1 + Math.min(feeUtxos.length, 3), // Use up to 3 additional UTXOs
+        2 // Inscription output + change output
+      );
+
+      // Select fee UTXOs
+      let totalFeeInputs = 0;
+      const selectedFeeUtxos: UTXO[] = [];
       for (const utxo of feeUtxos) {
+        if (totalFeeInputs >= estimatedFee) break;
+        selectedFeeUtxos.push(utxo);
+        totalFeeInputs += utxo.satoshis;
+      }
+
+      // Add fee UTXOs
+      for (const utxo of selectedFeeUtxos) {
         if (!utxo.sourceTransaction) {
           utxo.sourceTransaction = await this.fetchSourceTransaction(utxo.txId);
         }
@@ -224,25 +233,24 @@ export class OwnershipTransferService {
       const recipientP2pkh = new P2PKH();
       const recipientScript = recipientP2pkh.lock(recipientAddress);
       
-      // Add MEME marker to recipient's script
-      const memeMarker = Script.fromHex('6a044d454d45'); // OP_RETURN MEME
+      // Create combined script: P2PKH + Original TXID + MEME marker
       const lockingScript = new Script();
-      const recipientScriptBuffer = Buffer.from(recipientScript.toHex(), 'hex');
-      const memeMarkerBuffer = Buffer.from(memeMarker.toHex(), 'hex');
-      lockingScript.add(recipientScriptBuffer);
-      lockingScript.add(memeMarkerBuffer);
+      lockingScript.add(Buffer.from(recipientScript.toHex(), 'hex')); // P2PKH script
+      lockingScript.add(Buffer.from('6a20' + originalInscriptionId, 'hex')); // OP_RETURN <32 bytes> for TXID
+      lockingScript.add(Buffer.from('6a044d454d45', 'hex')); // OP_RETURN MEME
 
-      // Add the inscription output (always 1 satoshi)
+      // Add the inscription output (1 satoshi)
       tx.addOutput({
         lockingScript,
         satoshis: 1
       });
 
-      // Add change output if needed
-      const totalInput = inscriptionUtxo.satoshis + feeUtxos.reduce((sum: number, utxo: UTXO) => sum + utxo.satoshis, 0);
-      const changeAmount = totalInput - 1; // Subtract 1 satoshi for inscription output
+      // Calculate total input and change amount
+      const totalInput = inscriptionUtxo.satoshis + totalFeeInputs;
+      const changeAmount = totalInput - 1 - estimatedFee;
 
-      if (changeAmount > 0) {
+      // Add change output if amount is sufficient
+      if (changeAmount >= 546) { // Dust limit
         const p2pkh = new P2PKH();
         const changeScript = p2pkh.lock(senderAddress);
         tx.addOutput({
@@ -250,9 +258,6 @@ export class OwnershipTransferService {
           satoshis: changeAmount
         });
       }
-
-      // Calculate fee and adjust change output
-      await tx.fee();
 
       // Sign all inputs
       await tx.sign();
@@ -266,6 +271,15 @@ export class OwnershipTransferService {
       console.error('Failed to create transfer transaction:', error);
       throw error instanceof BSVError ? error : new BSVError('TRANSFER_ERROR', 'Failed to create transfer transaction');
     }
+  }
+
+  /**
+   * Extract original inscription ID from holder script
+   * @private
+   */
+  private extractOriginalInscriptionId(scriptHex: string): string | undefined {
+    const match = scriptHex.match(/6a20([0-9a-f]{64})/);
+    return match ? match[1] : undefined;
   }
 
   /**

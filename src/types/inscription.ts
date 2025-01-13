@@ -1,4 +1,12 @@
 import { Script } from '@bsv/sdk';
+import { VideoMetadata, VideoFile } from './video';
+
+export interface InscriptionCreationParams {
+  videoFile: VideoFile;
+  metadata: VideoMetadata;
+  creatorAddress: string;
+  blockHash: string;
+}
 
 export type InscriptionContentType = 'video/mp4' | 'video/webm' | 'video/quicktime';
 
@@ -61,6 +69,7 @@ export interface InscriptionLocation {
   script: Script;
   satoshis: number;
   height: number;
+  originalInscriptionId?: string;
 }
 
 export interface InscriptionTransaction {
@@ -86,4 +95,10 @@ export interface InscriptionValidation {
   isValid: boolean;
   errors: string[];
   warnings: string[];
+}
+
+export interface InscriptionHolderScript {
+  p2pkhScript: string;
+  memeMarker: string;
+  originalInscriptionId: string;
 } 

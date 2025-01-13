@@ -10,6 +10,13 @@ export interface VideoMetadata {
   bitrate: number;
 }
 
+export interface VideoFile {
+  buffer: Buffer;
+  name: string;
+  size: number;
+  type: string;
+}
+
 export interface VideoFormatValidation {
   isValid: boolean;
   format: string;

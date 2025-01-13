@@ -1,5 +1,5 @@
 import { BSVError } from '../types'
-import { Script } from '@bsv/sdk'
+import { Script, P2PKH } from '@bsv/sdk'
 import type {
   InscriptionContent,
   InscriptionMetadata,
@@ -8,25 +8,11 @@ import type {
   VideoChunk,
   InscriptionContentType,
   InscriptionLocation,
-  InscriptionTransaction
+  InscriptionTransaction,
+  InscriptionCreationParams
 } from '../types/inscription'
+import { VideoMetadata, VideoFile } from '../types/video'
 import crypto from 'crypto'
-
-interface VideoMetadata {
-  duration: number
-  dimensions: {
-    width: number
-    height: number
-  }
-  bitrate: number
-}
-
-interface InscriptionCreationParams {
-  file: File
-  metadata: VideoMetadata
-  creatorAddress: string
-  blockHash: string
-}
 
 const MAX_CHUNK_SIZE = 100 * 1024  // 100KB per chunk
 
@@ -35,93 +21,97 @@ const MAX_CHUNK_SIZE = 100 * 1024  // 100KB per chunk
  */
 export class InscriptionService {
   /**
+   * Creates the initial inscription holder script
+   * @param address - The address to create the holder script for
+   * @param inscriptionTxId - The inscription transaction ID
+   * @returns Script object
+   */
+  createInitialHolderScript(address: string, inscriptionTxId: string): Script {
+    // Create P2PKH script
+    const p2pkh = new P2PKH();
+    const p2pkhScript = p2pkh.lock(address);
+    
+    // Create combined script parts
+    const scriptParts = [
+      p2pkhScript.toHex(), // P2PKH script
+      '6a20' + inscriptionTxId, // OP_RETURN <32 bytes> for TXID
+      '6a044d454d45' // OP_RETURN MEME
+    ];
+    
+    // Create and return combined script
+    return Script.fromHex(scriptParts.join(''));
+  }
+
+  /**
    * Creates an inscription data structure for a video
    * @param params - Parameters for inscription creation
    * @returns Inscription data structure
    */
-  async createInscriptionData(params: InscriptionCreationParams): Promise<Inscription> {
-    const { file, metadata, creatorAddress, blockHash } = params
-    const timestamp = Date.now()
+  async createInscriptionData(params: InscriptionCreationParams): Promise<{ 
+    content: InscriptionContent; 
+    metadata: InscriptionMetadata;
+    holderScript: Script;
+    inscriptionId: string;
+  }> {
+    const { videoFile, metadata, creatorAddress, blockHash } = params
 
     // Validate input parameters
     this.validateInputParams(params)
 
-    // Read file data
-    const fileData = await file.arrayBuffer()
-    const buffer = Buffer.from(fileData)
+    // Create a temporary inscription ID based on content hash
+    // This will be replaced by the actual txid after transaction creation
+    const tempInscriptionId = crypto.createHash('sha256')
+      .update(videoFile.buffer)
+      .digest('hex');
+
+    // Create the holder script with the temporary ID
+    const holderScript = this.createInitialHolderScript(creatorAddress, tempInscriptionId)
 
     // Determine if we need to chunk the data
-    const chunks = this.prepareVideoChunks(buffer)
+    const chunks = this.prepareVideoChunks(videoFile.buffer)
     
     const content: InscriptionContent = {
-      type: this.validateVideoFormat(file.type),
-      data: chunks.length > 1 ? chunks : buffer,
-      size: file.size,
+      type: this.validateVideoFormat(videoFile.type),
+      data: chunks.length > 1 ? chunks : videoFile.buffer,
+      size: videoFile.size,
       duration: metadata.duration,
       width: metadata.dimensions.width,
-      height: metadata.dimensions.height
-    }
-
-    if (chunks.length > 1) {
-      content.chunks = {
+      height: metadata.dimensions.height,
+      chunks: chunks.length > 1 ? {
         total: chunks.length,
         size: MAX_CHUNK_SIZE,
-        references: []  // Will be filled when transactions are created
-      }
+        references: []
+      } : undefined
     }
 
     const inscriptionMetadata: InscriptionMetadata = {
       type: 'memepool',
       version: '1.0',
       content: {
-        type: file.type,
-        size: file.size,
+        type: videoFile.type,
+        size: videoFile.size,
         duration: metadata.duration,
         width: metadata.dimensions.width,
         height: metadata.dimensions.height
       },
       metadata: {
-        title: file.name,
+        title: videoFile.name,
         creator: creatorAddress,
-        createdAt: timestamp,
+        createdAt: Date.now(),
         attributes: {
           blockHash,
           bitrate: metadata.bitrate,
-          format: file.type,
+          format: videoFile.type,
           dimensions: `${metadata.dimensions.width}x${metadata.dimensions.height}`
         }
       }
     }
 
-    const location: InscriptionLocation = {
-      txid: '',  // Will be filled when transaction is created
-      vout: 0,
-      script: new Script(),
-      satoshis: 1,
-      height: 0
-    }
-
-    const transaction: InscriptionTransaction = {
-      txid: '',  // Will be filled when transaction is created
-      confirmations: 0,
-      timestamp: timestamp,
-      fee: 0,
-      blockHeight: 0,
-      chunks: chunks.length > 1 ? {
-        txids: [],
-        currentChunk: 0,
-        isComplete: false
-      } : undefined
-    }
-
-    return {
-      txid: '',  // Will be filled when transaction is created
-      content,
+    return { 
+      content, 
       metadata: inscriptionMetadata,
-      owner: creatorAddress,
-      location,
-      transaction,
-      history: []
+      holderScript,
+      inscriptionId: tempInscriptionId
     }
   }
 
@@ -192,27 +182,52 @@ export class InscriptionService {
 
   /**
    * Validates input parameters for inscription creation
-   * @param params - Parameters to validate
-   * @throws {BSVError} If any parameters are invalid
    */
   private validateInputParams(params: InscriptionCreationParams): void {
-    const { file, metadata, creatorAddress, blockHash } = params
+    const { videoFile, metadata, creatorAddress, blockHash } = params
 
-    if (!file || !(file instanceof File)) {
+    if (!videoFile || !videoFile.buffer || !videoFile.type) {
       throw new BSVError('INVALID_PARAMS', 'Invalid file parameter')
     }
 
-    if (!metadata || !metadata.duration || !metadata.dimensions || !metadata.bitrate) {
-      throw new BSVError('INVALID_PARAMS', 'Invalid metadata parameter')
+    if (!this.validateVideoFormat(videoFile.type)) {
+      throw new BSVError('INVALID_PARAMS', 'Invalid video format')
     }
 
-    if (!creatorAddress || typeof creatorAddress !== 'string' || creatorAddress.length < 25) {
+    if (!metadata || !metadata.duration || !metadata.dimensions) {
+      throw new BSVError('INVALID_PARAMS', 'Invalid metadata')
+    }
+
+    if (!creatorAddress) {
       throw new BSVError('INVALID_PARAMS', 'Invalid creator address')
     }
 
-    if (!blockHash || typeof blockHash !== 'string' || !/^[0-9a-f]{64}$/i.test(blockHash)) {
+    if (!blockHash) {
       throw new BSVError('INVALID_PARAMS', 'Invalid block hash')
     }
+  }
+
+  /**
+   * Generates a deterministic inscription ID based on content and metadata
+   * @private
+   */
+  private generateInscriptionId(
+    content: Buffer,
+    metadata: VideoMetadata,
+    creator: string,
+    timestamp: number
+  ): string {
+    const data = Buffer.concat([
+      content.slice(0, 1024), // First 1KB of content
+      Buffer.from(creator),
+      Buffer.from(JSON.stringify({
+        duration: metadata.duration,
+        dimensions: metadata.dimensions,
+        codec: metadata.codec,
+        bitrate: metadata.bitrate
+      }))
+    ]);
+    return crypto.createHash('sha256').update(data).digest('hex');
   }
 
   /**
@@ -241,11 +256,31 @@ export class InscriptionService {
       }
 
       // Check content type
-      const supportedFormats: InscriptionContentType[] = ['video/mp4', 'video/quicktime']
+      const supportedFormats: InscriptionContentType[] = ['video/mp4', 'video/webm', 'video/quicktime']
       if (!supportedFormats.includes(inscription.content.type)) {
         validation.errors.push('Invalid content type')
         validation.isValid = false
         return validation
+      }
+
+      // Check location and script
+      if (!inscription.location || !inscription.location.script) {
+        validation.errors.push('Missing location or script')
+      } else {
+        // Verify script format (P2PKH + Original TXID + MEME marker)
+        const scriptHex = inscription.location.script.toHex()
+        const hasP2PKH = /76a914[0-9a-f]{40}88ac/.test(scriptHex)
+        const hasOriginalTxid = /6a20[0-9a-f]{64}/.test(scriptHex)
+        const hasMEMEMarker = scriptHex.includes('6a044d454d45')
+        
+        if (!hasP2PKH || !hasOriginalTxid || !hasMEMEMarker) {
+          validation.errors.push('Invalid inscription holder script format')
+        }
+
+        // Verify 1 satoshi value
+        if (inscription.location.satoshis !== 1) {
+          validation.errors.push('Invalid inscription holder value (must be 1 satoshi)')
+        }
       }
 
       if (!inscription.metadata || 
@@ -273,5 +308,15 @@ export class InscriptionService {
     }
 
     return validation
+  }
+
+  /**
+   * Updates the holder script with the actual transaction ID
+   * @param script - The original holder script
+   * @param txid - The actual transaction ID
+   * @returns Updated holder script
+   */
+  updateHolderScript(creatorAddress: string, txid: string): Script {
+    return this.createInitialHolderScript(creatorAddress, txid);
   }
 } 

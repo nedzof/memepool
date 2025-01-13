@@ -131,6 +131,48 @@ The inscription transfer protocol includes a protection mechanism to prevent acc
 
 ## Script Format
 
+### Inscription Holder Script
+The inscription holder script follows a specific format to ensure proper tracking and transfer of inscriptions:
+
+```
+[P2PKH script] + [OP_RETURN Original TXID] + [OP_RETURN MEME]
+76a914<pubKeyHash>88ac + 6a20<originalTxId> + 6a044d454d45
+```
+
+Components:
+1. **P2PKH Script** - Standard Pay-to-Public-Key-Hash script
+   - Format: `76a914<pubKeyHash>88ac`
+   - Controls spending authorization
+
+2. **Original TXID** - Reference to original inscription
+   - Format: `6a20<originalTxId>`
+   - 32-byte transaction ID
+   - Maintains link to content
+
+3. **MEME Marker** - Protection marker
+   - Format: `6a044d454d45`
+   - Prevents accidental spending
+   - Identifies inscription holders
+
+### Transfer Process
+1. **Input**
+   - Current holder UTXO with complete script
+   - Value: exactly 1 satoshi
+   - Must include all three components
+
+2. **Output**
+   - New P2PKH script for recipient
+   - Original TXID preserved
+   - MEME marker maintained
+   - Value: 1 satoshi
+
+3. **Validation**
+   - Script format verification
+   - Original TXID presence
+   - MEME marker check
+   - Value confirmation
+   - Ownership verification
+
 ## 2. Inscription Process
 
 ### Content Preparation
@@ -369,4 +411,69 @@ The inscription transfer protocol includes a protection mechanism to prevent acc
    - Volume tracking
    - Pattern monitoring
    - Trend analysis
-   - Insight generation 
+   - Insight generation
+
+# Inscription Format
+
+## Overview
+Inscriptions in the Memepool platform are created using a special transaction format that includes both the inscription data and a holder UTXO with a unique marker.
+
+## Transaction Structure
+
+1. **Input**: Standard P2PKH input for funding the inscription
+2. **Outputs**:
+   a. **Inscription Data Output** (OP_FALSE OP_RETURN):
+      - Contains metadata and content data
+      - Value: 0 satoshis
+   b. **Inscription Holder Output** (1 satoshi):
+      - P2PKH script for the owner
+      - Original inscription ID marker
+      - MEME marker
+   c. **Change Output** (optional):
+      - Returns remaining satoshis to sender
+      - Standard P2PKH format
+
+## Inscription Holder Script Format
+
+The inscription holder output uses a special script format that combines:
+1. Standard P2PKH script for the owner
+2. Original inscription ID as OP_RETURN data
+3. MEME marker as OP_RETURN data
+
+Script format:
+```
+[P2PKH script] + [OP_RETURN Original Inscription ID] + [OP_RETURN MEME]
+76a914<pubKeyHash>88ac + 6a20<inscriptionId> + 6a044d454d45
+```
+
+Where:
+- `76a914<pubKeyHash>88ac`: Standard P2PKH script (25 bytes)
+- `6a20<inscriptionId>`: OP_RETURN followed by 32-byte inscription ID
+- `6a044d454d45`: OP_RETURN followed by "MEME" marker
+
+## Inscription ID Generation
+
+The inscription ID is generated deterministically using:
+1. SHA256 hash of the content
+2. Creator's address
+3. Essential metadata (type, content details, dimensions, etc.)
+
+This ensures:
+- Unique identification of inscriptions
+- Easy tracking and verification
+- Content-based referencing
+- Creator attribution
+
+## Validation
+To validate an inscription holder UTXO:
+1. Check for P2PKH script pattern
+2. Verify presence of inscription ID (32 bytes after OP_RETURN)
+3. Confirm MEME marker presence
+4. Ensure 1 satoshi value
+
+## Transfer Protocol
+When transferring an inscription:
+1. Use the inscription holder UTXO as input
+2. Create new holder output with same inscription ID
+3. Maintain the MEME marker
+4. Update P2PKH script to new owner's address 
