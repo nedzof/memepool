@@ -7,6 +7,11 @@
 ## 1. Inscription Format
 
 ### Data Structure
+The inscription consists of two main parts:
+1. Video inscription data (OP_RETURN)
+2. Holder UTXO with metadata
+
+#### 1. Video Inscription Data
 ```json
 {
   "type": "memepool",
@@ -32,24 +37,68 @@
 }
 ```
 
-The inscription data structure follows a strict format:
-1. **Root Level**
-   - `type`: Always "memepool" for our inscriptions
-   - `version`: Current version "1.0"
+#### 2. Holder UTXO Format
+The holder UTXO uses a new format combining P2PKH with CBOR-serialized metadata:
+```
+[P2PKH script] + [OP_RETURN CBOR<metadata>]
+```
 
-2. **Content Section**
-   - Contains technical details about the video
-   - All fields are required
-   - Size is in bytes
-   - Duration is in seconds
-   - Width and height in pixels
+Metadata structure for initial inscription:
+```json
+{
+  "version": 1,
+  "prefix": "meme",
+  "operation": "inscribe",
+  "name": "<video name>",
+  "contentID": "MEME_<hashed_id>_<timestamp>",
+  "txid": "deploy",
+  "creator": "<creator wallet address>"
+}
+```
 
-3. **Metadata Section**
-   - Contains descriptive information
-   - `title`: Original filename
-   - `creator`: Creator's BSV address
-   - `createdAt`: Unix timestamp in milliseconds
-   - `attributes`: Additional metadata including format details
+Metadata structure for transfers:
+```json
+{
+  "version": 1,
+  "prefix": "meme",
+  "operation": "transfer",
+  "name": "<video name>",
+  "contentID": "MEME_<hashed_id>_<timestamp>",
+  "txid": "<original inscription txid>",
+  "creator": "<creator wallet address>"
+}
+```
+
+The `contentID` is generated as:
+```
+MEME_<hash(video_name + creator_address + latest_block_hash)>_<timestamp>
+```
+
+### CBOR Serialization
+The metadata in the holder UTXO is serialized using CBOR (Concise Binary Object Representation) for:
+- Efficient encoding
+- Reduced size
+- Standardized parsing
+- Type safety
+
+### Script Format
+
+#### Inscription Holder Script
+The inscription holder script follows this format:
+```
+[P2PKH script] + [OP_RETURN CBOR<metadata>]
+76a914<pubKeyHash>88ac + 6a<pushdata><CBOR data>
+```
+
+Components:
+1. **P2PKH Script** - Standard Pay-to-Public-Key-Hash script
+   - Format: `76a914<pubKeyHash>88ac`
+   - Controls spending authorization
+
+2. **Metadata** - CBOR-serialized data
+   - Format: `6a<pushdata><CBOR data>`
+   - Contains inscription metadata
+   - Uses appropriate PUSHDATA opcode based on size
 
 ### Video Data Handling
 The video data is handled in the following way:
@@ -474,6 +523,10 @@ To validate an inscription holder UTXO:
 ## Transfer Protocol
 When transferring an inscription:
 1. Use the inscription holder UTXO as input
-2. Create new holder output with same inscription ID
-3. Maintain the MEME marker
+2. Create new holder output with:
+   - P2PKH script for new owner
+   - Updated metadata with:
+     - operation: "transfer"
+     - txid: original inscription txid
+3. Maintain all other metadata fields
 4. Update P2PKH script to new owner's address 

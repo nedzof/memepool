@@ -1,7 +1,8 @@
 import { Script } from '@bsv/sdk'
 import { InscriptionService } from '../src/services/inscription-service'
 import { BSVError } from '../src/types'
-import { Inscription, InscriptionContentType } from '../src/types/inscription'
+import { Inscription, InscriptionContentType, HolderMetadata } from '../src/types/inscription'
+import cbor from 'cbor'
 
 describe('InscriptionService', () => {
   let inscriptionService: InscriptionService
@@ -12,12 +13,22 @@ describe('InscriptionService', () => {
 
   describe('createInscriptionData', () => {
     // Create a small video file (under chunk size)
-    const smallVideoContent = new Uint8Array(50 * 1024) // 50KB
-    const smallFile = new File([smallVideoContent], 'small.mp4', { type: 'video/mp4' })
+    const smallVideoBuffer = Buffer.from(new Uint8Array(50 * 1024)) // 50KB
+    const smallVideoFile = {
+      buffer: smallVideoBuffer,
+      name: 'small.mp4',
+      type: 'video/mp4',
+      size: 50 * 1024
+    }
 
     // Create a large video file (over chunk size)
-    const largeVideoContent = new Uint8Array(150 * 1024) // 150KB
-    const largeFile = new File([largeVideoContent], 'large.mp4', { type: 'video/mp4' })
+    const largeVideoBuffer = Buffer.from(new Uint8Array(150 * 1024)) // 150KB
+    const largeVideoFile = {
+      buffer: largeVideoBuffer,
+      name: 'large.mp4',
+      type: 'video/mp4',
+      size: 150 * 1024
+    }
 
     const mockMetadata = {
       duration: 120,
@@ -28,12 +39,13 @@ describe('InscriptionService', () => {
       bitrate: 5000000
     }
 
+    // Use valid testnet address format
     const mockCreatorAddress = 'mzJ9Gi7vvp1NGw4fviWjkHSvYAkHYQM9VA'
     const mockBlockHash = '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254'
 
     it('should create valid inscription data for small video', async () => {
       const result = await inscriptionService.createInscriptionData({
-        file: smallFile,
+        videoFile: smallVideoFile,
         metadata: mockMetadata,
         creatorAddress: mockCreatorAddress,
         blockHash: mockBlockHash
@@ -42,33 +54,61 @@ describe('InscriptionService', () => {
       expect(result).toMatchObject({
         content: {
           type: 'video/mp4',
-          size: smallFile.size,
+          size: smallVideoFile.size,
           duration: mockMetadata.duration,
           width: mockMetadata.dimensions.width,
           height: mockMetadata.dimensions.height
         },
         metadata: {
-          title: smallFile.name,
-          creator: mockCreatorAddress,
-          attributes: {
-            blockHash: mockBlockHash,
-            bitrate: mockMetadata.bitrate,
-            format: smallFile.type,
-            dimensions: '1920x1080'
+          type: 'memepool',
+          version: '1.0',
+          content: {
+            type: smallVideoFile.type,
+            size: smallVideoFile.size,
+            duration: mockMetadata.duration,
+            width: mockMetadata.dimensions.width,
+            height: mockMetadata.dimensions.height
+          },
+          metadata: {
+            title: smallVideoFile.name,
+            creator: mockCreatorAddress,
+            attributes: {
+              blockHash: mockBlockHash,
+              bitrate: mockMetadata.bitrate,
+              format: smallVideoFile.type,
+              dimensions: '1920x1080'
+            }
           }
-        },
-        owner: mockCreatorAddress
+        }
       })
 
       // Verify single chunk for small file
       expect(Buffer.isBuffer(result.content.data)).toBe(true)
       expect(result.content.chunks).toBeUndefined()
-      expect(result.transaction.chunks).toBeUndefined()
+
+      // Verify holder script format
+      const scriptHex = result.holderScript.toHex()
+      expect(scriptHex).toMatch(/^76a914[0-9a-f]{40}88ac/) // P2PKH script
+      expect(scriptHex).toMatch(/6a/) // OP_RETURN
+
+      // Verify CBOR metadata in holder script
+      const p2pkhEnd = scriptHex.indexOf('88ac') + 4
+      const cborHex = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      const cborData = Buffer.from(cborHex, 'hex')
+      const decodedMetadata = cbor.decode(cborData) as HolderMetadata
+
+      expect(decodedMetadata).toMatchObject({
+        version: 1,
+        prefix: 'meme',
+        operation: 'inscribe',
+        name: smallVideoFile.name,
+        creator: mockCreatorAddress
+      })
     })
 
     it('should create chunked inscription data for large video', async () => {
       const result = await inscriptionService.createInscriptionData({
-        file: largeFile,
+        videoFile: largeVideoFile,
         metadata: mockMetadata,
         creatorAddress: mockCreatorAddress,
         blockHash: mockBlockHash
@@ -97,23 +137,42 @@ describe('InscriptionService', () => {
         references: []
       })
 
-      // Verify transaction chunk tracking
-      expect(result.transaction.chunks).toMatchObject({
-        txids: [],
-        currentChunk: 0,
-        isComplete: false
+      // Verify holder script CBOR metadata
+      const scriptHex = result.holderScript.toHex()
+      const p2pkhEnd = scriptHex.indexOf('88ac') + 4
+      const cborHex = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      const cborData = Buffer.from(cborHex, 'hex')
+      const decodedMetadata = cbor.decode(cborData) as HolderMetadata
+
+      expect(decodedMetadata).toMatchObject({
+        version: 1,
+        prefix: 'meme',
+        operation: 'inscribe',
+        name: largeVideoFile.name,
+        creator: mockCreatorAddress
       })
     })
 
     it('should throw on unsupported video format', async () => {
-      const invalidFile = new File(['test'], 'test.avi', { type: 'video/x-msvideo' })
+      const invalidFile = {
+        buffer: Buffer.from([]),
+        name: 'test.avi',
+        type: 'video/x-msvideo',
+        size: 1000
+      }
 
       await expect(inscriptionService.createInscriptionData({
-        file: invalidFile,
+        videoFile: invalidFile,
         metadata: mockMetadata,
         creatorAddress: mockCreatorAddress,
         blockHash: mockBlockHash
       })).rejects.toThrow(BSVError)
+      await expect(inscriptionService.createInscriptionData({
+        videoFile: invalidFile,
+        metadata: mockMetadata,
+        creatorAddress: mockCreatorAddress,
+        blockHash: mockBlockHash
+      })).rejects.toThrow("INSCRIPTION_ERROR")
     })
 
     it('should throw on invalid metadata', async () => {
@@ -127,29 +186,47 @@ describe('InscriptionService', () => {
       }
 
       await expect(inscriptionService.createInscriptionData({
-        file: smallFile,
+        videoFile: smallVideoFile,
         metadata: invalidMetadata,
         creatorAddress: mockCreatorAddress,
         blockHash: mockBlockHash
       })).rejects.toThrow(BSVError)
+      await expect(inscriptionService.createInscriptionData({
+        videoFile: smallVideoFile,
+        metadata: invalidMetadata,
+        creatorAddress: mockCreatorAddress,
+        blockHash: mockBlockHash
+      })).rejects.toThrow("INSCRIPTION_ERROR")
     })
 
     it('should throw on invalid creator address', async () => {
       await expect(inscriptionService.createInscriptionData({
-        file: smallFile,
+        videoFile: smallVideoFile,
         metadata: mockMetadata,
         creatorAddress: 'invalid',
         blockHash: mockBlockHash
       })).rejects.toThrow(BSVError)
+      await expect(inscriptionService.createInscriptionData({
+        videoFile: smallVideoFile,
+        metadata: mockMetadata,
+        creatorAddress: 'invalid',
+        blockHash: mockBlockHash
+      })).rejects.toThrow("VALIDATION_ERROR")
     })
 
     it('should throw on invalid block hash', async () => {
       await expect(inscriptionService.createInscriptionData({
-        file: smallFile,
+        videoFile: smallVideoFile,
         metadata: mockMetadata,
         creatorAddress: mockCreatorAddress,
         blockHash: 'invalid'
       })).rejects.toThrow(BSVError)
+      await expect(inscriptionService.createInscriptionData({
+        videoFile: smallVideoFile,
+        metadata: mockMetadata,
+        creatorAddress: mockCreatorAddress,
+        blockHash: 'invalid'
+      })).rejects.toThrow("VALIDATION_ERROR")
     })
   })
 
@@ -190,9 +267,18 @@ describe('InscriptionService', () => {
       location: {
         txid: '',
         vout: 0,
-        script: new Script(),
+        script: Script.fromHex('76a914729f451157ae9c5b89390c6e7690d612a4af2bd488ac6a044d454d45'),
         satoshis: 1,
-        height: 0
+        height: 0,
+        metadata: {
+          version: 1,
+          prefix: 'meme',
+          operation: 'inscribe',
+          name: 'Test Video',
+          contentID: '123',
+          txid: 'deploy',
+          creator: 'mzJ9Gi7vvp1NGw4fviWjkHSvYAkHYQM9VA'
+        }
       },
       transaction: {
         txid: '',
@@ -242,14 +328,6 @@ describe('InscriptionService', () => {
             size: 100 * 1024,
             references: []
           }
-        },
-        transaction: {
-          ...validInscription.transaction,
-          chunks: {
-            txids: [],
-            currentChunk: 0,
-            isComplete: false
-          }
         }
       }
 
@@ -271,12 +349,12 @@ describe('InscriptionService', () => {
         ...validInscription,
         content: { 
           ...validInscription.content, 
-          type: 'video/webm' as InscriptionContentType 
+          type: 'video/avi' as InscriptionContentType 
         }
       }
       const result = inscriptionService.validateInscription(invalid)
       expect(result.isValid).toBe(false)
       expect(result.errors).toContain('Invalid content type')
     })
-  })
+  }) 
 }) 

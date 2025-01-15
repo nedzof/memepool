@@ -259,13 +259,37 @@ export interface InscriptionMetadata {
   };
 }
 
+export type InscriptionOperation = 'inscribe' | 'transfer';
+
+export interface HolderMetadata {
+  version: number;
+  prefix: 'meme';
+  operation: InscriptionOperation;
+  name: string;
+  contentID: string;
+  txid: string;
+  creator: string;
+}
+
+export interface ContentIDComponents {
+  videoName: string;
+  creatorAddress: string;
+  blockHash: string;
+  timestamp: number;
+}
+
+export interface InscriptionHolderScript {
+  p2pkhScript: string;
+  metadata: HolderMetadata;
+}
+
 export interface InscriptionLocation {
   txid: string;
   vout: number;
   script: Script;
   satoshis: number;
   height: number;
-  originalInscriptionId?: string;
+  metadata: HolderMetadata;
 }
 
 export interface InscriptionTransaction {
@@ -293,16 +317,7 @@ export interface InscriptionValidation {
   warnings: string[];
 }
 
-export interface InscriptionHolderScript {
-  p2pkhScript: string;
-  memeMarker: string;
-  originalInscriptionId: string;
-}
-```
-
-### Transfer Types
-```typescript
-interface InscriptionTransfer {
+export interface InscriptionTransfer {
   inscriptionId: string
   fromAddress: string
   toAddress: string
@@ -344,6 +359,9 @@ interface BSVService {
 interface InscriptionService {
   createInscription(content: InscriptionContent, metadata: InscriptionMetadata, owner: WalletKeys): Promise<Inscription>
   validateInscription(inscription: Inscription): Promise<InscriptionValidation>
+  generateContentID(components: ContentIDComponents): string
+  serializeMetadata(metadata: HolderMetadata): Buffer
+  deserializeMetadata(buffer: Buffer): HolderMetadata
   getInscriptionById(id: string): Promise<Inscription | null>
   listInscriptionsByOwner(address: string): Promise<Inscription[]>
 }
@@ -358,7 +376,7 @@ interface OwnershipTransferService {
   verifyOwnership(inscription: Inscription, address: string): Promise<boolean>
   getTransferHistory(inscriptionId: string): Promise<InscriptionTransfer[]>
   getTransferStatus(transferId: string): Promise<InscriptionTransferStatus>
-  cancelTransfer(transferId: string): Promise<boolean>
+  updateHolderMetadata(metadata: HolderMetadata, operation: InscriptionOperation, newTxid?: string): HolderMetadata
 }
 ```
 

@@ -2,6 +2,8 @@ import { Transaction, Script, P2PKH, PublicKey, PrivateKey } from '@bsv/sdk'
 import { bsv } from 'scrypt-ts'
 import { BSVError } from '../src/types'
 import { TestnetWallet } from '../src/services/testnet-wallet'
+import { InscriptionMetadata } from '../src/types/inscription'
+import cbor from 'cbor'
 
 describe('TestnetWallet', () => {
   const testPrivateKey = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy'
@@ -448,6 +450,175 @@ describe('TestnetWallet', () => {
       
       expect(validateTemplate(script1)).toBe(true)
       expect(validateTemplate(script2)).toBe(true)
+    })
+
+    it('should create inscription output script', () => {
+      // Create test metadata
+      const mockMetadata: InscriptionMetadata = {
+        type: 'memepool',
+        version: '1.0',
+        content: {
+          type: 'video/mp4',
+          size: 1000000,
+          duration: 120,
+          width: 1920,
+          height: 1080
+        },
+        metadata: {
+          title: 'test.mp4',
+          creator: recipientAddress,
+          createdAt: Date.now(),
+          attributes: {
+            blockHash: '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254',
+            bitrate: 5000000,
+            format: 'video/mp4',
+            dimensions: '1920x1080'
+          }
+        }
+      }
+
+      // Create base P2PKH script
+      const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
+      
+      // Create CBOR metadata
+      const cborData = cbor.encode(mockMetadata)
+      const pushData = Buffer.concat([
+        Buffer.from('6a', 'hex'), // OP_RETURN
+        Buffer.from([cborData.length]), // Length
+        cborData
+      ])
+      
+      // Combine scripts
+      const combinedScript = Script.fromHex(p2pkhScript.toHex() + pushData.toString('hex'))
+      
+      // Verify script structure
+      const scriptHex = combinedScript.toHex()
+      expect(scriptHex).toContain(p2pkhScript.toHex()) // Contains P2PKH script
+      expect(scriptHex).toContain('6a') // Contains OP_RETURN
+
+      // Verify CBOR metadata
+      const p2pkhEnd = scriptHex.indexOf('88ac') + 4
+      const cborHex = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      const extractedData = Buffer.from(cborHex, 'hex')
+      const decodedMetadata = cbor.decode(extractedData) as InscriptionMetadata
+      expect(decodedMetadata).toEqual(mockMetadata)
+    })
+
+    it('should validate inscription output preservation', async () => {
+      // Create test metadata
+      const mockMetadata: InscriptionMetadata = {
+        type: 'memepool',
+        version: '1.0',
+        content: {
+          type: 'video/mp4',
+          size: 1000000,
+          duration: 120,
+          width: 1920,
+          height: 1080
+        },
+        metadata: {
+          title: 'test.mp4',
+          creator: recipientAddress,
+          createdAt: Date.now(),
+          attributes: {
+            blockHash: '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254',
+            bitrate: 5000000,
+            format: 'video/mp4',
+            dimensions: '1920x1080'
+          }
+        }
+      }
+
+      // Create transaction with inscription output
+      const tx = new Transaction()
+      tx.addInput(mockInput)
+
+      // Create combined P2PKH + CBOR metadata script
+      const p2pkhScript = p2pkh.lock(recipientAddress)
+      const cborData = cbor.encode(mockMetadata)
+      const pushData = Buffer.concat([
+        Buffer.from('6a', 'hex'), // OP_RETURN
+        Buffer.from([cborData.length]), // Length
+        cborData
+      ])
+      const combinedScript = Script.fromHex(p2pkhScript.toHex() + pushData.toString('hex'))
+
+      tx.addOutput({
+        lockingScript: combinedScript,
+        satoshis: 1 // Inscription outputs are always 1 satoshi
+      })
+
+      // Add change output
+      tx.addOutput({
+        lockingScript: p2pkh.lock(pubKey.toAddress('testnet')),
+        satoshis: 900
+      })
+
+      const signedTx = await wallet.signTransaction(tx)
+      const outputHex = signedTx.outputs[0].lockingScript.toHex()
+
+      // Verify P2PKH part
+      expect(outputHex).toContain(p2pkhScript.toHex())
+
+      // Verify CBOR metadata
+      const p2pkhEnd = outputHex.indexOf('88ac') + 4
+      const cborHex = outputHex.slice(p2pkhEnd + 2) // Skip 6a
+      const extractedData = Buffer.from(cborHex, 'hex')
+      const decodedMetadata = cbor.decode(extractedData) as InscriptionMetadata
+      expect(decodedMetadata).toEqual(mockMetadata)
+    })
+
+    it('should handle large metadata correctly', () => {
+      // Create test metadata with large title
+      const mockMetadata: InscriptionMetadata = {
+        type: 'memepool',
+        version: '1.0',
+        content: {
+          type: 'video/mp4',
+          size: 1000000,
+          duration: 120,
+          width: 1920,
+          height: 1080
+        },
+        metadata: {
+          title: 'a'.repeat(1000), // Long filename
+          creator: recipientAddress,
+          createdAt: Date.now(),
+          attributes: {
+            blockHash: '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254',
+            bitrate: 5000000,
+            format: 'video/mp4',
+            dimensions: '1920x1080'
+          }
+        }
+      }
+
+      // Create base P2PKH script
+      const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
+      
+      // Create CBOR metadata
+      const cborData = cbor.encode(mockMetadata)
+      const pushData = Buffer.concat([
+        Buffer.from('6a', 'hex'), // OP_RETURN
+        Buffer.from([0x4e]), // PUSHDATA4
+        Buffer.alloc(4).fill(cborData.length), // 4-byte length
+        cborData
+      ])
+      
+      // Combine scripts
+      const combinedScript = Script.fromHex(p2pkhScript.toHex() + pushData.toString('hex'))
+      
+      // Verify script structure
+      const scriptHex = combinedScript.toHex()
+      expect(scriptHex).toContain(p2pkhScript.toHex()) // Contains P2PKH script
+      expect(scriptHex).toContain('6a4e') // Contains OP_RETURN + PUSHDATA4
+
+      // Verify CBOR metadata
+      const p2pkhEnd = scriptHex.indexOf('88ac') + 4
+      const cborHex = scriptHex.slice(p2pkhEnd + 6) // Skip 6a4e and length
+      const extractedData = Buffer.from(cborHex, 'hex')
+      const decodedMetadata = cbor.decode(extractedData) as InscriptionMetadata
+      expect(decodedMetadata).toEqual(mockMetadata)
     })
   })
 

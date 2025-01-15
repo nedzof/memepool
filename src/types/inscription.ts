@@ -1,9 +1,21 @@
 import { Script } from '@bsv/sdk';
-import { VideoMetadata, VideoFile } from './video';
+import { SignedTransaction } from './services';
 
 export interface InscriptionCreationParams {
-  videoFile: VideoFile;
-  metadata: VideoMetadata;
+  videoFile: {
+    buffer: Buffer;
+    type: string;
+    name: string;
+    size: number;
+  };
+  metadata: {
+    duration: number;
+    dimensions: {
+      width: number;
+      height: number;
+    };
+    bitrate: number;
+  };
   creatorAddress: string;
   blockHash: string;
 }
@@ -40,6 +52,7 @@ export interface InscriptionContent {
   chunks?: ChunkMetadata;
 }
 
+// Video inscription metadata (in OP_RETURN)
 export interface InscriptionMetadata {
   type: string;
   version: string;
@@ -63,13 +76,38 @@ export interface InscriptionMetadata {
   };
 }
 
+// Holder UTXO metadata types
+export type InscriptionOperation = 'inscribe' | 'transfer';
+
+export interface HolderMetadata {
+  version: number;
+  prefix: 'meme';
+  operation: InscriptionOperation;
+  name: string;
+  contentID: string;
+  txid: string;
+  creator: string;
+}
+
+export interface ContentIDComponents {
+  videoName: string;
+  creatorAddress: string;
+  blockHash: string;
+  timestamp: number;
+}
+
+export interface InscriptionHolderScript {
+  p2pkhScript: string;
+  metadata: HolderMetadata;
+}
+
 export interface InscriptionLocation {
   txid: string;
   vout: number;
   script: Script;
   satoshis: number;
   height: number;
-  originalInscriptionId?: string;
+  metadata: HolderMetadata;
 }
 
 export interface InscriptionTransaction {
@@ -84,9 +122,9 @@ export interface InscriptionTransaction {
 export interface Inscription {
   txid: string;
   content: InscriptionContent;
-  metadata: InscriptionMetadata;
+  metadata: InscriptionMetadata;  // Video inscription metadata
   owner: string;
-  location: InscriptionLocation;
+  location: InscriptionLocation;  // Includes holder UTXO metadata
   transaction: InscriptionTransaction;
   history: InscriptionTransaction[];
 }
@@ -97,8 +135,14 @@ export interface InscriptionValidation {
   warnings: string[];
 }
 
-export interface InscriptionHolderScript {
-  p2pkhScript: string;
-  memeMarker: string;
-  originalInscriptionId: string;
+// CBOR serialization helpers
+export interface CBORSerializable {
+  toCBOR(): Buffer;
+  fromCBOR(buffer: Buffer): HolderMetadata;
+}
+
+export interface MetadataValidator {
+  validateMetadata(metadata: HolderMetadata): InscriptionValidation;
+  validateContentID(contentID: string): boolean;
+  validateOperation(operation: InscriptionOperation, context: Inscription): boolean;
 } 

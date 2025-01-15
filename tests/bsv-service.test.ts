@@ -3,6 +3,8 @@ import { BSVService } from '../src/services/bsv-service'
 import { TransactionInput, TransactionOutput, WalletProvider, UnlockingTemplate } from '../src/types/bsv'
 import { BSVError } from '../src/types'
 import { SignedTransaction } from '../src/types/services'
+import { InscriptionMetadata } from '../src/types/inscription'
+import cbor from 'cbor'
 
 describe('BSVService', () => {
   let service: BSVService
@@ -236,6 +238,120 @@ describe('BSVService', () => {
       await expect(service.broadcastTransaction(mockSignedTx))
         .rejects
         .toThrow(BSVError)
+    })
+  })
+
+  describe('Inscription Transactions', () => {
+    const p2pkh = new P2PKH()
+    const privateKey = PrivateKey.fromWif(testPrivateKey)
+    const pubKey = privateKey.toPublicKey()
+
+    it('should create inscription transaction with CBOR metadata', async () => {
+      const mockMetadata: InscriptionMetadata = {
+        type: 'memepool',
+        version: '1.0',
+        content: {
+          type: 'video/mp4',
+          size: 1000000,
+          duration: 120,
+          width: 1920,
+          height: 1080
+        },
+        metadata: {
+          title: 'test.mp4',
+          creator: testAddress,
+          createdAt: Date.now(),
+          attributes: {
+            blockHash: '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254',
+            bitrate: 5000000,
+            format: 'video/mp4',
+            dimensions: '1920x1080'
+          }
+        }
+      }
+
+      const content = Buffer.from('test video content')
+      const holderScript = new Script()
+
+      const txid = await service.createInscriptionTransaction(mockMetadata, content, holderScript)
+      expect(txid).toBeDefined()
+      expect(typeof txid).toBe('string')
+      expect(txid).toMatch(/^[0-9a-f]{64}$/)
+    })
+
+    it('should extract inscription metadata from transaction output', async () => {
+      // Create test metadata
+      const mockMetadata: InscriptionMetadata = {
+        type: 'memepool',
+        version: '1.0',
+        content: {
+          type: 'video/mp4',
+          size: 1000000,
+          duration: 120,
+          width: 1920,
+          height: 1080
+        },
+        metadata: {
+          title: 'test.mp4',
+          creator: testAddress,
+          createdAt: Date.now(),
+          attributes: {
+            blockHash: '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254',
+            bitrate: 5000000,
+            format: 'video/mp4',
+            dimensions: '1920x1080'
+          }
+        }
+      }
+
+      // Create OP_FALSE OP_RETURN script with CBOR metadata
+      const cborData = cbor.encode(mockMetadata)
+      const pushData = service['createPushData'](cborData)
+      const script = Script.fromHex('006a' + pushData.toString('hex'))
+
+      // Extract and verify metadata
+      const extractedMetadata = service.extractInscriptionMetadata(script)
+      expect(extractedMetadata).toEqual(mockMetadata)
+    })
+
+    it('should handle invalid inscription metadata', () => {
+      // Create script with invalid CBOR data
+      const invalidScript = Script.fromHex('006a04deadbeef')
+      const extractedMetadata = service.extractInscriptionMetadata(invalidScript)
+      expect(extractedMetadata).toBeNull()
+    })
+
+    it('should handle large inscription metadata correctly', async () => {
+      const mockMetadata: InscriptionMetadata = {
+        type: 'memepool',
+        version: '1.0',
+        content: {
+          type: 'video/mp4',
+          size: 1000000,
+          duration: 120,
+          width: 1920,
+          height: 1080
+        },
+        metadata: {
+          title: 'a'.repeat(1000), // Long filename
+          creator: testAddress,
+          createdAt: Date.now(),
+          attributes: {
+            blockHash: '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254',
+            bitrate: 5000000,
+            format: 'video/mp4',
+            dimensions: '1920x1080'
+          }
+        }
+      }
+
+      const content = Buffer.from('test video content')
+      const holderScript = new Script()
+
+      const txid = await service.createInscriptionTransaction(mockMetadata, content, holderScript)
+      expect(txid).toBeDefined()
+      expect(typeof txid).toBe('string')
+      expect(txid).toMatch(/^[0-9a-f]{64}$/)
     })
   })
 }) 

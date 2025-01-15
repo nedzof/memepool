@@ -14,6 +14,7 @@ import {
 import { SignedTransaction } from '../types/services'
 import { InscriptionMetadata } from '../types/inscription'
 import crypto from 'crypto'
+import cbor from 'cbor'
 
 /**
  * Service for handling BSV blockchain interactions
@@ -445,8 +446,8 @@ export class BSVService implements BSVServiceInterface {
       // Add inscription data output
       const inscriptionScriptParts = [
         '006a', // OP_FALSE OP_RETURN
-        this.createPushData4(Buffer.from(JSON.stringify(metadata))).toString('hex'),
-        this.createPushData4(content).toString('hex')
+        this.createPushData(cbor.encode(metadata)).toString('hex'),  // CBOR-encoded metadata
+        this.createPushData(content).toString('hex')  // Video content
       ];
       const inscriptionScript = Script.fromHex(inscriptionScriptParts.join(''));
       tx.addOutput({
@@ -457,22 +458,35 @@ export class BSVService implements BSVServiceInterface {
       // Generate deterministic inscription ID
       const inscriptionId = this.generateInscriptionId(content, metadata, address);
 
-      // Create the holder script with the inscription ID
+      // Create holder metadata
+      const holderMetadata = {
+        version: 1,
+        prefix: 'meme',
+        operation: 'inscribe' as const,
+        name: metadata.metadata.title,
+        contentID: inscriptionId,
+        txid: 'deploy',
+        creator: address
+      };
+
+      // Serialize metadata to CBOR
+      const cborData = cbor.encode(holderMetadata);
+
+      // Create the holder script
       const p2pkhScript = p2pkh.lock(address);
       const holderScriptParts = [
-        p2pkhScript.toHex(), // P2PKH script
-        '6a20' + inscriptionId, // OP_RETURN <32 bytes> for inscription ID
-        '6a044d454d45' // OP_RETURN MEME
+        p2pkhScript.toHex(),                // P2PKH script
+        '6a' + this.createPushData(cborData).toString('hex')  // OP_RETURN + CBOR data
       ];
       const finalHolderScript = Script.fromHex(holderScriptParts.join(''));
 
-      // Add inscription holder output
+      // Add inscription holder output with exactly 1 satoshi
       tx.addOutput({
         lockingScript: finalHolderScript,
         satoshis: 1
       });
 
-      // Add change output if above dust limit
+      // Add change output if above dust limit (546 satoshis)
       if (changeAmount >= 546) {
         tx.addOutput({
           lockingScript: p2pkhScript,
@@ -492,6 +506,38 @@ export class BSVService implements BSVServiceInterface {
   }
 
   /**
+   * Creates appropriate PUSHDATA based on data size
+   * @param data - The data to push
+   * @returns Buffer containing the PUSHDATA prefix and data
+   */
+  private createPushData(data: Buffer): Buffer {
+    if (data.length <= 0x4b) {
+      // Use direct push
+      const lenBuffer = Buffer.alloc(1);
+      lenBuffer.writeUInt8(data.length);
+      return Buffer.concat([lenBuffer, data]);
+    } else if (data.length <= 0xff) {
+      // Use PUSHDATA1
+      const lenBuffer = Buffer.alloc(2);
+      lenBuffer[0] = 0x4c; // PUSHDATA1
+      lenBuffer[1] = data.length;
+      return Buffer.concat([lenBuffer, data]);
+    } else if (data.length <= 0xffff) {
+      // Use PUSHDATA2
+      const lenBuffer = Buffer.alloc(3);
+      lenBuffer[0] = 0x4d; // PUSHDATA2
+      lenBuffer.writeUInt16LE(data.length, 1);
+      return Buffer.concat([lenBuffer, data]);
+    } else {
+      // Use PUSHDATA4
+      const lenBuffer = Buffer.alloc(5);
+      lenBuffer[0] = 0x4e; // PUSHDATA4
+      lenBuffer.writeUInt32LE(data.length, 1);
+      return Buffer.concat([lenBuffer, data]);
+    }
+  }
+
+  /**
    * Calculate the size needed for a pushdata operation
    * @private
    */
@@ -505,5 +551,110 @@ export class BSVService implements BSVServiceInterface {
     } else {
       return 5; // OP_PUSHDATA4 + size bytes
     }
+  }
+
+  /**
+   * Validates a holder script format
+   * @param script - The script to validate
+   * @returns boolean indicating if script is valid
+   */
+  private validateHolderScript(script: Script): boolean {
+    const scriptHex = script.toHex();
+    
+    // Check for required components
+    const hasP2PKH = /76a914[0-9a-f]{40}88ac/.test(scriptHex);
+    const hasOriginalTxid = /6a20[0-9a-f]{64}/.test(scriptHex);
+    const hasMEMEMarker = scriptHex.includes('6a044d454d45');
+    
+    // All components must be present and in correct order
+    return hasP2PKH && hasOriginalTxid && hasMEMEMarker;
+  }
+
+  /**
+   * Extracts and decodes inscription metadata from a transaction output
+   * @param script - The inscription script
+   * @returns The decoded metadata or null if invalid
+   */
+  extractInscriptionMetadata(script: Script): InscriptionMetadata | null {
+    try {
+      const scriptHex = script.toHex();
+      
+      // Check for OP_FALSE OP_RETURN prefix
+      if (!scriptHex.startsWith('006a')) return null;
+      
+      // Skip OP_FALSE OP_RETURN
+      let currentPos = 4;
+      
+      // Get PUSHDATA for metadata
+      const metadataLength = this.getPushDataLength(scriptHex.slice(currentPos));
+      if (!metadataLength) return null;
+      
+      // Extract CBOR data
+      const metadataHex = scriptHex.slice(currentPos + metadataLength.prefixSize * 2, 
+                                        currentPos + metadataLength.prefixSize * 2 + metadataLength.length * 2);
+      const metadataBuffer = Buffer.from(metadataHex, 'hex');
+      
+      // Decode CBOR data
+      const metadata = cbor.decode(metadataBuffer) as InscriptionMetadata;
+      
+      // Validate metadata structure
+      if (!this.validateInscriptionMetadata(metadata)) return null;
+      
+      return metadata;
+    } catch (error) {
+      console.error('Failed to extract inscription metadata:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Gets the length of a PUSHDATA operation from its hex representation
+   * @private
+   */
+  private getPushDataLength(hex: string): { length: number; prefixSize: number } | null {
+    try {
+      const firstByte = parseInt(hex.slice(0, 2), 16);
+      
+      if (firstByte <= 0x4b) {
+        return { length: firstByte, prefixSize: 1 };
+      } else if (firstByte === 0x4c) {
+        return { length: parseInt(hex.slice(2, 4), 16), prefixSize: 2 };
+      } else if (firstByte === 0x4d) {
+        return { length: parseInt(hex.slice(2, 6), 16), prefixSize: 3 };
+      } else if (firstByte === 0x4e) {
+        return { length: parseInt(hex.slice(2, 10), 16), prefixSize: 5 };
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Validates inscription metadata structure
+   * @private
+   */
+  private validateInscriptionMetadata(metadata: any): metadata is InscriptionMetadata {
+    return (
+      metadata &&
+      typeof metadata.type === 'string' &&
+      typeof metadata.version === 'string' &&
+      metadata.content &&
+      typeof metadata.content.type === 'string' &&
+      typeof metadata.content.size === 'number' &&
+      typeof metadata.content.duration === 'number' &&
+      typeof metadata.content.width === 'number' &&
+      typeof metadata.content.height === 'number' &&
+      metadata.metadata &&
+      typeof metadata.metadata.title === 'string' &&
+      typeof metadata.metadata.creator === 'string' &&
+      typeof metadata.metadata.createdAt === 'number' &&
+      metadata.metadata.attributes &&
+      typeof metadata.metadata.attributes.blockHash === 'string' &&
+      typeof metadata.metadata.attributes.bitrate === 'number' &&
+      typeof metadata.metadata.attributes.format === 'string' &&
+      typeof metadata.metadata.attributes.dimensions === 'string'
+    );
   }
 } 

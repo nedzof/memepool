@@ -149,7 +149,16 @@ async function testInscription(filePath: string): Promise<string> {
         vout: 1,
         script: finalHolderScript,
         satoshis: 1,
-        height: 0
+        height: 0,
+        metadata: {
+          version: 1,
+          prefix: 'meme',
+          operation: 'inscribe',
+          name: videoFile.name,
+          contentID: inscriptionData.inscriptionId,
+          txid: 'deploy',
+          creator: address
+        }
       },
       transaction: {
         txid,
@@ -168,6 +177,16 @@ async function testInscription(filePath: string): Promise<string> {
       throw new BSVError('INVALID_INSCRIPTION', `Validation failed: ${validation.errors.join(', ')}`);
     }
     console.log('Inscription validated successfully');
+
+    // Print metadata for verification
+    console.log('\nInscription details:');
+    console.log('Content type:', inscriptionData.content.type);
+    console.log('Content size:', inscriptionData.content.size, 'bytes');
+    console.log('Video duration:', inscriptionData.metadata.content.duration, 'seconds');
+    console.log('Resolution:', `${inscriptionData.metadata.content.width}x${inscriptionData.metadata.content.height}`);
+    console.log('Creator:', inscriptionData.metadata.metadata.creator);
+    console.log('Creation time:', new Date(inscriptionData.metadata.metadata.createdAt).toISOString());
+    console.log('Block hash:', inscriptionData.metadata.metadata.attributes.blockHash);
 
     console.log('\nTest completed successfully!');
     return txid;

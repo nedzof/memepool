@@ -1,7 +1,8 @@
 import { BSVService } from '../src/services/bsv-service';
-import { InscriptionMetadata } from '../src/types/inscription';
+import { InscriptionMetadata, HolderMetadata } from '../src/types/inscription';
 import fs from 'fs/promises';
 import crypto from 'crypto';
+import cbor from 'cbor';
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -183,37 +184,50 @@ async function verifyInscription(txid: string): Promise<boolean> {
     console.log('Extracted data length:', data.length);
     console.log('First 100 bytes of data:', data.slice(0, 100));
 
-    // Try to parse the data directly as JSON first
+    // Try to parse the data as CBOR
     try {
-      const jsonData = Buffer.from(data, 'hex').toString('utf8');
-      console.log('\nTrying to parse as JSON...');
-      const metadata: InscriptionMetadata = JSON.parse(jsonData);
+      const cborData = Buffer.from(data, 'hex');
+      console.log('\nTrying to parse as CBOR...');
+      const metadata: InscriptionMetadata = cbor.decode(cborData);
       console.log('Successfully parsed metadata:', metadata);
 
-      // Look for the next PUSHDATA4 chunk which should contain the video
+      // Look for the next PUSHDATA chunk which should contain the video
       const remainingData = scriptData.slice(dataStart + dataLength * 2);
       console.log('\nLooking for video data...');
       console.log('Remaining data length:', remainingData.length);
 
-      // Find the next PUSHDATA4
+      // Find the next PUSHDATA
       let pos = 0;
       while (pos < remainingData.length) {
         const opcode = parseInt(remainingData.slice(pos, pos + 2), 16);
-        if (opcode === 0x4e) {
-          console.log('Found PUSHDATA4 for video at offset:', pos);
+        if (opcode === 0x4e || opcode <= 0x4b || opcode === 0x4c || opcode === 0x4d) {
+          console.log('Found PUSHDATA for video at offset:', pos);
           
-          // Read 4-byte length (little-endian)
-          const lengthHex = remainingData.slice(pos + 2, pos + 10);
-          const lengthBytes = lengthHex.match(/../g)!.reverse();
-          const videoLength = parseInt(lengthBytes.join(''), 16);
-          console.log('Video length from PUSHDATA4:', videoLength);
+          // Get video data length based on PUSHDATA type
+          let videoLength: number;
+          let videoDataStart: number;
+          
+          if (opcode <= 0x4b) {
+            videoLength = opcode;
+            videoDataStart = pos + 2;
+          } else if (opcode === 0x4c) {
+            videoLength = parseInt(remainingData.slice(pos + 2, pos + 4), 16);
+            videoDataStart = pos + 4;
+          } else if (opcode === 0x4d) {
+            videoLength = parseInt(remainingData.slice(pos + 2, pos + 6).match(/../g)!.reverse().join(''), 16);
+            videoDataStart = pos + 6;
+          } else {
+            videoLength = parseInt(remainingData.slice(pos + 2, pos + 10).match(/../g)!.reverse().join(''), 16);
+            videoDataStart = pos + 10;
+          }
+          
+          console.log('Video length from PUSHDATA:', videoLength);
           
           // Extract video data
-          const videoDataStart = pos + 10; // Skip opcode and length
           const videoData = Buffer.from(remainingData.slice(videoDataStart, videoDataStart + videoLength * 2), 'hex');
           
           console.log('\nFound inscription data:');
-          console.log('Metadata size:', jsonData.length, 'bytes');
+          console.log('Metadata size:', cborData.length, 'bytes');
           console.log('Video size:', videoData.length, 'bytes');
 
           // Save video for verification
@@ -228,14 +242,6 @@ async function verifyInscription(txid: string): Promise<boolean> {
           console.log('Size match:', metadata.content.size === videoData.length);
           console.log('Format match:', videoData.slice(4, 8).toString() === 'ftyp');
 
-          // Check for protection marker
-          console.log('\nChecking protection marker...');
-          const markerHex = '6a044d454d45'; // OP_RETURN MEME
-          const hasMarker = txHex.includes(markerHex);
-          console.log('Protection marker found:', hasMarker);
-          console.log('Protection marker (hex):', markerHex);
-          console.log('Protection marker (decoded):', 'OP_RETURN "MEME"');
-
           // Get current owner from the input transaction
           console.log('\nOwnership details:');
           console.log('Original transaction:', originalTxId);
@@ -247,14 +253,23 @@ async function verifyInscription(txid: string): Promise<boolean> {
             throw new Error('No valid inscription holder output found');
           }
 
-          // Extract the P2PKH address from the output
-          const pubKeyHashMatch = currentOwnerOutput.scriptPubKey.hex.match(/76a914([0-9a-f]{40})88ac/);
-          if (!pubKeyHashMatch) {
+          // Extract the P2PKH script and CBOR metadata from the output
+          const scriptHex = currentOwnerOutput.scriptPubKey.hex;
+          const p2pkhMatch = scriptHex.match(/76a914([0-9a-f]{40})88ac/);
+          if (!p2pkhMatch) {
             throw new Error('Invalid P2PKH script format');
           }
 
           // Convert pubKeyHash to address
-          const currentOwnerAddress = pubKeyHashToAddress(pubKeyHashMatch[1]);
+          const currentOwnerAddress = pubKeyHashToAddress(p2pkhMatch[1]);
+
+          // Extract and decode holder metadata
+          const holderMetadataStart = scriptHex.indexOf('6a') + 2;
+          if (holderMetadataStart > 2) {
+            const holderCborData = Buffer.from(scriptHex.slice(holderMetadataStart), 'hex');
+            const holderMetadata = cbor.decode(holderCborData) as HolderMetadata;
+            console.log('\nHolder metadata:', holderMetadata);
+          }
 
           console.log('\nInscription holder output found:');
           console.log('Value:', currentOwnerOutput.value, 'BSV');
@@ -267,7 +282,7 @@ async function verifyInscription(txid: string): Promise<boolean> {
         }
         pos += 2;
       }
-      throw new Error('Could not find video data PUSHDATA4 chunk');
+      throw new Error('Could not find video data PUSHDATA chunk');
     } catch (error) {
       console.error('Failed to parse data:', error);
       throw error;
