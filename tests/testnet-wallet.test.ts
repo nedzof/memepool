@@ -480,11 +480,26 @@ describe('TestnetWallet', () => {
       // Create base P2PKH script
       const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
       
-      // Create CBOR metadata
+      // Create CBOR metadata with proper PUSHDATA prefix
       const cborData = cbor.encode(mockMetadata)
+      let pushDataPrefix: Buffer
+      if (cborData.length <= 0x4b) {
+        pushDataPrefix = Buffer.from([cborData.length])
+      } else if (cborData.length <= 0xff) {
+        pushDataPrefix = Buffer.concat([Buffer.from([0x4c]), Buffer.from([cborData.length])])
+      } else if (cborData.length <= 0xffff) {
+        const lenBuffer = Buffer.alloc(2)
+        lenBuffer.writeUInt16LE(cborData.length)
+        pushDataPrefix = Buffer.concat([Buffer.from([0x4d]), lenBuffer])
+      } else {
+        const lenBuffer = Buffer.alloc(4)
+        lenBuffer.writeUInt32LE(cborData.length)
+        pushDataPrefix = Buffer.concat([Buffer.from([0x4e]), lenBuffer])
+      }
+      
       const pushData = Buffer.concat([
         Buffer.from('6a', 'hex'), // OP_RETURN
-        Buffer.from([cborData.length]), // Length
+        pushDataPrefix,
         cborData
       ])
       
@@ -496,9 +511,23 @@ describe('TestnetWallet', () => {
       expect(scriptHex).toContain(p2pkhScript.toHex()) // Contains P2PKH script
       expect(scriptHex).toContain('6a') // Contains OP_RETURN
 
-      // Verify CBOR metadata
+      // Verify CBOR metadata by extracting it correctly
       const p2pkhEnd = scriptHex.indexOf('88ac') + 4
-      const cborHex = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      const opReturnData = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      
+      // Extract CBOR data by skipping PUSHDATA prefix
+      let cborStartIndex = 0
+      if (opReturnData.startsWith('4c')) {
+        cborStartIndex = 4 // Skip 4c and one byte length
+      } else if (opReturnData.startsWith('4d')) {
+        cborStartIndex = 6 // Skip 4d and two byte length
+      } else if (opReturnData.startsWith('4e')) {
+        cborStartIndex = 10 // Skip 4e and four byte length
+      } else {
+        cborStartIndex = 2 // Skip one byte length for direct push
+      }
+      
+      const cborHex = opReturnData.slice(cborStartIndex)
       const extractedData = Buffer.from(cborHex, 'hex')
       const decodedMetadata = cbor.decode(extractedData) as InscriptionMetadata
       expect(decodedMetadata).toEqual(mockMetadata)
@@ -536,11 +565,29 @@ describe('TestnetWallet', () => {
       // Create combined P2PKH + CBOR metadata script
       const p2pkhScript = p2pkh.lock(recipientAddress)
       const cborData = cbor.encode(mockMetadata)
+      
+      // Create PUSHDATA prefix based on size
+      let pushDataPrefix: Buffer
+      if (cborData.length <= 0x4b) {
+        pushDataPrefix = Buffer.from([cborData.length])
+      } else if (cborData.length <= 0xff) {
+        pushDataPrefix = Buffer.concat([Buffer.from([0x4c]), Buffer.from([cborData.length])])
+      } else if (cborData.length <= 0xffff) {
+        const lenBuffer = Buffer.alloc(2)
+        lenBuffer.writeUInt16LE(cborData.length)
+        pushDataPrefix = Buffer.concat([Buffer.from([0x4d]), lenBuffer])
+      } else {
+        const lenBuffer = Buffer.alloc(4)
+        lenBuffer.writeUInt32LE(cborData.length)
+        pushDataPrefix = Buffer.concat([Buffer.from([0x4e]), lenBuffer])
+      }
+      
       const pushData = Buffer.concat([
         Buffer.from('6a', 'hex'), // OP_RETURN
-        Buffer.from([cborData.length]), // Length
+        pushDataPrefix,
         cborData
       ])
+      
       const combinedScript = Script.fromHex(p2pkhScript.toHex() + pushData.toString('hex'))
 
       tx.addOutput({
@@ -560,9 +607,23 @@ describe('TestnetWallet', () => {
       // Verify P2PKH part
       expect(outputHex).toContain(p2pkhScript.toHex())
 
-      // Verify CBOR metadata
+      // Verify CBOR metadata by extracting it correctly
       const p2pkhEnd = outputHex.indexOf('88ac') + 4
-      const cborHex = outputHex.slice(p2pkhEnd + 2) // Skip 6a
+      const opReturnData = outputHex.slice(p2pkhEnd + 2) // Skip 6a
+      
+      // Extract CBOR data by skipping PUSHDATA prefix
+      let cborStartIndex = 0
+      if (opReturnData.startsWith('4c')) {
+        cborStartIndex = 4 // Skip 4c and one byte length
+      } else if (opReturnData.startsWith('4d')) {
+        cborStartIndex = 6 // Skip 4d and two byte length
+      } else if (opReturnData.startsWith('4e')) {
+        cborStartIndex = 10 // Skip 4e and four byte length
+      } else {
+        cborStartIndex = 2 // Skip one byte length for direct push
+      }
+      
+      const cborHex = opReturnData.slice(cborStartIndex)
       const extractedData = Buffer.from(cborHex, 'hex')
       const decodedMetadata = cbor.decode(extractedData) as InscriptionMetadata
       expect(decodedMetadata).toEqual(mockMetadata)
@@ -596,12 +657,15 @@ describe('TestnetWallet', () => {
       // Create base P2PKH script
       const p2pkhScript = p2pkh.lock(pubKey.toAddress('testnet'))
       
-      // Create CBOR metadata
+      // Create CBOR metadata with PUSHDATA4 for large data
       const cborData = cbor.encode(mockMetadata)
+      const lenBuffer = Buffer.alloc(4)
+      lenBuffer.writeUInt32LE(cborData.length)
+      
       const pushData = Buffer.concat([
         Buffer.from('6a', 'hex'), // OP_RETURN
         Buffer.from([0x4e]), // PUSHDATA4
-        Buffer.alloc(4).fill(cborData.length), // 4-byte length
+        lenBuffer,
         cborData
       ])
       
@@ -615,7 +679,10 @@ describe('TestnetWallet', () => {
 
       // Verify CBOR metadata
       const p2pkhEnd = scriptHex.indexOf('88ac') + 4
-      const cborHex = scriptHex.slice(p2pkhEnd + 6) // Skip 6a4e and length
+      const opReturnData = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      
+      // Extract CBOR data by skipping PUSHDATA4 prefix
+      const cborHex = opReturnData.slice(10) // Skip 4e and 4-byte length
       const extractedData = Buffer.from(cborHex, 'hex')
       const decodedMetadata = cbor.decode(extractedData) as InscriptionMetadata
       expect(decodedMetadata).toEqual(mockMetadata)

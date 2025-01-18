@@ -13,21 +13,29 @@ describe('InscriptionService', () => {
 
   describe('createInscriptionData', () => {
     // Create a small video file (under chunk size)
-    const smallVideoBuffer = Buffer.from(new Uint8Array(50 * 1024)) // 50KB
+    const smallVideoBuffer = Buffer.from([
+      0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, // MP4 file signature
+      0x69, 0x73, 0x6F, 0x6D, // ISOM
+      ...new Array(50 * 1024 - 12).fill(0xFF) // Fill rest with 0xFF
+    ]);
     const smallVideoFile = {
       buffer: smallVideoBuffer,
       name: 'small.mp4',
       type: 'video/mp4',
-      size: 50 * 1024
+      size: smallVideoBuffer.length
     }
 
     // Create a large video file (over chunk size)
-    const largeVideoBuffer = Buffer.from(new Uint8Array(150 * 1024)) // 150KB
+    const largeVideoBuffer = Buffer.from([
+      0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, // MP4 file signature
+      0x69, 0x73, 0x6F, 0x6D, // ISOM
+      ...new Array(150 * 1024 - 12).fill(0xFF) // Fill rest with 0xFF
+    ]);
     const largeVideoFile = {
       buffer: largeVideoBuffer,
       name: 'large.mp4',
       type: 'video/mp4',
-      size: 150 * 1024
+      size: largeVideoBuffer.length
     }
 
     const mockMetadata = {
@@ -40,7 +48,7 @@ describe('InscriptionService', () => {
     }
 
     // Use valid testnet address format
-    const mockCreatorAddress = 'mzJ9Gi7vvp1NGw4fviWjkHSvYAkHYQM9VA'
+    const mockCreatorAddress = 'mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn'
     const mockBlockHash = '000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254'
 
     it('should create valid inscription data for small video', async () => {
@@ -93,7 +101,21 @@ describe('InscriptionService', () => {
 
       // Verify CBOR metadata in holder script
       const p2pkhEnd = scriptHex.indexOf('88ac') + 4
-      const cborHex = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      const opReturnData = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      
+      // Extract CBOR data by skipping PUSHDATA prefix
+      let cborStartIndex = 0;
+      if (opReturnData.startsWith('4c')) {
+        cborStartIndex = 4; // Skip 4c and one byte length
+      } else if (opReturnData.startsWith('4d')) {
+        cborStartIndex = 6; // Skip 4d and two byte length
+      } else if (opReturnData.startsWith('4e')) {
+        cborStartIndex = 10; // Skip 4e and four byte length
+      } else {
+        cborStartIndex = 2; // Skip one byte length for direct push
+      }
+      
+      const cborHex = opReturnData.slice(cborStartIndex)
       const cborData = Buffer.from(cborHex, 'hex')
       const decodedMetadata = cbor.decode(cborData) as HolderMetadata
 
@@ -140,7 +162,21 @@ describe('InscriptionService', () => {
       // Verify holder script CBOR metadata
       const scriptHex = result.holderScript.toHex()
       const p2pkhEnd = scriptHex.indexOf('88ac') + 4
-      const cborHex = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      const opReturnData = scriptHex.slice(p2pkhEnd + 2) // Skip 6a
+      
+      // Extract CBOR data by skipping PUSHDATA prefix
+      let cborStartIndex = 0;
+      if (opReturnData.startsWith('4c')) {
+        cborStartIndex = 4; // Skip 4c and one byte length
+      } else if (opReturnData.startsWith('4d')) {
+        cborStartIndex = 6; // Skip 4d and two byte length
+      } else if (opReturnData.startsWith('4e')) {
+        cborStartIndex = 10; // Skip 4e and four byte length
+      } else {
+        cborStartIndex = 2; // Skip one byte length for direct push
+      }
+      
+      const cborHex = opReturnData.slice(cborStartIndex)
       const cborData = Buffer.from(cborHex, 'hex')
       const decodedMetadata = cbor.decode(cborData) as HolderMetadata
 

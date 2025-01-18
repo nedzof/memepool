@@ -32,14 +32,10 @@ export class InscriptionService {
    */
   createInitialHolderScript(address: string, name: string, contentId: string): Script {
     try {
-      // Validate address format
-      if (!/^([mn1])[a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(address)) {
-        throw new BSVError('VALIDATION_ERROR', 'Invalid address format');
-      }
-
       // Create P2PKH script
+      console.log('Creating P2PKH script with:', { address, name, contentId });
       const p2pkh = new P2PKH();
-      console.log('Creating P2PKH script for address:', address);
+      console.log('P2PKH instance created');
       const p2pkhScript = p2pkh.lock(address);
       console.log('P2PKH script created:', p2pkhScript.toHex());
       
@@ -58,25 +54,22 @@ export class InscriptionService {
       // Serialize metadata to CBOR
       const cborData = cbor.encode(metadata);
       console.log('CBOR data length:', cborData.length);
+      console.log('CBOR data hex:', cborData.toString('hex'));
       
       // Create combined script parts
       const scriptParts = [
         p2pkhScript.toHex(),                // P2PKH script
         '6a' + this.createPushData(cborData).toString('hex')  // OP_RETURN + CBOR data
       ];
+      console.log('Script parts:', scriptParts);
       
-      return Script.fromHex(scriptParts.join(''));
+      const finalScript = Script.fromHex(scriptParts.join(''));
+      console.log('Final script hex:', finalScript.toHex());
+      return finalScript;
     } catch (error) {
       console.error('Failed to create holder script:', error);
-      if (error instanceof BSVError) {
-        throw error;
-      }
-      if (error instanceof Error) {
-        if (error.message.includes('Invalid base58') || error.message.includes('Invalid checksum')) {
-          throw new BSVError('VALIDATION_ERROR', 'Invalid address format');
-        }
-      }
-      throw new BSVError('SCRIPT_ERROR', 'Failed to create holder script');
+      // Let the error propagate up to be handled by createInscriptionData
+      throw error;
     }
   }
 
@@ -164,7 +157,21 @@ export class InscriptionService {
       if (scriptHex.slice(dataStart, dataStart + 2) !== '6a') return null;
       
       // Extract CBOR data after OP_RETURN
-      const cborHex = scriptHex.slice(dataStart + 2);
+      const opReturnData = scriptHex.slice(dataStart + 2);
+      
+      // Handle PUSHDATA prefixes
+      let cborStartIndex = 0;
+      if (opReturnData.startsWith('4c')) {
+        cborStartIndex = 4; // Skip 4c and one byte length
+      } else if (opReturnData.startsWith('4d')) {
+        cborStartIndex = 6; // Skip 4d and two byte length
+      } else if (opReturnData.startsWith('4e')) {
+        cborStartIndex = 10; // Skip 4e and four byte length
+      } else {
+        cborStartIndex = 2; // Skip one byte length for direct push
+      }
+      
+      const cborHex = opReturnData.slice(cborStartIndex);
       const cborBuffer = Buffer.from(cborHex, 'hex');
       
       // Decode CBOR data
@@ -230,84 +237,111 @@ export class InscriptionService {
     inscriptionId: string;
   }> {
     try {
-      console.log('Creating inscription data with params:', {
+      console.log('Step 1: Starting inscription data creation');
+      console.log('Input params:', {
         videoName: params.videoFile.name,
         videoType: params.videoFile.type,
         videoSize: params.videoFile.size,
         creatorAddress: params.creatorAddress,
-        blockHash: params.blockHash
+        blockHash: params.blockHash,
+        metadata: params.metadata
       });
 
+      // Validate creator address format first
+      console.log('Step 2: Validating creator address');
+      if (!params.creatorAddress || !/^[mn1][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(params.creatorAddress)) {
+        throw new BSVError('VALIDATION_ERROR', 'Invalid address format');
+      }
+
       // Validate block hash format
+      console.log('Step 3: Validating block hash');
       if (!/^[0-9a-f]{64}$/i.test(params.blockHash)) {
         throw new BSVError('VALIDATION_ERROR', 'Invalid block hash format');
       }
 
-      // Validate creator address format
-      if (!/^([mn1])[a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(params.creatorAddress)) {
-        throw new BSVError('VALIDATION_ERROR', 'Invalid address format');
-      }
-
-      // Generate unique content ID
-      const contentId = this.generateContentId({
-        videoName: params.videoFile.name,
-        creatorAddress: params.creatorAddress,
-        blockHash: params.blockHash,
-        timestamp: Date.now()
-      });
-      console.log('Generated content ID:', contentId);
-
-      // Create holder script with proper error handling
-      console.log('Creating holder script with:', {
-        address: params.creatorAddress,
-        name: params.videoFile.name,
-        contentId
-      });
-      const holderScript = this.createInitialHolderScript(
-        params.creatorAddress,
-        params.videoFile.name,
-        contentId
-      );
-      console.log('Holder script created:', holderScript.toHex());
-
-      // Validate input parameters
+      // Validate other input parameters
+      console.log('Step 4: Validating input parameters');
       try {
         this.validateInputParams(params);
       } catch (error) {
         console.error('Input parameter validation failed:', error);
-        if (error instanceof BSVError) {
-          throw error;
-        }
-        throw new BSVError('VALIDATION_ERROR', 'Invalid input parameters');
+        throw error;
       }
 
-      // Create a temporary inscription ID based on content hash
+      // Generate unique content ID
+      console.log('Step 5: Generating content ID');
+      const contentIdComponents = {
+        videoName: params.videoFile.name,
+        creatorAddress: params.creatorAddress,
+        blockHash: params.blockHash,
+        timestamp: Date.now()
+      };
+      console.log('Content ID components:', contentIdComponents);
+      const contentId = this.generateContentId(contentIdComponents);
+      console.log('Generated content ID:', contentId);
+
+      // Create holder script
+      console.log('Step 6: Creating holder script');
+      let holderScript: Script;
+      try {
+        holderScript = this.createInitialHolderScript(
+          params.creatorAddress,
+          params.videoFile.name,
+          contentId
+        );
+        console.log('Holder script created successfully');
+      } catch (error) {
+        console.error('Failed to create holder script:', error);
+        throw new BSVError('INSCRIPTION_ERROR', `Failed to create holder script: ${error instanceof Error ? error.message : String(error)}`);
+      }
+
+      // Create inscription ID
+      console.log('Step 7: Creating inscription ID');
       const tempInscriptionId = crypto.createHash('sha256')
         .update(params.videoFile.buffer)
         .digest('hex');
-      console.log('Generated temporary inscription ID:', tempInscriptionId);
+      console.log('Generated inscription ID:', tempInscriptionId);
 
-      // Determine if we need to chunk the data
-      const chunks = this.prepareVideoChunks(params.videoFile.buffer);
-      console.log('Prepared video chunks:', {
-        numberOfChunks: chunks.length,
-        totalSize: params.videoFile.size
-      });
+      // Prepare video chunks
+      console.log('Step 8: Preparing video chunks');
+      let chunks: VideoChunk[];
+      try {
+        chunks = this.prepareVideoChunks(params.videoFile.buffer);
+        console.log('Video chunks prepared:', {
+          numberOfChunks: chunks.length,
+          totalSize: params.videoFile.size,
+          firstChunkSize: chunks[0].data.length
+        });
+      } catch (error) {
+        console.error('Failed to prepare video chunks:', error);
+        throw new BSVError('INSCRIPTION_ERROR', `Failed to prepare video chunks: ${error instanceof Error ? error.message : String(error)}`);
+      }
       
-      const content: InscriptionContent = {
-        type: this.validateVideoFormat(params.videoFile.type),
-        data: chunks.length > 1 ? chunks : params.videoFile.buffer,
-        size: params.videoFile.size,
-        duration: params.metadata.duration,
-        width: params.metadata.dimensions.width,
-        height: params.metadata.dimensions.height,
-        chunks: chunks.length > 1 ? {
-          total: chunks.length,
-          size: MAX_CHUNK_SIZE,
-          references: []
-        } : undefined
-      };
+      // Create content structure
+      console.log('Step 9: Creating content structure');
+      let content: InscriptionContent;
+      try {
+        content = {
+          type: this.validateVideoFormat(params.videoFile.type),
+          data: chunks.length > 1 ? chunks : params.videoFile.buffer,
+          size: params.videoFile.size,
+          duration: params.metadata.duration,
+          width: params.metadata.dimensions.width,
+          height: params.metadata.dimensions.height,
+          chunks: chunks.length > 1 ? {
+            total: chunks.length,
+            size: MAX_CHUNK_SIZE,
+            references: []
+          } : undefined
+        };
+        console.log('Content structure created successfully');
+      } catch (error) {
+        console.error('Failed to create content structure:', error);
+        throw new BSVError('INSCRIPTION_ERROR', `Failed to create content structure: ${error instanceof Error ? error.message : String(error)}`);
+      }
 
+      // Create metadata
+      console.log('Step 10: Creating inscription metadata');
       const inscriptionMetadata: InscriptionMetadata = {
         type: 'memepool',
         version: '1.0',
@@ -330,9 +364,9 @@ export class InscriptionService {
           }
         }
       };
+      console.log('Inscription metadata created successfully');
 
-      console.log('Created inscription metadata:', inscriptionMetadata);
-
+      console.log('Step 11: Returning final result');
       return { 
         content, 
         metadata: inscriptionMetadata,
@@ -344,7 +378,7 @@ export class InscriptionService {
       if (error instanceof BSVError) {
         throw error;
       }
-      throw new BSVError('INSCRIPTION_ERROR', 'Failed to create inscription data');
+      throw new BSVError('INSCRIPTION_ERROR', 'Failed to create inscription data: ' + (error instanceof Error ? error.message : String(error)));
     }
   }
 
@@ -417,26 +451,21 @@ export class InscriptionService {
    * Validates input parameters for inscription creation
    */
   private validateInputParams(params: InscriptionCreationParams): void {
-    const { videoFile, metadata, creatorAddress, blockHash } = params
+    const { videoFile, metadata } = params;
 
     if (!videoFile || !videoFile.buffer || !videoFile.type) {
-      throw new BSVError('INVALID_PARAMS', 'Invalid file parameter')
+      throw new BSVError('INSCRIPTION_ERROR', 'Invalid file parameter');
     }
 
-    if (!this.validateVideoFormat(videoFile.type)) {
-      throw new BSVError('INVALID_PARAMS', 'Invalid video format')
+    // Validate video format
+    try {
+      this.validateVideoFormat(videoFile.type);
+    } catch (error) {
+      throw new BSVError('INSCRIPTION_ERROR', 'Invalid video format');
     }
 
     if (!metadata || !metadata.duration || !metadata.dimensions) {
-      throw new BSVError('INVALID_PARAMS', 'Invalid metadata')
-    }
-
-    if (!creatorAddress) {
-      throw new BSVError('INVALID_PARAMS', 'Invalid creator address')
-    }
-
-    if (!blockHash) {
-      throw new BSVError('INVALID_PARAMS', 'Invalid block hash')
+      throw new BSVError('INSCRIPTION_ERROR', 'Invalid metadata');
     }
   }
 

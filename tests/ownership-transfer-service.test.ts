@@ -152,7 +152,11 @@ describe('OwnershipTransferService', () => {
       const mockUtxo: UTXO = {
         txId: mockSourceTxId,
         outputIndex: mockSourceOutputIndex,
-        script: Script.fromHex('6a044d454d45'),
+        script: Script.fromHex(
+          '76a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac' + // P2PKH script
+          '6a20' + '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef' + // Inscription ID
+          '6a044d454d45' // MEME marker
+        ),
         satoshis: 1,
         sourceTransaction: Transaction.fromHex(mockTxHex)
       };
@@ -161,8 +165,8 @@ describe('OwnershipTransferService', () => {
       const mockFeeUtxo: UTXO = {
         txId: 'mock_fee_utxo',
         outputIndex: 0,
-        script: Script.fromHex('76a914mock88ac'),
-        satoshis: 1000,
+        script: Script.fromHex('76a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac'),
+        satoshis: 10000, // Increased to ensure enough for fees
         sourceTransaction: Transaction.fromHex(mockTxHex)
       };
 
