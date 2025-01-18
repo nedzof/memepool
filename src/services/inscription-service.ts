@@ -192,10 +192,10 @@ export class InscriptionService {
    * @param metadata - The metadata to validate
    * @returns boolean indicating if metadata is valid
    */
-  private validateHolderMetadata(metadata: any): metadata is HolderMetadata {
-    return (
+  private validateHolderMetadata(metadata: HolderMetadata): boolean {
+    return !!(
       metadata &&
-      typeof metadata.version === 'number' &&
+      metadata.version === 1 &&
       metadata.prefix === 'meme' &&
       (metadata.operation === 'inscribe' || metadata.operation === 'transfer') &&
       typeof metadata.name === 'string' &&
@@ -211,18 +211,39 @@ export class InscriptionService {
    * @returns boolean indicating if script is valid
    */
   private validateHolderScript(script: Script): boolean {
+    console.log('Validating holder script...');
+    
     // Extract and validate metadata
     const metadata = this.extractHolderMetadata(script);
-    if (!metadata) return false;
+    console.log('Extracted metadata:', metadata);
+    if (!metadata) {
+      console.log('Failed to extract metadata from script');
+      return false;
+    }
     
-    // Check P2PKH script presence
+    // Check P2PKH script presence (76a914{20-bytes}88ac)
     const scriptHex = script.toHex();
+    console.log('Script hex:', scriptHex);
     const hasP2PKH = /76a914[0-9a-f]{40}88ac/.test(scriptHex);
+    console.log('Has P2PKH:', hasP2PKH);
     
-    // Check for OP_RETURN
-    const hasOpReturn = scriptHex.includes('6a');
+    // Check for OP_RETURN with PUSHDATA prefix
+    // The prefix can be:
+    // 0x01-0x4b: direct length
+    // 0x4c: PUSHDATA1 (1 byte length)
+    // 0x4d: PUSHDATA2 (2 bytes length)
+    // 0x4e: PUSHDATA4 (4 bytes length)
+    const hasOpReturn = /6a([0-9a-f]{2}){1,5}/.test(scriptHex);
+    console.log('Has OP_RETURN with PUSHDATA:', hasOpReturn);
     
-    return hasP2PKH && hasOpReturn;
+    // Check if metadata is valid
+    const isValidMetadata = this.validateHolderMetadata(metadata);
+    console.log('Metadata validation result:', isValidMetadata);
+    
+    const isValid = hasP2PKH && hasOpReturn && isValidMetadata;
+    console.log('Final validation result:', isValid);
+    
+    return isValid;
   }
 
   /**

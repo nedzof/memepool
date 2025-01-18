@@ -264,11 +264,116 @@ async function verifyInscription(txid: string): Promise<boolean> {
           const currentOwnerAddress = pubKeyHashToAddress(p2pkhMatch[1]);
 
           // Extract and decode holder metadata
-          const holderMetadataStart = scriptHex.indexOf('6a') + 2;
-          if (holderMetadataStart > 2) {
-            const holderCborData = Buffer.from(scriptHex.slice(holderMetadataStart), 'hex');
-            const holderMetadata = cbor.decode(holderCborData) as HolderMetadata;
-            console.log('\nHolder metadata:', holderMetadata);
+          const p2pkhScript = scriptHex.slice(0, 50);  // 76a914{20-bytes}88ac is 50 chars
+          const opReturnStart = scriptHex.indexOf('6a', 50);  // Look for OP_RETURN after P2PKH
+          
+          if (opReturnStart > 0) {
+            const opReturnData = scriptHex.slice(opReturnStart + 2);  // Skip the 6a
+            console.log('\nExtracting holder metadata:');
+            console.log('P2PKH script:', p2pkhScript);
+            console.log('OP_RETURN position:', opReturnStart);
+            console.log('OP_RETURN data:', opReturnData);
+            
+            // Handle PUSHDATA prefixes
+            let cborStartIndex = 0;
+            let cborLength = 0;
+            
+            if (opReturnData.startsWith('4c')) {
+              // PUSHDATA1: 1 byte length
+              const lengthHex = opReturnData.slice(2, 4);
+              cborLength = parseInt(lengthHex, 16);
+              cborStartIndex = 4;
+              console.log('PUSHDATA1 detected:');
+              console.log('- Length hex:', lengthHex);
+              console.log('- Decoded length:', cborLength);
+            } else if (opReturnData.startsWith('4d')) {
+              // PUSHDATA2: 2 bytes length
+              const lengthHex = opReturnData.slice(2, 6);
+              cborLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
+              cborStartIndex = 6;
+              console.log('PUSHDATA2 detected:');
+              console.log('- Length hex:', lengthHex);
+              console.log('- Decoded length:', cborLength);
+            } else if (opReturnData.startsWith('4e')) {
+              // PUSHDATA4: 4 bytes length
+              const lengthHex = opReturnData.slice(2, 10);
+              cborLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
+              cborStartIndex = 10;
+              console.log('PUSHDATA4 detected:');
+              console.log('- Length hex:', lengthHex);
+              console.log('- Decoded length:', cborLength);
+            } else {
+              // Direct push: 1 byte length
+              const lengthHex = opReturnData.slice(0, 2);
+              cborLength = parseInt(lengthHex, 16);
+              cborStartIndex = 2;
+              console.log('Direct push detected:');
+              console.log('- Length hex:', lengthHex);
+              console.log('- Decoded length:', cborLength);
+            }
+            
+            // Extract CBOR data
+            const cborHex = opReturnData.slice(cborStartIndex, cborStartIndex + (cborLength * 2));
+            console.log('\nExtracted CBOR data:');
+            console.log('- Start index:', cborStartIndex);
+            console.log('- Length:', cborLength);
+            console.log('- Hex:', cborHex);
+            
+            const cborBuffer = Buffer.from(cborHex, 'hex');
+            
+            try {
+              const holderMetadata = cbor.decodeFirstSync(cborBuffer) as HolderMetadata;
+              console.log('\nHolder Script Analysis:');
+              console.log('------------------------');
+              console.log('1. Script Components:');
+              console.log('   - P2PKH Script (lock):', p2pkhScript);
+              console.log('   - OP_RETURN Marker: 0x6a');
+              console.log('   - PUSHDATA Format:', opReturnData.startsWith('4c') ? 'PUSHDATA1' :
+                                                opReturnData.startsWith('4d') ? 'PUSHDATA2' :
+                                                opReturnData.startsWith('4e') ? 'PUSHDATA4' : 'Direct Push');
+              console.log('   - CBOR Data Length:', cborLength, 'bytes');
+              
+              console.log('\n2. Holder Metadata (Decoded):');
+              console.log('   Version:', holderMetadata.version);
+              console.log('   Prefix:', holderMetadata.prefix);
+              console.log('   Operation:', holderMetadata.operation);
+              console.log('   Name:', holderMetadata.name);
+              console.log('   Content ID:', holderMetadata.contentID);
+              console.log('   Transaction ID:', holderMetadata.txid);
+              console.log('   Creator:', holderMetadata.creator);
+
+              console.log('\n3. Validation:');
+              const validationResults = {
+                hasVersion: typeof holderMetadata.version === 'number',
+                hasPrefix: holderMetadata.prefix === 'meme',
+                hasValidOp: ['inscribe', 'transfer'].includes(holderMetadata.operation),
+                hasName: typeof holderMetadata.name === 'string',
+                hasContentId: typeof holderMetadata.contentID === 'string',
+                hasTxid: typeof holderMetadata.txid === 'string',
+                hasCreator: typeof holderMetadata.creator === 'string'
+              };
+
+              Object.entries(validationResults).forEach(([key, value]) => {
+                console.log(`   ${key}: ${value ? '✓' : '✗'}`);
+              });
+
+              console.log('\n4. Original JSON Structure:');
+              console.log(JSON.stringify({
+                version: holderMetadata.version,
+                prefix: holderMetadata.prefix,
+                operation: holderMetadata.operation,
+                name: holderMetadata.name,
+                contentID: holderMetadata.contentID,
+                txid: holderMetadata.txid,
+                creator: holderMetadata.creator
+              }, null, 2));
+
+            } catch (error) {
+              console.error('Failed to decode holder metadata:', error);
+              console.log('Debug info:');
+              console.log('CBOR buffer length:', cborBuffer.length);
+              console.log('First few bytes:', Buffer.from(cborBuffer.slice(0, 10)).toString('hex'));
+            }
           }
 
           console.log('\nInscription holder output found:');
