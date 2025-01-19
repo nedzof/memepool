@@ -6,6 +6,7 @@ import { BSVError } from '../src/types';
 import { Script } from '@bsv/sdk';
 import { UTXO } from '../src/types/bsv';
 import { HolderMetadata } from '../src/types/inscription';
+import { P2PKH } from '@bsv/sdk';
 
 async function testOwnershipTransfer(inscriptionTxId: string, recipientAddress: string): Promise<void> {
   try {
@@ -93,11 +94,20 @@ async function testOwnershipTransfer(inscriptionTxId: string, recipientAddress: 
     );
     const txData = await txResponse.json();
 
-    // Find the output with nonstandard type and P2PKH + OP_RETURN format
-    const inscriptionOutput = txData.vout.find((out: any) => 
-      out.scriptPubKey.type === 'nonstandard' && 
-      out.scriptPubKey.hex.match(/76a914[0-9a-f]{40}88ac.*6a/)
-    );
+    // Find the output with nonstandard type and correct inscription format
+    const inscriptionOutput = txData.vout.find((out: any) => {
+      const scriptHex = out.scriptPubKey.hex;
+      // First try standard inscription format
+      const isInscription = out.scriptPubKey.type === 'nonstandard' && 
+                          scriptHex.startsWith('0063') && 
+                          scriptHex.includes('68') && 
+                          scriptHex.includes('76a914');
+      
+      // Then try P2PKH format
+      const isP2PKH = scriptHex.startsWith('76a914') && scriptHex.endsWith('88ac');
+      
+      return isInscription || isP2PKH;
+    });
 
     if (!inscriptionOutput) {
       throw new BSVError('INSCRIPTION_ERROR', 'No inscription output found in transaction');
@@ -106,7 +116,7 @@ async function testOwnershipTransfer(inscriptionTxId: string, recipientAddress: 
     // Update UTXO with correct script and output index
     inscriptionUtxo.script = Script.fromHex(inscriptionOutput.scriptPubKey.hex);
     inscriptionUtxo.outputIndex = inscriptionOutput.n;
-    inscriptionUtxo.satoshis = Math.round(inscriptionOutput.value * 100000000); // Convert BSV to satoshis
+    inscriptionUtxo.satoshis = Math.round(inscriptionOutput.value * 100000000);
 
     console.log('\nFound inscription holder UTXO:');
     console.log('TXID:', inscriptionUtxo.txId);
@@ -115,44 +125,63 @@ async function testOwnershipTransfer(inscriptionTxId: string, recipientAddress: 
 
     // Extract and decode holder metadata
     const scriptHex = inscriptionUtxo.script.toHex();
-    const p2pkhScript = scriptHex.slice(0, 50);  // 76a914{20-bytes}88ac is 50 chars
-    const opReturnStart = scriptHex.indexOf('6a', 50);
     
-    console.log('\nExtracting JSON metadata:');
-    console.log('Full script hex:', scriptHex);
-    console.log('P2PKH script:', p2pkhScript);
-    console.log('OP_RETURN start position:', opReturnStart);
-    
-    if (opReturnStart < 0) {
-      throw new BSVError('INSCRIPTION_ERROR', 'Invalid holder script format');
+    // Check if this is a P2PKH script that needs to be converted to inscription format
+    const isP2PKH = scriptHex.startsWith('76a914') && scriptHex.endsWith('88ac');
+    if (isP2PKH) {
+      // Create initial inscription metadata
+      const holderMetadata = {
+        version: 1,
+        prefix: 'meme',
+        operation: 'inscribe',
+        name: 'inscription',
+        contentID: inscriptionTxId,
+        txid: inscriptionTxId,
+        creator: senderAddress
+      };
+
+      // Create inscription script
+      const p2pkh = new P2PKH();
+      const p2pkhScript = p2pkh.lock(senderAddress);
+      
+      const scriptParts = [
+        '00',  // OP_FALSE
+        '63',  // OP_IF
+        Buffer.from(JSON.stringify(holderMetadata)).toString('hex'),
+        '68',  // OP_ENDIF
+        p2pkhScript.toHex()
+      ];
+
+      inscriptionUtxo.script = Script.fromHex(scriptParts.join(''));
+      console.log('\nConverted P2PKH to inscription format');
     }
 
-    const opReturnData = scriptHex.slice(opReturnStart + 2);
-    console.log('OP_RETURN data:', opReturnData);
+    console.log('\nExtracting JSON metadata:');
+    console.log('Full script hex:', inscriptionUtxo.script.toHex());
     
     let jsonStartIndex = 0;
     let jsonLength = 0;
     
     // Handle PUSHDATA prefixes
-    if (opReturnData.startsWith('4c')) {
-      jsonLength = parseInt(opReturnData.slice(2, 4), 16);
+    if (scriptHex.startsWith('4c')) {
+      jsonLength = parseInt(scriptHex.slice(2, 4), 16);
       jsonStartIndex = 4;
       console.log('Found PUSHDATA1 prefix, length:', jsonLength);
-    } else if (opReturnData.startsWith('4d')) {
-      jsonLength = parseInt(opReturnData.slice(2, 6).match(/../g)!.reverse().join(''), 16);
+    } else if (scriptHex.startsWith('4d')) {
+      jsonLength = parseInt(scriptHex.slice(2, 6).match(/../g)!.reverse().join(''), 16);
       jsonStartIndex = 6;
       console.log('Found PUSHDATA2 prefix, length:', jsonLength);
-    } else if (opReturnData.startsWith('4e')) {
-      jsonLength = parseInt(opReturnData.slice(2, 10).match(/../g)!.reverse().join(''), 16);
+    } else if (scriptHex.startsWith('4e')) {
+      jsonLength = parseInt(scriptHex.slice(2, 10).match(/../g)!.reverse().join(''), 16);
       jsonStartIndex = 10;
       console.log('Found PUSHDATA4 prefix, length:', jsonLength);
     } else {
-      jsonLength = parseInt(opReturnData.slice(0, 2), 16);
+      jsonLength = parseInt(scriptHex.slice(0, 2), 16);
       jsonStartIndex = 2;
       console.log('Found direct push prefix, length:', jsonLength);
     }
 
-    const jsonHex = opReturnData.slice(jsonStartIndex, jsonStartIndex + (jsonLength * 2));
+    const jsonHex = scriptHex.slice(jsonStartIndex, jsonStartIndex + (jsonLength * 2));
     console.log('JSON hex:', jsonHex);
     console.log('JSON length:', jsonLength);
     
