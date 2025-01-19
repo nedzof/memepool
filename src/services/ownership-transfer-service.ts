@@ -86,19 +86,19 @@ export class OwnershipTransferService {
       const txData = await txResponse.json();
 
       // Find the output with nonstandard type and P2PKH + OP_RETURN format
-      const inscriptionOutput = txData.vout.find((out: any) => 
+      const sourceOutput = txData.vout.find((out: any) => 
         out.scriptPubKey.type === 'nonstandard' && 
         out.scriptPubKey.hex.match(/76a914[0-9a-f]{40}88ac.*6a/)
       );
 
-      if (!inscriptionOutput) {
+      if (!sourceOutput) {
         throw new BSVError('INSCRIPTION_ERROR', 'No inscription output found in transaction');
       }
 
       // Update UTXO with correct script and output index
-      inscriptionUtxo.script = Script.fromHex(inscriptionOutput.scriptPubKey.hex);
-      inscriptionUtxo.outputIndex = inscriptionOutput.n;
-      inscriptionUtxo.satoshis = Math.round(inscriptionOutput.value * 100000000); // Convert BSV to satoshis
+      inscriptionUtxo.script = Script.fromHex(sourceOutput.scriptPubKey.hex);
+      inscriptionUtxo.outputIndex = sourceOutput.n;
+      inscriptionUtxo.satoshis = Math.round(sourceOutput.value * 100000000); // Convert BSV to satoshis
 
       // Extract and decode holder metadata
       const scriptHex = inscriptionUtxo.script.toHex();
@@ -141,33 +141,27 @@ export class OwnershipTransferService {
       // Create new transaction
       const tx = new Transaction();
       const privateKey = this.bsvService.wallet.privateKey;
-      const p2pkhUnlock = new P2PKH();
 
-      // Add inscription holder UTXO as input with proper unlocking script
+      // Add inscription holder UTXO as input
       if (!inscriptionUtxo.sourceTransaction) {
         inscriptionUtxo.sourceTransaction = await this.fetchSourceTransaction(inscriptionUtxo.txId);
       }
 
-      // Get the source transaction output's locking script
-      const sourceOutput = inscriptionUtxo.sourceTransaction.outputs[inscriptionUtxo.outputIndex];
-      if (!sourceOutput) {
-        throw new BSVError('SCRIPT_ERROR', 'Source output not found');
-      }
-
-      // Create unlocking script template for the inscription input using sender's key
+      // Create a fresh P2PKH instance for unlocking the input
+      const p2pkhUnlock = new P2PKH();
       const unlockingTemplate = p2pkhUnlock.unlock(privateKey);
 
       // Add input with proper script template
       const inscriptionInput = {
         sourceTXID: inscriptionUtxo.txId,
         sourceOutputIndex: inscriptionUtxo.outputIndex,
-        sourceSatoshis: inscriptionUtxo.satoshis,
+        sourceSatoshis: 1, // Always 1 satoshi for inscription
         sourceTransaction: inscriptionUtxo.sourceTransaction,
         unlockingScriptTemplate: unlockingTemplate
       };
       tx.addInput(inscriptionInput);
 
-      // Calculate minimum fee
+      // Calculate minimum fee and select UTXOs for fee
       const minFee = 1000; // 1000 satoshis minimum fee
       let totalFeeInputs = 0;
 
@@ -184,19 +178,12 @@ export class OwnershipTransferService {
         throw new BSVError('UTXO_ERROR', 'Insufficient funds for fee');
       }
 
-      // Add fee UTXOs to transaction with proper unlocking scripts
+      // Add fee UTXOs to transaction
       for (const utxo of selectedFeeUtxos) {
         if (!utxo.sourceTransaction) {
           utxo.sourceTransaction = await this.fetchSourceTransaction(utxo.txId);
         }
 
-        // Get the source transaction output's locking script for fee UTXO
-        const feeSourceOutput = utxo.sourceTransaction.outputs[utxo.outputIndex];
-        if (!feeSourceOutput) {
-          throw new BSVError('SCRIPT_ERROR', `Fee source output not found for UTXO ${utxo.txId}:${utxo.outputIndex}`);
-        }
-
-        // Create unlocking script template for the fee output
         const feeUnlockingTemplate = p2pkhUnlock.unlock(privateKey);
         
         const feeInput = {
@@ -209,33 +196,32 @@ export class OwnershipTransferService {
         tx.addInput(feeInput);
       }
 
-      // Update metadata for transfer
-      const transferMetadata: HolderMetadata = {
+      // Create transfer metadata
+      const transferMetadata = {
         ...holderMetadata,
         operation: 'transfer',
         txid: inscriptionTxId
       };
+      const metadataBuffer = Buffer.from(JSON.stringify(transferMetadata));
 
-      // Create recipient's inscription locking script
-      const recipientP2pkh = new P2PKH();
-      const recipientLockingScript = recipientP2pkh.lock(recipientAddress);
+      // Create combined script with metadata in OP_IF and P2PKH
+      const recipientTemplate = new P2PKH();
+      const recipientScript = recipientTemplate.lock(recipientAddress);
+      const recipientScriptHex = recipientScript.toHex();
 
-      // Create the combined locking script with metadata
-      const lockingScriptParts = [
-        recipientLockingScript.toHex(),
-        '6a' + Buffer.from(JSON.stringify(transferMetadata)).toString('hex')
+      // Construct the complete script
+      const scriptParts = [
+        '00', // OP_FALSE
+        '63', // OP_IF
+        Buffer.from(metadataBuffer).toString('hex'),
+        '68', // OP_ENDIF
+        recipientScriptHex
       ];
+      const combinedScript = Script.fromHex(scriptParts.join(''));
 
-      const lockingScript = Script.fromHex(lockingScriptParts.join(''));
-
-      // Verify the locking script starts with the correct P2PKH for the recipient
-      if (!lockingScript.toHex().startsWith(recipientLockingScript.toHex())) {
-        throw new BSVError('SCRIPT_ERROR', 'Locking script does not contain correct recipient P2PKH');
-      }
-
-      // Add the inscription output (1 satoshi)
+      // Add single output with combined script
       tx.addOutput({
-        lockingScript,
+        lockingScript: combinedScript,
         satoshis: 1
       });
 
@@ -256,11 +242,43 @@ export class OwnershipTransferService {
       await tx.sign();
 
       // Verify the transaction structure before broadcasting
-      const outputScripts = tx.outputs.map(output => output.lockingScript.toHex());
-      const hasRecipientOutput = outputScripts.some(script => script.startsWith(recipientLockingScript.toHex()));
-      if (!hasRecipientOutput) {
-        throw new BSVError('SCRIPT_ERROR', 'Transaction does not contain recipient output');
+      console.log('\nVerifying transaction structure before broadcast...');
+      
+      // 1. Verify inputs
+      const verifyInscriptionInput = tx.inputs[0];
+      if (!verifyInscriptionInput) {
+        throw new BSVError('SCRIPT_ERROR', 'Transaction is missing inscription input');
       }
+
+      // 2. Verify outputs and find inscription output
+      const outputs = tx.outputs;
+      if (!outputs || outputs.length === 0) {
+        throw new BSVError('SCRIPT_ERROR', 'Transaction has no outputs');
+      }
+
+      // Find and verify the inscription output
+      const verifyInscriptionOutput = outputs[0];
+      if (!verifyInscriptionOutput || verifyInscriptionOutput.satoshis !== 1) {
+        throw new BSVError('SCRIPT_ERROR', 'First output must be inscription output with 1 satoshi');
+      }
+
+      // Verify the output script format
+      const outputScriptHex = verifyInscriptionOutput.lockingScript.toHex();
+      if (!outputScriptHex.startsWith('0063') || !outputScriptHex.includes('68' + recipientScriptHex)) {
+        throw new BSVError('SCRIPT_ERROR', 'Invalid inscription output script format');
+      }
+
+      // Extract and verify recipient's pubKeyHash from the P2PKH part
+      const p2pkhStart = outputScriptHex.indexOf(recipientScriptHex);
+      if (p2pkhStart === -1) {
+        throw new BSVError('SCRIPT_ERROR', 'Output does not contain recipient P2PKH script');
+      }
+
+      console.log('Transaction verification passed ✓');
+      console.log('- Inscription input verified');
+      console.log('- Combined script format verified');
+      console.log('- Output value is 1 satoshi');
+      console.log('- P2PKH part matches recipient');
 
       // Broadcast transaction
       try {

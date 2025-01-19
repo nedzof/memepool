@@ -402,7 +402,6 @@ export class BSVService implements BSVServiceInterface {
       // Calculate actual data sizes
       const metadataSize = Buffer.from(JSON.stringify(metadata)).length;
       const contentSize = content.length;
-      const holderScriptSize = holderScript.toHex().length / 2;
 
       // Calculate exact output sizes
       const inscriptionOutputSize = 
@@ -417,7 +416,7 @@ export class BSVService implements BSVServiceInterface {
       const holderOutputSize = 
         8 + // satoshis field
         1 + // varint for script length
-        holderScriptSize;
+        holderScript.toHex().length / 2;
 
       const changeOutputSize = 
         8 + // satoshis field
@@ -471,11 +470,14 @@ export class BSVService implements BSVServiceInterface {
       // Convert metadata to JSON string
       const jsonData = Buffer.from(JSON.stringify(holderMetadata));
 
-      // Create the holder script
+      // Create the holder script with OP_IF structure
       const p2pkhScript = p2pkh.lock(address);
       const holderScriptParts = [
-        p2pkhScript.toHex(),                // P2PKH script
-        '6a' + this.createPushData(jsonData).toString('hex')  // OP_RETURN + JSON data
+        '00',  // OP_FALSE
+        '63',  // OP_IF
+        this.createPushData(jsonData).toString('hex'),  // JSON metadata
+        '68',  // OP_ENDIF
+        p2pkhScript.toHex()  // P2PKH script
       ];
       const finalHolderScript = Script.fromHex(holderScriptParts.join(''));
 
@@ -487,8 +489,9 @@ export class BSVService implements BSVServiceInterface {
 
       // Add change output if above dust limit (546 satoshis)
       if (changeAmount >= 546) {
+        const changeScript = p2pkh.lock(address);
         tx.addOutput({
-          lockingScript: p2pkhScript,
+          lockingScript: changeScript,
           satoshis: changeAmount
         });
       }

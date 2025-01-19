@@ -83,6 +83,70 @@ interface Transaction {
   vout: TransactionOutput[];
 }
 
+function extractHolderMetadata(script: string): { metadata: any, pubKeyHash: string } | null {
+  try {
+    console.log('Extracting holder metadata from script:', script);
+    
+    // Check for OP_IF structure
+    if (!script.startsWith('63')) {
+      console.log('Script does not start with OP_IF');
+      return null;
+    }
+
+    // Find OP_ENDIF (0x68)
+    const opEndifPos = script.indexOf('68', 2); // Start search after OP_IF
+    if (opEndifPos === -1) {
+      console.log('OP_ENDIF not found');
+      return null;
+    }
+
+    // Extract metadata from script
+    const metadataHex = script.slice(4); // Skip OP_IF and PUSHDATA1 prefix
+    console.log('Metadata hex:', metadataHex);
+
+    // Get length from PUSHDATA1
+    const pushdata1Length = parseInt(metadataHex.slice(0, 2), 16);
+    console.log('PUSHDATA1 length:', pushdata1Length);
+
+    // Extract JSON hex using the full PUSHDATA1 length
+    const jsonHex = metadataHex.slice(2, 2 + (pushdata1Length * 2));
+    console.log('JSON hex length:', jsonHex.length);
+    console.log('Expected length:', pushdata1Length * 2);
+
+    // Convert hex to string
+    const jsonString = Buffer.from(jsonHex, 'hex').toString('utf8');
+    console.log('Full metadata string:', jsonString);
+    const metadata = JSON.parse(jsonString);
+
+    // Extract P2PKH script after metadata and OP_ENDIF
+    const p2pkhScript = metadataHex.slice(2 + (pushdata1Length * 2) + 2); // +2 for OP_ENDIF
+    console.log('P2PKH script:', p2pkhScript);
+
+    // Verify P2PKH format (should start with 76a914 and end with 88ac)
+    if (!p2pkhScript.startsWith('76a914') || !p2pkhScript.endsWith('88ac')) {
+      console.log('Invalid P2PKH script format');
+      return null;
+    }
+
+    // Extract public key hash from P2PKH script
+    const pubKeyHash = p2pkhScript.slice(6, -4);
+    console.log('Public key hash:', pubKeyHash);
+
+    return {
+      metadata,
+      pubKeyHash
+    };
+  } catch (error) {
+    console.error('Failed to decode holder metadata:', error);
+    if (error instanceof SyntaxError) {
+      console.log('Debug info:');
+      console.log('Script:', script);
+      console.log('Metadata hex:', script.substring(2, script.indexOf('68')));
+    }
+    return null;
+  }
+}
+
 async function verifyInscription(txid: string): Promise<boolean> {
   try {
     const bsv = new BSVService();
@@ -242,145 +306,32 @@ async function verifyInscription(txid: string): Promise<boolean> {
           console.log('Format match:', videoData.slice(4, 8).toString() === 'ftyp');
 
           // Get current owner from the input transaction
-          console.log('\nOwnership details:');
-          console.log('Original transaction:', originalTxId);
-          console.log('Current transaction:', txid);
+          console.log('\nExtracting holder metadata...');
+          if (!currentTx) {
+            throw new Error('Transaction data not found');
+          }
           
-          // Get the current owner from the 1 satoshi output
-          const currentOwnerOutput = currentTx?.vout.find(out => out.value === 0.00000001);
-          if (!currentOwnerOutput) {
-            throw new Error('No valid inscription holder output found');
-          }
-
-          // Extract the P2PKH script and JSON metadata from the output
-          const scriptHex = currentOwnerOutput.scriptPubKey.hex;
-          const p2pkhMatch = scriptHex.match(/76a914([0-9a-f]{40})88ac/);
-          if (!p2pkhMatch) {
-            throw new Error('Invalid P2PKH script format');
-          }
-
-          // Convert pubKeyHash to address
-          const currentOwnerAddress = pubKeyHashToAddress(p2pkhMatch[1]);
-
-          // Extract and decode holder metadata
-          const p2pkhScript = scriptHex.slice(0, 50);  // 76a914{20-bytes}88ac is 50 chars
-          const opReturnStart = scriptHex.indexOf('6a', 50);  // Look for OP_RETURN after P2PKH
+          const holderOutput = currentTx.vout.find(output => 
+            output.value === 1e-8 && 
+            output.scriptPubKey.type === 'nonstandard'
+          );
           
-          if (opReturnStart > 0) {
-            const opReturnData = scriptHex.slice(opReturnStart + 2);  // Skip the 6a
-            console.log('\nExtracting holder metadata:');
-            console.log('P2PKH script:', p2pkhScript);
-            console.log('OP_RETURN position:', opReturnStart);
-            console.log('OP_RETURN data:', opReturnData);
-            
-            // Handle PUSHDATA prefixes
-            let jsonStartIndex = 0;
-            let jsonLength = 0;
-            
-            if (opReturnData.startsWith('4c')) {
-              // PUSHDATA1: 1 byte length
-              const lengthHex = opReturnData.slice(2, 4);
-              jsonLength = parseInt(lengthHex, 16);
-              jsonStartIndex = 4;
-              console.log('PUSHDATA1 detected:');
-              console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', jsonLength);
-            } else if (opReturnData.startsWith('4d')) {
-              // PUSHDATA2: 2 bytes length
-              const lengthHex = opReturnData.slice(2, 6);
-              jsonLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
-              jsonStartIndex = 6;
-              console.log('PUSHDATA2 detected:');
-              console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', jsonLength);
-            } else if (opReturnData.startsWith('4e')) {
-              // PUSHDATA4: 4 bytes length
-              const lengthHex = opReturnData.slice(2, 10);
-              jsonLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
-              jsonStartIndex = 10;
-              console.log('PUSHDATA4 detected:');
-              console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', jsonLength);
-            } else {
-              // Direct push: 1 byte length
-              const lengthHex = opReturnData.slice(0, 2);
-              jsonLength = parseInt(lengthHex, 16);
-              jsonStartIndex = 2;
-              console.log('Direct push detected:');
-              console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', jsonLength);
-            }
-            
-            // Extract JSON data
-            const jsonHex = opReturnData.slice(jsonStartIndex, jsonStartIndex + (jsonLength * 2));
-            console.log('\nExtracted JSON data:');
-            console.log('- Start index:', jsonStartIndex);
-            console.log('- Length:', jsonLength);
-            console.log('- Hex:', jsonHex);
-            
-            const jsonBuffer = Buffer.from(jsonHex, 'hex');
-            
-            try {
-              const holderMetadata = JSON.parse(jsonBuffer.toString()) as HolderMetadata;
-              console.log('\nHolder Script Analysis:');
-              console.log('------------------------');
-              console.log('1. Script Components:');
-              console.log('   - P2PKH Script (lock):', p2pkhScript);
-              console.log('   - OP_RETURN Marker: 0x6a');
-              console.log('   - PUSHDATA Format:', opReturnData.startsWith('4c') ? 'PUSHDATA1' :
-                                                opReturnData.startsWith('4d') ? 'PUSHDATA2' :
-                                                opReturnData.startsWith('4e') ? 'PUSHDATA4' : 'Direct Push');
-              console.log('   - JSON Data Length:', jsonLength, 'bytes');
-              
-              console.log('\n2. Holder Metadata (Decoded):');
-              console.log('   Version:', holderMetadata.version);
-              console.log('   Prefix:', holderMetadata.prefix);
-              console.log('   Operation:', holderMetadata.operation);
-              console.log('   Name:', holderMetadata.name);
-              console.log('   Content ID:', holderMetadata.contentID);
-              console.log('   Transaction ID:', holderMetadata.txid);
-              console.log('   Creator:', holderMetadata.creator);
-
-              console.log('\n3. Validation:');
-              const validationResults = {
-                hasVersion: typeof holderMetadata.version === 'number',
-                hasPrefix: holderMetadata.prefix === 'meme',
-                hasValidOp: ['inscribe', 'transfer'].includes(holderMetadata.operation),
-                hasName: typeof holderMetadata.name === 'string',
-                hasContentId: typeof holderMetadata.contentID === 'string',
-                hasTxid: typeof holderMetadata.txid === 'string',
-                hasCreator: typeof holderMetadata.creator === 'string'
-              };
-
-              Object.entries(validationResults).forEach(([key, value]) => {
-                console.log(`   ${key}: ${value ? '✓' : '✗'}`);
-              });
-
-              console.log('\n4. Original JSON Structure:');
-              console.log(JSON.stringify({
-                version: holderMetadata.version,
-                prefix: holderMetadata.prefix,
-                operation: holderMetadata.operation,
-                name: holderMetadata.name,
-                contentID: holderMetadata.contentID,
-                txid: holderMetadata.txid,
-                creator: holderMetadata.creator
-              }, null, 2));
-
-            } catch (error) {
-              console.error('Failed to decode holder metadata:', error);
-              console.log('Debug info:');
-              console.log('JSON buffer length:', jsonBuffer.length);
-              console.log('First few bytes:', Buffer.from(jsonBuffer.slice(0, 10)).toString('hex'));
-            }
+          if (!holderOutput) {
+            throw new Error('No inscription holder output found');
           }
-
-          console.log('\nInscription holder output found:');
-          console.log('Value:', currentOwnerOutput.value, 'BSV');
-          console.log('Script type:', currentOwnerOutput.scriptPubKey.type);
-          console.log('Script (hex):', currentOwnerOutput.scriptPubKey.hex);
-          console.log('Current owner:', currentOwnerAddress);
-          console.log('Is creator:', currentOwnerAddress === metadata.metadata.creator ? 'Yes' : 'No');
+          
+          console.log('Inscription holder output found:');
+          console.log('Value:', holderOutput.value, 'BSV');
+          console.log('Script type:', holderOutput.scriptPubKey.type);
+          console.log('Script (hex):', holderOutput.scriptPubKey.hex);
+          
+          const holderMetadata = extractHolderMetadata(holderOutput.scriptPubKey.hex);
+          if (!holderMetadata) {
+            throw new Error('Failed to extract holder metadata');
+          }
+          
+          console.log('Current owner:', pubKeyHashToAddress(holderMetadata.pubKeyHash));
+          console.log('Is creator:', pubKeyHashToAddress(holderMetadata.pubKeyHash) === metadata.metadata.creator ? 'Yes' : 'No');
 
           return true;
         }

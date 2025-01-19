@@ -111,9 +111,10 @@ async function testInscription(filePath: string): Promise<string> {
     console.log('2. Outputs:');
     console.log('   a. OP_RETURN (inscription data): 0 satoshis');
     console.log('   b. Inscription holder (nonstandard): 1 satoshi');
+    console.log('      - OP_FALSE OP_IF');
+    console.log('      - JSON metadata');
+    console.log('      - OP_ENDIF');
     console.log('      - P2PKH script for:', address);
-    console.log('      - Original inscription ID');
-    console.log('      - OP_RETURN MEME marker');
     console.log('   c. Change output (P2PKH): remaining amount minus fee');
 
     // Create initial transaction with temporary script

@@ -38,9 +38,19 @@ The inscription consists of two main parts:
 ```
 
 #### 2. Holder UTXO Format
-The holder UTXO uses a new format combining P2PKH with JSON-serialized metadata:
+The holder UTXO uses a new format combining P2PKH with JSON-serialized metadata using OP_IF:
 ```
-[P2PKH script] + [OP_RETURN JSON<metadata>]
+[OP_FALSE] [OP_IF] [JSON metadata] [OP_ENDIF] [P2PKH script]
+```
+
+Script hex format:
+```
+00           - OP_FALSE
+63           - OP_IF
+<pushdata>   - JSON metadata length
+<metadata>   - JSON-serialized metadata
+68           - OP_ENDIF
+76a914...88ac - P2PKH script
 ```
 
 Metadata structure for initial inscription:
@@ -50,7 +60,7 @@ Metadata structure for initial inscription:
   "prefix": "meme",
   "operation": "inscribe",
   "name": "<video name>",
-  "contentID": "MEME_<hashed_id>_<timestamp>",
+  "contentID": "<inscription_id>",
   "txid": "deploy",
   "creator": "<creator wallet address>"
 }
@@ -63,15 +73,10 @@ Metadata structure for transfers:
   "prefix": "meme",
   "operation": "transfer",
   "name": "<video name>",
-  "contentID": "MEME_<hashed_id>_<timestamp>",
+  "contentID": "<inscription_id>",
   "txid": "<original inscription txid>",
   "creator": "<creator wallet address>"
 }
-```
-
-The `contentID` is generated as:
-```
-MEME_<hash(video_name + creator_address + latest_block_hash)>_<timestamp>
 ```
 
 ### Script Format
@@ -79,19 +84,27 @@ MEME_<hash(video_name + creator_address + latest_block_hash)>_<timestamp>
 #### Inscription Holder Script
 The inscription holder script follows this format:
 ```
-[P2PKH script] + [OP_RETURN JSON<metadata>]
-76a914<pubKeyHash>88ac + 6a<pushdata><JSON data>
+[OP_FALSE] [OP_IF] [JSON metadata] [OP_ENDIF] [P2PKH script]
+00 + 63 + <pushdata><metadata> + 68 + 76a914<pubKeyHash>88ac
 ```
 
 Components:
-1. **P2PKH Script** - Standard Pay-to-Public-Key-Hash script
-   - Format: `76a914<pubKeyHash>88ac`
-   - Controls spending authorization
+1. **OP_FALSE and OP_IF** - Start of conditional structure
+   - Format: `00` (OP_FALSE) followed by `63` (OP_IF)
+   - Creates a conditional branch that is never executed
 
 2. **Metadata** - JSON-serialized data
-   - Format: `6a<pushdata><JSON data>`
+   - Format: `<pushdata><JSON data>`
    - Contains inscription metadata
    - Uses appropriate PUSHDATA opcode based on size
+
+3. **OP_ENDIF** - End of conditional structure
+   - Format: `68`
+   - Closes the conditional branch
+
+4. **P2PKH Script** - Standard Pay-to-Public-Key-Hash script
+   - Format: `76a914<pubKeyHash>88ac`
+   - Controls spending authorization
 
 ### Video Data Handling
 The video data is handled in the following way:
@@ -143,33 +156,37 @@ The video data is handled in the following way:
 
 ## Transfer Protection Mechanism
 
-The inscription transfer protocol includes a protection mechanism to prevent accidental spending of inscription UTXOs:
+The inscription transfer protocol uses the OP_IF structure to protect inscription UTXOs:
 
-1. Protection Marker
-   - Each inscription UTXO includes a special marker: `OP_RETURN "MEME"` (hex: `6a044d454d45`)
-   - This marker is appended to the standard P2PKH script
+1. Protection Structure
+   - Each inscription UTXO uses the OP_IF structure:
+     ```
+     [OP_FALSE] [OP_IF] [JSON metadata] [OP_ENDIF] [P2PKH script]
+     ```
+   - The OP_FALSE OP_IF combination ensures the metadata section is never executed
    - Makes the output "nonstandard" to prevent accidental spending
 
 2. Transfer Process
    - Original inscription UTXO is consumed
    - New UTXO is created for recipient with:
      - 1 satoshi value
-     - P2PKH script locking to recipient's address
-     - Protection marker appended
+     - Same OP_IF structure
+     - Updated metadata (operation: "transfer")
+     - P2PKH script updated to recipient's address
    - Change (if any) returned to sender
 
 3. Ownership Verification
-   - Current owner determined by tracing UTXO chain
-   - Each transfer maintains protection marker
-   - Original creator preserved in inscription metadata
+   - Current owner determined by P2PKH script in latest UTXO
+   - Each transfer maintains OP_IF structure with metadata
+   - Original creator preserved in metadata
    - Ownership history traceable through blockchain
 
 4. Security Measures
    - Minimum confirmations required for transfer
    - Ownership verification before transfer
    - UTXO spending status verification
-   - Protection marker verification
-   - Transaction format validation
+   - Script format validation
+   - Metadata structure validation
 
 ## Script Format
 
@@ -458,7 +475,7 @@ Components:
 # Inscription Format
 
 ## Overview
-Inscriptions in the Memepool platform are created using a special transaction format that includes both the inscription data and a holder UTXO with a unique marker.
+Inscriptions in the Memepool platform are created using a special transaction format that includes both the inscription data and a holder UTXO with metadata in an OP_IF structure.
 
 ## Transaction Structure
 
@@ -468,9 +485,9 @@ Inscriptions in the Memepool platform are created using a special transaction fo
       - Contains metadata and content data
       - Value: 0 satoshis
    b. **Inscription Holder Output** (1 satoshi):
+      - OP_FALSE OP_IF structure
+      - JSON metadata
       - P2PKH script for the owner
-      - Original inscription ID marker
-      - MEME marker
    c. **Change Output** (optional):
       - Returns remaining satoshis to sender
       - Standard P2PKH format
@@ -478,20 +495,22 @@ Inscriptions in the Memepool platform are created using a special transaction fo
 ## Inscription Holder Script Format
 
 The inscription holder output uses a special script format that combines:
-1. Standard P2PKH script for the owner
-2. Original inscription ID as OP_RETURN data
-3. MEME marker as OP_RETURN data
+1. OP_FALSE and OP_IF for metadata protection
+2. JSON metadata with inscription details
+3. Standard P2PKH script for the owner
 
 Script format:
 ```
-[P2PKH script] + [OP_RETURN Original Inscription ID] + [OP_RETURN MEME]
-76a914<pubKeyHash>88ac + 6a20<inscriptionId> + 6a044d454d45
+[OP_FALSE] [OP_IF] [JSON metadata] [OP_ENDIF] [P2PKH script]
+00 + 63 + <pushdata><metadata> + 68 + 76a914<pubKeyHash>88ac
 ```
 
 Where:
+- `00`: OP_FALSE opcode
+- `63`: OP_IF opcode
+- `<pushdata><metadata>`: Length-prefixed JSON metadata
+- `68`: OP_ENDIF opcode
 - `76a914<pubKeyHash>88ac`: Standard P2PKH script (25 bytes)
-- `6a20<inscriptionId>`: OP_RETURN followed by 32-byte inscription ID
-- `6a044d454d45`: OP_RETURN followed by "MEME" marker
 
 ## Inscription ID Generation
 
@@ -508,18 +527,19 @@ This ensures:
 
 ## Validation
 To validate an inscription holder UTXO:
-1. Check for P2PKH script pattern
-2. Verify presence of inscription ID (32 bytes after OP_RETURN)
-3. Confirm MEME marker presence
+1. Check for OP_FALSE OP_IF structure
+2. Verify JSON metadata format and content
+3. Validate P2PKH script format
 4. Ensure 1 satoshi value
 
 ## Transfer Protocol
 When transferring an inscription:
 1. Use the inscription holder UTXO as input
 2. Create new holder output with:
-   - P2PKH script for new owner
+   - Same OP_IF structure
    - Updated metadata with:
      - operation: "transfer"
      - txid: original inscription txid
+   - P2PKH script for new owner
 3. Maintain all other metadata fields
-4. Update P2PKH script to new owner's address 
+4. Ensure output has exactly 1 satoshi 

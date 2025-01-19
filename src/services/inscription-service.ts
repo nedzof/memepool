@@ -55,12 +55,14 @@ export class InscriptionService {
       console.log('JSON data length:', jsonData.length);
       console.log('JSON data hex:', jsonData.toString('hex'));
       
-      // Create combined script parts
+      // Create combined script with metadata in OP_IF and P2PKH
       const scriptParts = [
-        p2pkhScript.toHex(),                // P2PKH script
-        '6a' + this.createPushData(jsonData).toString('hex')  // OP_RETURN + JSON data
+        '00', // OP_FALSE
+        '63', // OP_IF
+        jsonData.toString('hex'),
+        '68', // OP_ENDIF
+        p2pkhScript.toHex()
       ];
-      console.log('Script parts:', scriptParts);
       
       const finalScript = Script.fromHex(scriptParts.join(''));
       console.log('Final script hex:', finalScript.toHex());
@@ -147,36 +149,28 @@ export class InscriptionService {
     try {
       const scriptHex = script.toHex();
       
-      // Find OP_RETURN data after P2PKH script
-      const p2pkhMatch = scriptHex.match(/76a914[0-9a-f]{40}88ac/);
-      if (!p2pkhMatch) return null;
-      
-      const dataStart = p2pkhMatch.index! + p2pkhMatch[0].length;
-      if (scriptHex.slice(dataStart, dataStart + 2) !== '6a') return null;
-      
-      // Extract JSON data after OP_RETURN
-      const opReturnData = scriptHex.slice(dataStart + 2);
-      
-      // Handle PUSHDATA prefixes
-      let jsonStartIndex = 0;
-      if (opReturnData.startsWith('4c')) {
-        jsonStartIndex = 4; // Skip 4c and one byte length
-      } else if (opReturnData.startsWith('4d')) {
-        jsonStartIndex = 6; // Skip 4d and two byte length
-      } else if (opReturnData.startsWith('4e')) {
-        jsonStartIndex = 10; // Skip 4e and four byte length
-      } else {
-        jsonStartIndex = 2; // Skip one byte length for direct push
+      // Check for OP_FALSE OP_IF structure
+      if (!scriptHex.startsWith('0063')) {
+        return null;
       }
       
-      const jsonHex = opReturnData.slice(jsonStartIndex);
+      // Find OP_ENDIF and P2PKH script
+      const opEndifIndex = scriptHex.indexOf('68');
+      if (opEndifIndex === -1) {
+        return null;
+      }
+      
+      // Extract JSON data between OP_IF and OP_ENDIF
+      const jsonHex = scriptHex.slice(4, opEndifIndex);
       const jsonBuffer = Buffer.from(jsonHex, 'hex');
       
       // Parse JSON data
       const metadata = JSON.parse(jsonBuffer.toString()) as HolderMetadata;
       
       // Validate metadata structure
-      if (!this.validateHolderMetadata(metadata)) return null;
+      if (!this.validateHolderMetadata(metadata)) {
+        return null;
+      }
       
       return metadata;
     } catch (error) {
@@ -225,20 +219,15 @@ export class InscriptionService {
     const hasP2PKH = /76a914[0-9a-f]{40}88ac/.test(scriptHex);
     console.log('Has P2PKH:', hasP2PKH);
     
-    // Check for OP_RETURN with PUSHDATA prefix
-    // The prefix can be:
-    // 0x01-0x4b: direct length
-    // 0x4c: PUSHDATA1 (1 byte length)
-    // 0x4d: PUSHDATA2 (2 bytes length)
-    // 0x4e: PUSHDATA4 (4 bytes length)
-    const hasOpReturn = /6a([0-9a-f]{2}){1,5}/.test(scriptHex);
-    console.log('Has OP_RETURN with PUSHDATA:', hasOpReturn);
+    // Check for OP_FALSE OP_IF structure
+    const hasOpIf = scriptHex.startsWith('0063') && scriptHex.includes('68');
+    console.log('Has OP_IF structure:', hasOpIf);
     
     // Check if metadata is valid
     const isValidMetadata = this.validateHolderMetadata(metadata);
     console.log('Metadata validation result:', isValidMetadata);
     
-    const isValid = hasP2PKH && hasOpReturn && isValidMetadata;
+    const isValid = hasP2PKH && hasOpIf && isValidMetadata;
     console.log('Final validation result:', isValid);
     
     return isValid;
