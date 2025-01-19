@@ -38,9 +38,9 @@ The inscription consists of two main parts:
 ```
 
 #### 2. Holder UTXO Format
-The holder UTXO uses a new format combining P2PKH with CBOR-serialized metadata:
+The holder UTXO uses a new format combining P2PKH with JSON-serialized metadata:
 ```
-[P2PKH script] + [OP_RETURN CBOR<metadata>]
+[P2PKH script] + [OP_RETURN JSON<metadata>]
 ```
 
 Metadata structure for initial inscription:
@@ -74,20 +74,13 @@ The `contentID` is generated as:
 MEME_<hash(video_name + creator_address + latest_block_hash)>_<timestamp>
 ```
 
-### CBOR Serialization
-The metadata in the holder UTXO is serialized using CBOR (Concise Binary Object Representation) for:
-- Efficient encoding
-- Reduced size
-- Standardized parsing
-- Type safety
-
 ### Script Format
 
 #### Inscription Holder Script
 The inscription holder script follows this format:
 ```
-[P2PKH script] + [OP_RETURN CBOR<metadata>]
-76a914<pubKeyHash>88ac + 6a<pushdata><CBOR data>
+[P2PKH script] + [OP_RETURN JSON<metadata>]
+76a914<pubKeyHash>88ac + 6a<pushdata><JSON data>
 ```
 
 Components:
@@ -95,8 +88,8 @@ Components:
    - Format: `76a914<pubKeyHash>88ac`
    - Controls spending authorization
 
-2. **Metadata** - CBOR-serialized data
-   - Format: `6a<pushdata><CBOR data>`
+2. **Metadata** - JSON-serialized data
+   - Format: `6a<pushdata><JSON data>`
    - Contains inscription metadata
    - Uses appropriate PUSHDATA opcode based on size
 

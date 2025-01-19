@@ -15,7 +15,6 @@ import type {
 } from '../types/inscription'
 import { VideoMetadata, VideoFile } from '../types/video'
 import crypto from 'crypto'
-import cbor from 'cbor'
 
 const MAX_CHUNK_SIZE = 100 * 1024  // 100KB per chunk
 
@@ -51,15 +50,15 @@ export class InscriptionService {
       };
       console.log('Created holder metadata:', metadata);
 
-      // Serialize metadata to CBOR
-      const cborData = cbor.encode(metadata);
-      console.log('CBOR data length:', cborData.length);
-      console.log('CBOR data hex:', cborData.toString('hex'));
+      // Convert metadata to JSON string and then to Buffer
+      const jsonData = Buffer.from(JSON.stringify(metadata));
+      console.log('JSON data length:', jsonData.length);
+      console.log('JSON data hex:', jsonData.toString('hex'));
       
       // Create combined script parts
       const scriptParts = [
         p2pkhScript.toHex(),                // P2PKH script
-        '6a' + this.createPushData(cborData).toString('hex')  // OP_RETURN + CBOR data
+        '6a' + this.createPushData(jsonData).toString('hex')  // OP_RETURN + JSON data
       ];
       console.log('Script parts:', scriptParts);
       
@@ -68,7 +67,6 @@ export class InscriptionService {
       return finalScript;
     } catch (error) {
       console.error('Failed to create holder script:', error);
-      // Let the error propagate up to be handled by createInscriptionData
       throw error;
     }
   }
@@ -96,13 +94,13 @@ export class InscriptionService {
       creator: originalMetadata.creator
     };
 
-    // Serialize metadata to CBOR
-    const cborData = cbor.encode(metadata);
+    // Convert metadata to JSON string and then to Buffer
+    const jsonData = Buffer.from(JSON.stringify(metadata));
     
     // Create combined script parts
     const scriptParts = [
       p2pkhScript.toHex(),                // P2PKH script
-      '6a' + this.createPushData(cborData).toString('hex')  // OP_RETURN + CBOR data
+      '6a' + this.createPushData(jsonData).toString('hex')  // OP_RETURN + JSON data
     ];
     
     return Script.fromHex(scriptParts.join(''));
@@ -156,26 +154,26 @@ export class InscriptionService {
       const dataStart = p2pkhMatch.index! + p2pkhMatch[0].length;
       if (scriptHex.slice(dataStart, dataStart + 2) !== '6a') return null;
       
-      // Extract CBOR data after OP_RETURN
+      // Extract JSON data after OP_RETURN
       const opReturnData = scriptHex.slice(dataStart + 2);
       
       // Handle PUSHDATA prefixes
-      let cborStartIndex = 0;
+      let jsonStartIndex = 0;
       if (opReturnData.startsWith('4c')) {
-        cborStartIndex = 4; // Skip 4c and one byte length
+        jsonStartIndex = 4; // Skip 4c and one byte length
       } else if (opReturnData.startsWith('4d')) {
-        cborStartIndex = 6; // Skip 4d and two byte length
+        jsonStartIndex = 6; // Skip 4d and two byte length
       } else if (opReturnData.startsWith('4e')) {
-        cborStartIndex = 10; // Skip 4e and four byte length
+        jsonStartIndex = 10; // Skip 4e and four byte length
       } else {
-        cborStartIndex = 2; // Skip one byte length for direct push
+        jsonStartIndex = 2; // Skip one byte length for direct push
       }
       
-      const cborHex = opReturnData.slice(cborStartIndex);
-      const cborBuffer = Buffer.from(cborHex, 'hex');
+      const jsonHex = opReturnData.slice(jsonStartIndex);
+      const jsonBuffer = Buffer.from(jsonHex, 'hex');
       
-      // Decode CBOR data
-      const metadata = cbor.decode(cborBuffer) as HolderMetadata;
+      // Parse JSON data
+      const metadata = JSON.parse(jsonBuffer.toString()) as HolderMetadata;
       
       // Validate metadata structure
       if (!this.validateHolderMetadata(metadata)) return null;
@@ -548,13 +546,25 @@ export class InscriptionService {
       if (!inscription.location || !inscription.location.script) {
         validation.errors.push('Missing location or script');
       } else {
-        // Verify script format (P2PKH + MEME marker)
+        // Verify script format (P2PKH + OP_RETURN with JSON metadata)
         const scriptHex = inscription.location.script.toHex();
-        const hasP2PKH = /76a914[0-9a-f]{40}88ac/.test(scriptHex);
-        const hasMEMEMarker = scriptHex.includes('6a044d454d45');
         
-        if (!hasP2PKH || !hasMEMEMarker) {
-          validation.errors.push('Invalid inscription holder script format');
+        // Check for P2PKH script
+        const hasP2PKH = /76a914[0-9a-f]{40}88ac/.test(scriptHex);
+        if (!hasP2PKH) {
+          validation.errors.push('Invalid P2PKH script format');
+        }
+
+        // Check for OP_RETURN with JSON metadata
+        const hasOpReturn = scriptHex.includes('6a');
+        if (!hasOpReturn) {
+          validation.errors.push('Missing OP_RETURN data');
+        }
+
+        // Try to extract and validate metadata
+        const metadata = this.extractHolderMetadata(inscription.location.script);
+        if (!metadata) {
+          validation.errors.push('Invalid metadata format');
         }
 
         // Verify 1 satoshi value

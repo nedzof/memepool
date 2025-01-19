@@ -14,7 +14,7 @@ export interface TransferParams {
 export class InscriptionSecurityService {
   public readonly minConfirmations = 6
   private readonly MAX_TXID_LENGTH = 64
-  private readonly ADDRESS_REGEX = /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/
+  private readonly ADDRESS_REGEX = /^[mn1][a-km-zA-HJ-NP-Z1-9]{25,34}$/
   private readonly BASIC_ADDRESS_REGEX = /^[a-zA-Z0-9]+$/
   private readonly isTestEnvironment: boolean
 

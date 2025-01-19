@@ -14,7 +14,6 @@ import {
 import { SignedTransaction } from '../types/services'
 import { InscriptionMetadata } from '../types/inscription'
 import crypto from 'crypto'
-import cbor from 'cbor'
 
 /**
  * Service for handling BSV blockchain interactions
@@ -446,7 +445,7 @@ export class BSVService implements BSVServiceInterface {
       // Add inscription data output
       const inscriptionScriptParts = [
         '006a', // OP_FALSE OP_RETURN
-        this.createPushData(cbor.encode(metadata)).toString('hex'),  // CBOR-encoded metadata
+        this.createPushData(Buffer.from(JSON.stringify(metadata))).toString('hex'),  // JSON metadata
         this.createPushData(content).toString('hex')  // Video content
       ];
       const inscriptionScript = Script.fromHex(inscriptionScriptParts.join(''));
@@ -469,14 +468,14 @@ export class BSVService implements BSVServiceInterface {
         creator: address
       };
 
-      // Serialize metadata to CBOR
-      const cborData = cbor.encode(holderMetadata);
+      // Convert metadata to JSON string
+      const jsonData = Buffer.from(JSON.stringify(holderMetadata));
 
       // Create the holder script
       const p2pkhScript = p2pkh.lock(address);
       const holderScriptParts = [
         p2pkhScript.toHex(),                // P2PKH script
-        '6a' + this.createPushData(cborData).toString('hex')  // OP_RETURN + CBOR data
+        '6a' + this.createPushData(jsonData).toString('hex')  // OP_RETURN + JSON data
       ];
       const finalHolderScript = Script.fromHex(holderScriptParts.join(''));
 
@@ -595,7 +594,7 @@ export class BSVService implements BSVServiceInterface {
       const metadataBuffer = Buffer.from(metadataHex, 'hex');
       
       // Decode CBOR data
-      const metadata = cbor.decode(metadataBuffer) as InscriptionMetadata;
+      const metadata = JSON.parse(metadataBuffer.toString()) as InscriptionMetadata;
       
       // Validate metadata structure
       if (!this.validateInscriptionMetadata(metadata)) return null;

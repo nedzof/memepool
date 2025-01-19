@@ -2,7 +2,6 @@ import { BSVService } from '../src/services/bsv-service';
 import { InscriptionMetadata, HolderMetadata } from '../src/types/inscription';
 import fs from 'fs/promises';
 import crypto from 'crypto';
-import cbor from 'cbor';
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -184,11 +183,11 @@ async function verifyInscription(txid: string): Promise<boolean> {
     console.log('Extracted data length:', data.length);
     console.log('First 100 bytes of data:', data.slice(0, 100));
 
-    // Try to parse the data as CBOR
+    // Try to parse the data as JSON
     try {
-      const cborData = Buffer.from(data, 'hex');
-      console.log('\nTrying to parse as CBOR...');
-      const metadata: InscriptionMetadata = cbor.decode(cborData);
+      const jsonData = Buffer.from(data, 'hex').toString();
+      console.log('\nTrying to parse as JSON...');
+      const metadata: InscriptionMetadata = JSON.parse(jsonData);
       console.log('Successfully parsed metadata:', metadata);
 
       // Look for the next PUSHDATA chunk which should contain the video
@@ -227,7 +226,7 @@ async function verifyInscription(txid: string): Promise<boolean> {
           const videoData = Buffer.from(remainingData.slice(videoDataStart, videoDataStart + videoLength * 2), 'hex');
           
           console.log('\nFound inscription data:');
-          console.log('Metadata size:', cborData.length, 'bytes');
+          console.log('Metadata size:', Buffer.from(data, 'hex').length, 'bytes');
           console.log('Video size:', videoData.length, 'bytes');
 
           // Save video for verification
@@ -253,7 +252,7 @@ async function verifyInscription(txid: string): Promise<boolean> {
             throw new Error('No valid inscription holder output found');
           }
 
-          // Extract the P2PKH script and CBOR metadata from the output
+          // Extract the P2PKH script and JSON metadata from the output
           const scriptHex = currentOwnerOutput.scriptPubKey.hex;
           const p2pkhMatch = scriptHex.match(/76a914([0-9a-f]{40})88ac/);
           if (!p2pkhMatch) {
@@ -275,54 +274,54 @@ async function verifyInscription(txid: string): Promise<boolean> {
             console.log('OP_RETURN data:', opReturnData);
             
             // Handle PUSHDATA prefixes
-            let cborStartIndex = 0;
-            let cborLength = 0;
+            let jsonStartIndex = 0;
+            let jsonLength = 0;
             
             if (opReturnData.startsWith('4c')) {
               // PUSHDATA1: 1 byte length
               const lengthHex = opReturnData.slice(2, 4);
-              cborLength = parseInt(lengthHex, 16);
-              cborStartIndex = 4;
+              jsonLength = parseInt(lengthHex, 16);
+              jsonStartIndex = 4;
               console.log('PUSHDATA1 detected:');
               console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', cborLength);
+              console.log('- Decoded length:', jsonLength);
             } else if (opReturnData.startsWith('4d')) {
               // PUSHDATA2: 2 bytes length
               const lengthHex = opReturnData.slice(2, 6);
-              cborLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
-              cborStartIndex = 6;
+              jsonLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
+              jsonStartIndex = 6;
               console.log('PUSHDATA2 detected:');
               console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', cborLength);
+              console.log('- Decoded length:', jsonLength);
             } else if (opReturnData.startsWith('4e')) {
               // PUSHDATA4: 4 bytes length
               const lengthHex = opReturnData.slice(2, 10);
-              cborLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
-              cborStartIndex = 10;
+              jsonLength = parseInt(lengthHex.match(/../g)!.reverse().join(''), 16);
+              jsonStartIndex = 10;
               console.log('PUSHDATA4 detected:');
               console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', cborLength);
+              console.log('- Decoded length:', jsonLength);
             } else {
               // Direct push: 1 byte length
               const lengthHex = opReturnData.slice(0, 2);
-              cborLength = parseInt(lengthHex, 16);
-              cborStartIndex = 2;
+              jsonLength = parseInt(lengthHex, 16);
+              jsonStartIndex = 2;
               console.log('Direct push detected:');
               console.log('- Length hex:', lengthHex);
-              console.log('- Decoded length:', cborLength);
+              console.log('- Decoded length:', jsonLength);
             }
             
-            // Extract CBOR data
-            const cborHex = opReturnData.slice(cborStartIndex, cborStartIndex + (cborLength * 2));
-            console.log('\nExtracted CBOR data:');
-            console.log('- Start index:', cborStartIndex);
-            console.log('- Length:', cborLength);
-            console.log('- Hex:', cborHex);
+            // Extract JSON data
+            const jsonHex = opReturnData.slice(jsonStartIndex, jsonStartIndex + (jsonLength * 2));
+            console.log('\nExtracted JSON data:');
+            console.log('- Start index:', jsonStartIndex);
+            console.log('- Length:', jsonLength);
+            console.log('- Hex:', jsonHex);
             
-            const cborBuffer = Buffer.from(cborHex, 'hex');
+            const jsonBuffer = Buffer.from(jsonHex, 'hex');
             
             try {
-              const holderMetadata = cbor.decodeFirstSync(cborBuffer) as HolderMetadata;
+              const holderMetadata = JSON.parse(jsonBuffer.toString()) as HolderMetadata;
               console.log('\nHolder Script Analysis:');
               console.log('------------------------');
               console.log('1. Script Components:');
@@ -331,7 +330,7 @@ async function verifyInscription(txid: string): Promise<boolean> {
               console.log('   - PUSHDATA Format:', opReturnData.startsWith('4c') ? 'PUSHDATA1' :
                                                 opReturnData.startsWith('4d') ? 'PUSHDATA2' :
                                                 opReturnData.startsWith('4e') ? 'PUSHDATA4' : 'Direct Push');
-              console.log('   - CBOR Data Length:', cborLength, 'bytes');
+              console.log('   - JSON Data Length:', jsonLength, 'bytes');
               
               console.log('\n2. Holder Metadata (Decoded):');
               console.log('   Version:', holderMetadata.version);
@@ -371,8 +370,8 @@ async function verifyInscription(txid: string): Promise<boolean> {
             } catch (error) {
               console.error('Failed to decode holder metadata:', error);
               console.log('Debug info:');
-              console.log('CBOR buffer length:', cborBuffer.length);
-              console.log('First few bytes:', Buffer.from(cborBuffer.slice(0, 10)).toString('hex'));
+              console.log('JSON buffer length:', jsonBuffer.length);
+              console.log('First few bytes:', Buffer.from(jsonBuffer.slice(0, 10)).toString('hex'));
             }
           }
 

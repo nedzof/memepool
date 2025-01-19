@@ -5,6 +5,7 @@ import { Script, Transaction, P2PKH, PublicKey, Signature } from '@bsv/sdk';
 import { BSVError } from '../src/types';
 import { OwnershipTransferService } from '../src/services/ownership-transfer-service';
 import { UTXO } from '../src/types/bsv';
+import * as cbor from 'cbor';
 
 jest.mock('../src/services/bsv-service');
 jest.mock('../src/services/transaction-verification-service');
@@ -16,22 +17,28 @@ jest.mock('@bsv/sdk', () => {
     private hex: string;
 
     constructor(hex = '') {
+      console.log('Creating MockScript with hex:', hex);
       this.hex = hex;
     }
 
     static fromHex(hex: string) {
+      console.log('MockScript.fromHex:', hex);
       return new MockScript(hex);
     }
 
     toHex() {
+      console.log('MockScript.toHex returning:', this.hex);
       return this.hex;
     }
 
     add(data: Buffer) {
+      console.log('MockScript.add:', data.toString('hex'));
       this.hex += data.toString('hex');
+      return this;
     }
 
     toBuffer() {
+      console.log('MockScript.toBuffer for hex:', this.hex);
       return Buffer.from(this.hex, 'hex');
     }
   }
@@ -41,43 +48,48 @@ jest.mock('@bsv/sdk', () => {
     public outputs: any[] = [];
     private hex: string = '';
 
-    public addInput: jest.Mock;
-    public addOutput: jest.Mock;
-    public fee: jest.Mock;
-    public sign: jest.Mock;
-    public getSignaturePreimage: jest.Mock;
-
     constructor() {
-      this.addInput = jest.fn().mockImplementation((input) => {
-        this.inputs.push(input);
-        return this;
-      });
-      this.addOutput = jest.fn().mockImplementation((output) => {
-        this.outputs.push(output);
-        return this;
-      });
-      this.fee = jest.fn().mockResolvedValue(undefined);
-      this.sign = jest.fn().mockResolvedValue(undefined);
-      this.getSignaturePreimage = jest.fn().mockReturnValue(Buffer.from('mock_preimage'));
+      console.log('Creating new MockTransaction');
+    }
+
+    addInput(input: any) {
+      console.log('MockTransaction.addInput:', input);
+      this.inputs.push(input);
+      return this;
+    }
+
+    addOutput(output: any) {
+      console.log('MockTransaction.addOutput:', output);
+      this.outputs.push(output);
+      return this;
+    }
+
+    async sign() {
+      console.log('MockTransaction.sign called');
+      return Promise.resolve(this);
     }
 
     static fromHex(hex: string) {
+      console.log('MockTransaction.fromHex:', hex);
       const tx = new MockTransaction();
       tx.hex = hex;
       return tx;
     }
 
     toHex() {
+      console.log('MockTransaction.toHex returning:', this.hex);
       return this.hex;
     }
   }
 
   class MockP2PKH {
     lock(address: string) {
-      return new MockScript('76a914mock88ac');
+      console.log('MockP2PKH.lock for address:', address);
+      return new MockScript('76a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac');
     }
 
     unlock(privateKey: any) {
+      console.log('MockP2PKH.unlock called');
       return {
         script: new MockScript('mock_script'),
         satoshis: 1000,
@@ -89,9 +101,9 @@ jest.mock('@bsv/sdk', () => {
 
   return {
     ...originalModule,
-    Transaction: MockTransaction,
     Script: MockScript,
-    P2PKH: MockP2PKH
+    Transaction: MockTransaction,
+    P2PKH: MockP2PKH,
   };
 });
 
@@ -101,12 +113,40 @@ describe('OwnershipTransferService', () => {
   let verificationService: jest.Mocked<TransactionVerificationService>;
   let securityService: jest.Mocked<InscriptionSecurityService>;
   
-  // Mock transaction data
-  const mockTxHex = '0100000001c6e21c0c9d3e0bb2ad6689cd877c0c234d8cd5e0a76e6f8acd8a615a06d87738000000006a47304402207f8c3f0b244e6e96a82603f04546d1c017c5386f82c7e3d7a8c29f3aa6c156f902205f1e6cbba2e11823ed3f38f7fd88e3d57b66a9448be7d2c07c72d55273e6e7c7412102f7ae76d41d0099e04912bf0c132ee2f1e060be0e4133b69ca50ad7ea8a58b8e0ffffffff02e8030000000000001976a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac0000000000000000066a044d454d4500000000';
+  // Mock data
   const mockTransferTxId = 'mock_transfer_tx_id';
   const mockRecipientAddress = 'mock_recipient_address';
   const mockSourceTxId = 'mock_source_tx_id';
   const mockSourceOutputIndex = 0;
+  const mockContentId = 'MEME_1234567890_' + Date.now();
+
+  // Create mock metadata
+  const mockMetadata = {
+    version: 1,
+    prefix: 'meme',
+    operation: 'create',
+    name: 'test.mp4',
+    contentID: mockContentId,
+    txid: mockSourceTxId,
+    creator: 'mock_creator_address'
+  };
+
+  // Serialize metadata to CBOR
+  const mockMetadataBuffer = cbor.encode(mockMetadata);
+  const mockMetadataHex = mockMetadataBuffer.toString('hex');
+  
+  // Create PUSHDATA prefix based on length
+  let pushdataPrefix = '';
+  if (mockMetadataBuffer.length <= 0x4b) {
+    pushdataPrefix = mockMetadataBuffer.length.toString(16).padStart(2, '0');
+  } else {
+    pushdataPrefix = '4c' + mockMetadataBuffer.length.toString(16).padStart(2, '0');
+  }
+
+  // Create combined script: P2PKH + OP_RETURN CBOR
+  const mockScriptHex = 
+    '76a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac' + // P2PKH script
+    '6a' + pushdataPrefix + mockMetadataHex; // OP_RETURN with CBOR metadata
 
   beforeEach(() => {
     const mockPrivateKey = {
@@ -149,16 +189,15 @@ describe('OwnershipTransferService', () => {
 
   describe('createTransferTransaction', () => {
     it('should create and broadcast a transfer transaction', async () => {
+      console.log('Setting up test mocks...');
+      
+      // Create mock inscription UTXO with proper script format
       const mockUtxo: UTXO = {
         txId: mockSourceTxId,
         outputIndex: mockSourceOutputIndex,
-        script: Script.fromHex(
-          '76a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac' + // P2PKH script
-          '6a20' + '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef' + // Inscription ID
-          '6a044d454d45' // MEME marker
-        ),
+        script: Script.fromHex(mockScriptHex),
         satoshis: 1,
-        sourceTransaction: Transaction.fromHex(mockTxHex)
+        sourceTransaction: Transaction.fromHex('mock_tx_hex')
       };
 
       // Mock additional UTXO for fees
@@ -166,18 +205,30 @@ describe('OwnershipTransferService', () => {
         txId: 'mock_fee_utxo',
         outputIndex: 0,
         script: Script.fromHex('76a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac'),
-        satoshis: 10000, // Increased to ensure enough for fees
-        sourceTransaction: Transaction.fromHex(mockTxHex)
+        satoshis: 100000, // Increased to ensure enough for fees
+        sourceTransaction: Transaction.fromHex('mock_tx_hex')
       };
+
+      console.log('Setting up service mocks...');
+      
+      // Set up all required mocks
+      (bsvService.wallet.getUtxos as jest.Mock).mockResolvedValue([mockUtxo, mockFeeUtxo]);
+      (bsvService.getWalletAddress as jest.Mock).mockResolvedValue('mock_sender_address');
+      (securityService.validateTransferParams as jest.Mock).mockResolvedValue(true);
+      (securityService.verifyOwnershipForTransfer as jest.Mock).mockResolvedValue(true);
+      (bsvService.wallet.broadcastTransaction as jest.Mock).mockResolvedValue(mockTransferTxId);
 
       // Mock the fetch responses
       (bsvService.wallet.fetchWithRetry as jest.Mock).mockImplementation(async (url: string) => {
+        console.log('Fetching URL:', url);
         if (url.includes('/hex')) {
+          console.log('Returning mock transaction hex');
           return {
             ok: true,
-            text: async () => mockTxHex
+            text: async () => 'mock_tx_hex'
           };
         }
+        console.log('Returning mock transaction data');
         return {
           ok: true,
           json: async () => ({
@@ -187,11 +238,10 @@ describe('OwnershipTransferService', () => {
             size: 225,
             locktime: 0,
             vin: [{
-              txid: "7387d8065a618acd8a6f6ea7e0d58c4d230c7c87cd8966adb20b3e9d0c1ce2c6",
+              txid: mockSourceTxId,
               vout: 0,
               scriptSig: {
-                asm: "304402207f8c3f0b244e6e96a82603f04546d1c017c5386f82c7e3d7a8c29f3aa6c156f902205f1e6cbba2e11823ed3f38f7fd88e3d57b66a9448be7d2c07c72d55273e6e7c7412102f7ae76d41d0099e04912bf0c132ee2f1e060be0e4133b69ca50ad7ea8a58b8e0",
-                hex: "47304402207f8c3f0b244e6e96a82603f04546d1c017c5386f82c7e3d7a8c29f3aa6c156f902205f1e6cbba2e11823ed3f38f7fd88e3d57b66a9448be7d2c07c72d55273e6e7c7412102f7ae76d41d0099e04912bf0c132ee2f1e060be0e4133b69ca50ad7ea8a58b8e0"
+                hex: '47304402207f8c3f0b244e6e96a82603f04546d1c017c5386f82c7e3d7a8c29f3aa6c156f902205f1e6cbba2e11823ed3f38f7fd88e3d57b66a9448be7d2c07c72d55273e6e7c7412102f7ae76d41d0099e04912bf0c132ee2f1e060be0e4133b69ca50ad7ea8a58b8e0'
               },
               sequence: 4294967295
             }],
@@ -200,20 +250,7 @@ describe('OwnershipTransferService', () => {
                 value: 0.00001,
                 n: 0,
                 scriptPubKey: {
-                  asm: "OP_DUP OP_HASH160 d8b6fcc85a383261df05423ddf068a8987bf0d7f OP_EQUALVERIFY OP_CHECKSIG",
-                  hex: "76a914d8b6fcc85a383261df05423ddf068a8987bf0d7f88ac",
-                  reqSigs: 1,
-                  type: "pubkeyhash",
-                  addresses: ["1LZk8TPrt7UDMQrqpxuDcX3mZoKnwtEa9K"]
-                }
-              },
-              {
-                value: 0.00000001,
-                n: 1,
-                scriptPubKey: {
-                  asm: "OP_RETURN 4d454d45",
-                  hex: "6a044d454d45",
-                  type: "nonstandard"
+                  hex: mockScriptHex
                 }
               }
             ]
@@ -221,12 +258,9 @@ describe('OwnershipTransferService', () => {
         };
       });
 
-      (bsvService.wallet.getUtxos as jest.Mock).mockResolvedValue([mockUtxo, mockFeeUtxo]);
-      (bsvService.getWalletAddress as jest.Mock).mockResolvedValue('mock_sender_address');
-      (securityService.validateTransferParams as jest.Mock).mockResolvedValue(true);
-      (securityService.verifyOwnershipForTransfer as jest.Mock).mockResolvedValue(true);
-
+      console.log('Executing transfer transaction...');
       const result = await service.createTransferTransaction(mockSourceTxId, mockRecipientAddress);
+      console.log('Transfer result:', result);
       expect(result).toBe(mockTransferTxId);
     });
 

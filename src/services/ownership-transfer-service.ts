@@ -4,7 +4,7 @@ import { InscriptionSecurityService } from './inscription-security-service';
 import { Script, Transaction, P2PKH, PublicKey, Signature } from '@bsv/sdk';
 import { BSVError } from '../types';
 import { BSVServiceInterface, UTXO, TransactionInput, TransactionOutput } from '../types/bsv';
-import { InscriptionHolderScript } from '../types/inscription';
+import { InscriptionHolderScript, HolderMetadata } from '../types/inscription';
 
 interface TransferOptions {
   value?: number;
@@ -35,7 +35,7 @@ export class OwnershipTransferService {
   ) {
     this.bsvService = bsvService;
     this.verificationService = verificationService || new TransactionVerificationService(bsvService);
-    this.securityService = securityService || new InscriptionSecurityService(bsvService);
+    this.securityService = securityService || new InscriptionSecurityService(bsvService, this.verificationService);
   }
 
   /**
@@ -74,99 +74,164 @@ export class OwnershipTransferService {
       }
 
       // Find the inscription holder UTXO
-      const inscriptionUtxo = allUtxos.find((utxo: UTXO) => {
-        const scriptHex = utxo.script.toHex();
-        return scriptHex.includes('6a044d454d45') && // Has MEME marker
-               scriptHex.includes('6a20') && // Has inscription ID
-               utxo.satoshis === 1; // Is 1 satoshi
-      });
-
+      const inscriptionUtxo = allUtxos.find((utxo: UTXO) => utxo.txId === inscriptionTxId);
       if (!inscriptionUtxo) {
         throw new BSVError('UTXO_ERROR', 'Inscription holder UTXO not found');
       }
 
-      // Extract original inscription ID from script
+      // Fetch complete transaction data to get the full script
+      const txResponse = await this.bsvService.wallet.fetchWithRetry(
+        `https://api.whatsonchain.com/v1/bsv/test/tx/${inscriptionTxId}`
+      );
+      const txData = await txResponse.json();
+
+      // Find the output with nonstandard type and P2PKH + OP_RETURN format
+      const inscriptionOutput = txData.vout.find((out: any) => 
+        out.scriptPubKey.type === 'nonstandard' && 
+        out.scriptPubKey.hex.match(/76a914[0-9a-f]{40}88ac.*6a/)
+      );
+
+      if (!inscriptionOutput) {
+        throw new BSVError('INSCRIPTION_ERROR', 'No inscription output found in transaction');
+      }
+
+      // Update UTXO with correct script and output index
+      inscriptionUtxo.script = Script.fromHex(inscriptionOutput.scriptPubKey.hex);
+      inscriptionUtxo.outputIndex = inscriptionOutput.n;
+      inscriptionUtxo.satoshis = Math.round(inscriptionOutput.value * 100000000); // Convert BSV to satoshis
+
+      // Extract and decode holder metadata
       const scriptHex = inscriptionUtxo.script.toHex();
-      const originalInscriptionId = options.originalInscriptionId || this.extractOriginalInscriptionId(scriptHex);
+      const p2pkhScript = scriptHex.slice(0, 50);  // 76a914{20-bytes}88ac is 50 chars
+      const opReturnStart = scriptHex.indexOf('6a', 50);
       
-      if (!originalInscriptionId) {
-        throw new BSVError('INSCRIPTION_ERROR', 'Could not find original inscription ID in holder script');
+      if (opReturnStart < 0) {
+        throw new BSVError('INSCRIPTION_ERROR', 'Invalid holder script format');
+      }
+
+      const opReturnData = scriptHex.slice(opReturnStart + 2);
+      let jsonStartIndex = 0;
+      let jsonLength = 0;
+      
+      // Handle PUSHDATA prefixes
+      if (opReturnData.startsWith('4c')) {
+        jsonLength = parseInt(opReturnData.slice(2, 4), 16);
+        jsonStartIndex = 4;
+      } else if (opReturnData.startsWith('4d')) {
+        jsonLength = parseInt(opReturnData.slice(2, 6).match(/../g)!.reverse().join(''), 16);
+        jsonStartIndex = 6;
+      } else if (opReturnData.startsWith('4e')) {
+        jsonLength = parseInt(opReturnData.slice(2, 10).match(/../g)!.reverse().join(''), 16);
+        jsonStartIndex = 10;
+      } else {
+        jsonLength = parseInt(opReturnData.slice(0, 2), 16);
+        jsonStartIndex = 2;
+      }
+
+      const jsonHex = opReturnData.slice(jsonStartIndex, jsonStartIndex + (jsonLength * 2));
+      const jsonBuffer = Buffer.from(jsonHex, 'hex');
+      
+      let holderMetadata: HolderMetadata;
+      try {
+        holderMetadata = JSON.parse(jsonBuffer.toString()) as HolderMetadata;
+      } catch (error) {
+        throw new BSVError('INSCRIPTION_ERROR', 'Failed to decode holder metadata');
       }
 
       // Create new transaction
       const tx = new Transaction();
-
-      // Get source transaction for the inscription UTXO
-      const sourceTx = await this.fetchSourceTransaction(inscriptionUtxo.txId);
-      inscriptionUtxo.sourceTransaction = sourceTx;
-
-      // Create P2PKH unlocking template
-      const p2pkhUnlock = new P2PKH();
       const privateKey = this.bsvService.wallet.privateKey;
-      const pubKey = privateKey.toPublicKey();
+      const p2pkhUnlock = new P2PKH();
 
-      // Add the inscription input
-      tx.addInput({
+      // Add inscription holder UTXO as input with proper unlocking script
+      if (!inscriptionUtxo.sourceTransaction) {
+        inscriptionUtxo.sourceTransaction = await this.fetchSourceTransaction(inscriptionUtxo.txId);
+      }
+
+      // Get the source transaction output's locking script
+      const sourceOutput = inscriptionUtxo.sourceTransaction.outputs[inscriptionUtxo.outputIndex];
+      if (!sourceOutput) {
+        throw new BSVError('SCRIPT_ERROR', 'Source output not found');
+      }
+
+      // Create unlocking script template for the inscription input using sender's key
+      const unlockingTemplate = p2pkhUnlock.unlock(privateKey);
+
+      // Add input with proper script template
+      const inscriptionInput = {
         sourceTXID: inscriptionUtxo.txId,
         sourceOutputIndex: inscriptionUtxo.outputIndex,
         sourceSatoshis: inscriptionUtxo.satoshis,
         sourceTransaction: inscriptionUtxo.sourceTransaction,
-        unlockingScriptTemplate: p2pkhUnlock.unlock(privateKey)
-      });
+        unlockingScriptTemplate: unlockingTemplate
+      };
+      tx.addInput(inscriptionInput);
 
-      // Calculate base size for fee estimation
-      const baseSize = 
-        148 + // Basic P2PKH input
-        34 + // Basic P2PKH output
-        44; // OP_RETURN data size (inscription ID + MEME marker)
-
-      // Get additional UTXOs for fees
-      const feeUtxos = allUtxos
-        .filter((utxo: UTXO) => 
-          utxo.txId !== inscriptionUtxo.txId && 
-          !utxo.script.toHex().includes('6a044d454d45')
-        )
-        .sort((a, b) => a.satoshis - b.satoshis); // Sort by value ascending
-
-      // Calculate minimum required fee (1 sat/kb)
-      const minFee = Math.ceil(baseSize / 1000);
-
-      // Select fee UTXOs
+      // Calculate minimum fee
+      const minFee = 1000; // 1000 satoshis minimum fee
       let totalFeeInputs = 0;
+
+      // Select UTXOs for fee
       const selectedFeeUtxos: UTXO[] = [];
-      
-      for (const utxo of feeUtxos) {
-        if (totalFeeInputs >= minFee) break;
-        selectedFeeUtxos.push(utxo);
-        totalFeeInputs += utxo.satoshis;
+      for (const utxo of allUtxos) {
+        if (utxo.txId !== inscriptionTxId && totalFeeInputs < minFee) {
+          selectedFeeUtxos.push(utxo);
+          totalFeeInputs += utxo.satoshis;
+        }
       }
 
-      // Add fee UTXOs to transaction
+      if (totalFeeInputs < minFee) {
+        throw new BSVError('UTXO_ERROR', 'Insufficient funds for fee');
+      }
+
+      // Add fee UTXOs to transaction with proper unlocking scripts
       for (const utxo of selectedFeeUtxos) {
         if (!utxo.sourceTransaction) {
           utxo.sourceTransaction = await this.fetchSourceTransaction(utxo.txId);
         }
-        tx.addInput({
+
+        // Get the source transaction output's locking script for fee UTXO
+        const feeSourceOutput = utxo.sourceTransaction.outputs[utxo.outputIndex];
+        if (!feeSourceOutput) {
+          throw new BSVError('SCRIPT_ERROR', `Fee source output not found for UTXO ${utxo.txId}:${utxo.outputIndex}`);
+        }
+
+        // Create unlocking script template for the fee output
+        const feeUnlockingTemplate = p2pkhUnlock.unlock(privateKey);
+        
+        const feeInput = {
           sourceTXID: utxo.txId,
           sourceOutputIndex: utxo.outputIndex,
           sourceSatoshis: utxo.satoshis,
           sourceTransaction: utxo.sourceTransaction,
-          unlockingScriptTemplate: p2pkhUnlock.unlock(privateKey)
-        });
+          unlockingScriptTemplate: feeUnlockingTemplate
+        };
+        tx.addInput(feeInput);
       }
 
-      // Create recipient's P2PKH script
+      // Update metadata for transfer
+      const transferMetadata: HolderMetadata = {
+        ...holderMetadata,
+        operation: 'transfer',
+        txid: inscriptionTxId
+      };
+
+      // Create recipient's inscription locking script
       const recipientP2pkh = new P2PKH();
-      const recipientScript = recipientP2pkh.lock(recipientAddress);
-      
-      // Create combined script: P2PKH + Original TXID + MEME marker
-      const scriptParts = [
-        recipientScript.toHex(),
-        '6a20' + originalInscriptionId,
-        '6a044d454d45'
+      const recipientLockingScript = recipientP2pkh.lock(recipientAddress);
+
+      // Create the combined locking script with metadata
+      const lockingScriptParts = [
+        recipientLockingScript.toHex(),
+        '6a' + Buffer.from(JSON.stringify(transferMetadata)).toString('hex')
       ];
-      
-      const lockingScript = Script.fromHex(scriptParts.join(''));
+
+      const lockingScript = Script.fromHex(lockingScriptParts.join(''));
+
+      // Verify the locking script starts with the correct P2PKH for the recipient
+      if (!lockingScript.toHex().startsWith(recipientLockingScript.toHex())) {
+        throw new BSVError('SCRIPT_ERROR', 'Locking script does not contain correct recipient P2PKH');
+      }
 
       // Add the inscription output (1 satoshi)
       tx.addOutput({
@@ -190,11 +255,20 @@ export class OwnershipTransferService {
       // Sign all inputs
       await tx.sign();
 
-      // Broadcast transaction
-      const txid = await this.bsvService.wallet.broadcastTransaction(tx);
-      console.log('Transfer transaction broadcast:', txid);
+      // Verify the transaction structure before broadcasting
+      const outputScripts = tx.outputs.map(output => output.lockingScript.toHex());
+      const hasRecipientOutput = outputScripts.some(script => script.startsWith(recipientLockingScript.toHex()));
+      if (!hasRecipientOutput) {
+        throw new BSVError('SCRIPT_ERROR', 'Transaction does not contain recipient output');
+      }
 
-      return txid;
+      // Broadcast transaction
+      try {
+        const txid = await this.bsvService.wallet.broadcastTransaction(tx);
+        return txid;
+      } catch (error) {
+        throw new BSVError('BROADCAST_ERROR', `Failed to broadcast transaction: ${error instanceof Error ? error.message : String(error)}`);
+      }
     } catch (error) {
       console.error('Failed to create transfer transaction:', error);
       throw error instanceof BSVError ? error : new BSVError('TRANSFER_ERROR', 'Failed to create transfer transaction');

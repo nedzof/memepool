@@ -135,12 +135,6 @@ export interface InscriptionValidation {
   warnings: string[];
 }
 
-// CBOR serialization helpers
-export interface CBORSerializable {
-  toCBOR(): Buffer;
-  fromCBOR(buffer: Buffer): HolderMetadata;
-}
-
 export interface MetadataValidator {
   validateMetadata(metadata: HolderMetadata): InscriptionValidation;
   validateContentID(contentID: string): boolean;
