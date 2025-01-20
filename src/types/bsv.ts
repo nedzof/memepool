@@ -12,15 +12,13 @@ export interface TransactionInput {
   sourceOutputIndex: number;
   sourceSatoshis: number;
   script: Script;
-  unlockingScriptTemplate?: UnlockingTemplate;
   sourceTransaction?: Transaction;
+  unlockingScriptTemplate?: UnlockingTemplate;
 }
 
 export interface UnlockingTemplate {
-  script: Script
-  satoshis: number
-  sign(tx: Transaction, inputIndex: number): Promise<Script>
-  estimateLength(): number
+  sign(tx: Transaction, inputIndex: number): Promise<Script>;
+  estimateLength(): number;
 }
 
 export interface WalletProvider {
@@ -35,8 +33,7 @@ export interface UTXO {
   outputIndex: number;
   script: Script;
   satoshis: number;
-  sourceTransaction?: Transaction;
-  unlockingTemplate?: UnlockingTemplate;
+  tx?: Transaction;
 }
 
 export interface TransactionStatus {
@@ -45,17 +42,18 @@ export interface TransactionStatus {
 }
 
 export interface BSVServiceInterface {
-  wallet: WalletProvider;
-  getWalletAddress(): Promise<string>;
+  wallet: {
+    getUtxos(): Promise<UTXO[]>;
+    fetchWithRetry(url: string): Promise<Response>;
+    privateKey: PrivateKey;
+    broadcastTransaction(tx: Transaction): Promise<string>;
+  };
   getTransactionStatus(txid: string): Promise<TransactionStatus>;
+  getWalletAddress(): Promise<string>;
+  getUTXO(txid: string): Promise<UTXO | null>;
+  getPrivateKey(): Promise<PrivateKey>;
+  broadcastTx(tx: Transaction): Promise<string>;
   getTransaction(txid: string): Promise<Transaction>;
-  createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Promise<SignedTransaction>;
-  broadcastTransaction(transaction: SignedTransaction): Promise<string>;
-  connect(): Promise<boolean>;
-  connectWallet(): Promise<string>;
-  getUTXOs(address: string): Promise<UTXO[]>;
-  estimateFee(inputs: number, outputs: number): number;
-  getNetworkConfig(): NetworkConfig;
 }
 
 // Network types

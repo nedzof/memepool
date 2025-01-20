@@ -1,5 +1,6 @@
 import { Script } from '@bsv/sdk';
 import { SignedTransaction } from './services';
+import { ByteString, PubKey } from 'scrypt-ts';
 
 export interface InscriptionCreationParams {
   videoFile: {
@@ -80,13 +81,13 @@ export interface InscriptionMetadata {
 export type InscriptionOperation = 'inscribe' | 'transfer';
 
 export interface HolderMetadata {
-  version: number;
-  prefix: 'meme';
-  operation: InscriptionOperation;
-  name: string;
-  contentID: string;
-  txid: string;
-  creator: string;
+  version: string;
+  prefix: string;
+  operation: 'inscribe' | 'transfer';
+  contentId: string;
+  timestamp: number;
+  creator?: string;
+  previousOwner?: string;
 }
 
 export interface ContentIDComponents {
@@ -116,7 +117,6 @@ export interface InscriptionTransaction {
   timestamp: number;
   fee: number;
   blockHeight: number;
-  chunks?: ChunkTracking;
 }
 
 export interface Inscription {
@@ -138,5 +138,16 @@ export interface InscriptionValidation {
 export interface MetadataValidator {
   validateMetadata(metadata: HolderMetadata): InscriptionValidation;
   validateContentID(contentID: string): boolean;
-  validateOperation(operation: InscriptionOperation, context: Inscription): boolean;
+  validateOperation(operation: string, context: any): boolean;
+}
+
+export interface InscriptionMetadata {
+  version: string;
+  prefix: string;
+  operation: 'inscribe' | 'transfer';
+  contentId: string;
+  timestamp: number;
+  creator?: string;
+  previousOwner?: string;
+  tx?: string;
 } 

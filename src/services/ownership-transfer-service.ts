@@ -1,11 +1,13 @@
 import { BSVService } from './bsv-service';
 import { TransactionVerificationService } from './transaction-verification-service';
 import { InscriptionSecurityService } from './inscription-security-service';
-import { Script, Transaction, P2PKH, PublicKey, Signature } from '@bsv/sdk';
+import { Script, Transaction } from '@bsv/sdk';
 import { BSVError } from '../types';
-import { BSVServiceInterface, UTXO, TransactionInput, TransactionOutput } from '../types/bsv';
-import { InscriptionHolderScript, HolderMetadata } from '../types/inscription';
-import crypto from 'crypto';
+import { BSVServiceInterface, UTXO, TransactionOutput } from '../types/bsv';
+import { InscriptionHolder } from '../contracts/inscription-holder';
+import { bsv, ByteString, PubKey, Sig } from 'scrypt-ts';
+import { createHash } from 'crypto';
+import { HolderMetadata } from '../types/inscription';
 
 interface TransferOptions {
   value?: number;
@@ -48,99 +50,50 @@ export class OwnershipTransferService {
     options: TransferOptions = {}
   ): Promise<string> {
     try {
-      const senderAddress = await this.bsvService.getWalletAddress();
-      console.log('Sender address:', senderAddress);
-
-      // Validate transfer parameters
-      await this.securityService.validateTransferParams({
-        txid: inscriptionTxId,
-        senderAddress,
-        recipientAddress
-      });
-
-      // Verify ownership and security checks
-      const securityCheck = await this.securityService.verifyOwnershipForTransfer(
-        inscriptionTxId,
-        senderAddress
-      );
-
-      if (!securityCheck) {
-        throw new BSVError('SECURITY_ERROR', 'Security check failed');
+      // Get the inscription UTXO
+      const utxo = await this.bsvService.getUTXO(inscriptionTxId);
+      if (!utxo) {
+        throw new BSVError('UTXO_ERROR', 'Inscription UTXO not found');
       }
 
-      // Get all available UTXOs
-      const allUtxos = await this.bsvService.wallet.getUtxos();
-      if (!allUtxos?.length) {
-        throw new BSVError('UTXO_ERROR', 'No UTXOs available');
-      }
-
-      // Find the inscription holder UTXO
-      const inscriptionUtxo = allUtxos.find((utxo: UTXO) => utxo.txId === inscriptionTxId);
-      if (!inscriptionUtxo) {
-        throw new BSVError('UTXO_ERROR', 'Inscription holder UTXO not found');
-      }
-
-      // Fetch complete transaction data
-      const txResponse = await this.bsvService.wallet.fetchWithRetry(
-        `https://api.whatsonchain.com/v1/bsv/test/tx/${inscriptionTxId}`
-      );
-      const txData = await txResponse.json();
-
-      // Find inscription output
-      const sourceOutput = txData.vout.find((out: any) => {
-        const scriptHex = out.scriptPubKey.hex;
-        return out.scriptPubKey.type === 'nonstandard' && this.validateInscriptionScript(scriptHex);
-      });
-
-      if (!sourceOutput) {
-        throw new BSVError('INSCRIPTION_ERROR', 'No inscription output found in transaction');
-      }
-
-      // Update UTXO with correct script
-      inscriptionUtxo.script = Script.fromHex(sourceOutput.scriptPubKey.hex);
-      inscriptionUtxo.outputIndex = sourceOutput.n;
-      inscriptionUtxo.satoshis = Math.round(sourceOutput.value * 100000000);
-
-      // Extract holder metadata
-      const holderMetadata = await this.extractHolderMetadata(inscriptionUtxo.script.toHex());
-      if (!holderMetadata) {
-        throw new BSVError('INSCRIPTION_ERROR', 'Failed to extract holder metadata');
-      }
-
-      // Create transfer metadata
-      const transferMetadata = {
-        ...holderMetadata,
-        operation: 'transfer' as const,
-        txid: inscriptionTxId
-      };
-
-      // Create new inscription holder script
-      const p2pkh = new P2PKH();
-      const recipientP2PKH = p2pkh.lock(recipientAddress);
+      // Load and verify the contract instance
+      const contract = InscriptionHolder.fromTx(utxo.tx);
       
-      const scriptParts = [
-        '00',  // OP_FALSE
-        '63',  // OP_IF
-        this.createPushData(Buffer.from(JSON.stringify(transferMetadata))).toString('hex'),
-        '68',  // OP_ENDIF
-        recipientP2PKH.toHex()
-      ];
+      // Get recipient's public key from address
+      const recipientPubKey = bsv.PublicKey.fromString(recipientAddress);
 
-      const transferScript = Script.fromHex(scriptParts.join(''));
+      // Create signature for transfer
+      const currentPrivateKey = await this.bsvService.getPrivateKey();
+      const tx = new Transaction();
+      tx.addInput({
+        sourceTXID: inscriptionTxId,
+        sourceOutputIndex: utxo.outputIndex,
+        sourceSatoshis: utxo.satoshis,
+        sourceTransaction: utxo.tx
+      });
 
-      // Create and sign transaction
-      const tx = await this.createAndSignTransferTx(
-        inscriptionUtxo,
-        transferScript,
-        recipientAddress,
-        senderAddress
+      // Add contract output
+      tx.addOutput({
+        lockingScript: contract.lockingScript,
+        satoshis: utxo.satoshis
+      });
+
+      // Sign the transaction
+      const sigBuf = currentPrivateKey.sign(tx.getSignaturePreimage(0, contract.lockingScript, utxo.satoshis, 0x41));
+
+      // Call contract transfer method with raw bytes
+      await contract.methods.transfer(
+        recipientPubKey.toBuffer(),
+        sigBuf
       );
 
       // Broadcast transaction
-      return await this.bsvService.wallet.broadcastTransaction(tx);
+      const txid = await this.bsvService.broadcastTx(tx);
+
+      return txid;
     } catch (error) {
-      console.error('Failed to create transfer transaction:', error);
-      throw error instanceof BSVError ? error : new BSVError('TRANSFER_ERROR', 'Failed to create transfer transaction');
+      console.error('Transfer transaction creation failed:', error);
+      throw error;
     }
   }
 
@@ -278,20 +231,21 @@ export class OwnershipTransferService {
       if (scriptHex.startsWith('76a914') && scriptHex.endsWith('88ac')) {
         // Extract pubKeyHash from P2PKH script
         const pubKeyHash = scriptHex.slice(6, -4);
+        const timestamp = Date.now();
+        const contentId = this.extractOriginalInscriptionId(scriptHex) || scriptHex;
         
         // Create initial inscription metadata
         return {
-          version: 1,
+          version: '1',
           prefix: 'meme',
           operation: 'inscribe',
-          name: 'inscription',
-          contentID: this.extractOriginalInscriptionId(scriptHex) || scriptHex,
-          txid: 'deploy',
+          contentId,
+          timestamp,
           creator: this.pubKeyHashToAddress(pubKeyHash)
         };
       }
 
-      // Handle standard inscription format
+      // Handle ordinals-like inscription format
       if (!scriptHex.startsWith('0063')) {
         return null;
       }
@@ -341,9 +295,9 @@ export class OwnershipTransferService {
     // Convert to Buffer for checksum calculation
     const buffer = Buffer.from(fullHash, 'hex');
     
-    // Calculate double SHA256 for checksum
-    const hash1 = crypto.createHash('sha256').update(buffer).digest();
-    const hash2 = crypto.createHash('sha256').update(hash1).digest();
+    // Calculate double SHA256 for checksum using Node's crypto
+    const hash1 = createHash('sha256').update(buffer).digest();
+    const hash2 = createHash('sha256').update(hash1).digest();
     const checksum = hash2.slice(0, 4);
     
     // Combine version, pubkey hash, and checksum
@@ -374,142 +328,45 @@ export class OwnershipTransferService {
     return result;
   }
 
-  private async createAndSignTransferTx(
-    inscriptionUtxo: UTXO,
-    transferScript: Script,
-    recipientAddress: string,
-    senderAddress: string
-  ): Promise<Transaction> {
-    // Create new transaction
-    const tx = new Transaction();
-    const privateKey = this.bsvService.wallet.privateKey;
-
-    // Add inscription holder UTXO as input
-    if (!inscriptionUtxo.sourceTransaction) {
-      inscriptionUtxo.sourceTransaction = await this.fetchSourceTransaction(inscriptionUtxo.txId);
-    }
-
-    // Create a fresh P2PKH instance for unlocking the input
-    const p2pkhUnlock = new P2PKH();
-    const unlockingTemplate = p2pkhUnlock.unlock(privateKey);
-
-    // Add input with proper script template
-    const inscriptionInput = {
-      sourceTXID: inscriptionUtxo.txId,
-      sourceOutputIndex: inscriptionUtxo.outputIndex,
-      sourceSatoshis: 1, // Always 1 satoshi for inscription
-      sourceTransaction: inscriptionUtxo.sourceTransaction,
-      unlockingScriptTemplate: unlockingTemplate
-    };
-    tx.addInput(inscriptionInput);
-
-    // Get all UTXOs for fee calculation
-    const allUtxos = await this.bsvService.wallet.getUtxos();
-
-    // Calculate minimum fee and select UTXOs for fee
-    const minFee = 1000; // 1000 satoshis minimum fee
-    let totalFeeInputs = 0;
-
-    // Select UTXOs for fee
-    const selectedFeeUtxos: UTXO[] = [];
-    for (const utxo of allUtxos) {
-      if (utxo.txId !== inscriptionUtxo.txId && totalFeeInputs < minFee) {
-        selectedFeeUtxos.push(utxo);
-        totalFeeInputs += utxo.satoshis;
-      }
-    }
-
-    if (totalFeeInputs < minFee) {
-      throw new BSVError('UTXO_ERROR', 'Insufficient funds for fee');
-    }
-
-    // Add fee UTXOs to transaction
-    for (const utxo of selectedFeeUtxos) {
-      if (!utxo.sourceTransaction) {
-        utxo.sourceTransaction = await this.fetchSourceTransaction(utxo.txId);
+  private async verifyTransferTransaction(txId: string): Promise<boolean> {
+    try {
+      const tx = await this.bsvService.getTransaction(txId);
+      if (!tx) {
+        throw new BSVError('TX_ERROR', 'Transaction not found');
       }
 
-      const feeUnlockingTemplate = p2pkhUnlock.unlock(privateKey);
-      
-      const feeInput = {
-        sourceTXID: utxo.txId,
-        sourceOutputIndex: utxo.outputIndex,
-        sourceSatoshis: utxo.satoshis,
-        sourceTransaction: utxo.sourceTransaction,
-        unlockingScriptTemplate: feeUnlockingTemplate
-      };
-      tx.addInput(feeInput);
+      // Verify contract state in the transaction
+      const contract = InscriptionHolder.fromTx(tx);
+      return contract !== null;
+    } catch (error) {
+      console.error('Transfer verification failed:', error);
+      return false;
     }
-
-    // Add inscription holder output
-    tx.addOutput({
-      lockingScript: transferScript,
-      satoshis: 1
-    });
-
-    // Calculate total input and change amount
-    const totalInput = inscriptionUtxo.satoshis + totalFeeInputs;
-    const changeAmount = totalInput - 1 - minFee;
-
-    // Add change output if amount is sufficient (dust limit: 546 sats)
-    if (changeAmount >= 546) {
-      const changeScript = p2pkhUnlock.lock(senderAddress);
-      tx.addOutput({
-        lockingScript: changeScript,
-        satoshis: changeAmount
-      });
-    }
-
-    // Sign transaction
-    await tx.sign();
-
-    // Verify transaction structure
-    await this.verifyTransferTransaction(tx, transferScript, recipientAddress);
-
-    return tx;
   }
 
-  private async verifyTransferTransaction(
-    tx: Transaction,
-    transferScript: Script,
-    recipientAddress: string
-  ): Promise<void> {
-    console.log('\nVerifying transaction structure before broadcast...');
+  private createInscriptionScript(metadata: HolderMetadata, address: string): Script {
+    // Create P2PKH script for the address
+    const p2pkhScript = bsv.Script.buildPublicKeyHashOut(address);
     
-    // 1. Verify inputs
-    const verifyInscriptionInput = tx.inputs[0];
-    if (!verifyInscriptionInput) {
-      throw new BSVError('SCRIPT_ERROR', 'Transaction is missing inscription input');
-    }
-
-    // 2. Verify outputs
-    const outputs = tx.outputs;
-    if (!outputs || outputs.length === 0) {
-      throw new BSVError('SCRIPT_ERROR', 'Transaction has no outputs');
-    }
-
-    // Verify inscription output
-    const verifyInscriptionOutput = outputs[0];
-    if (!verifyInscriptionOutput || verifyInscriptionOutput.satoshis !== 1) {
-      throw new BSVError('SCRIPT_ERROR', 'First output must be inscription output with 1 satoshi');
-    }
-
-    // Verify script format
-    const outputScriptHex = verifyInscriptionOutput.lockingScript.toHex();
-    const transferScriptHex = transferScript.toHex();
+    // Convert metadata to buffer
+    const metadataBuffer = Buffer.from(JSON.stringify(metadata));
     
-    if (!this.validateInscriptionScript(outputScriptHex)) {
-      throw new BSVError('SCRIPT_ERROR', 'Invalid inscription output script format');
-    }
+    // Create PUSHDATA for metadata
+    const pushdataMetadata = this.createPushData(metadataBuffer);
+    
+    // Combine all parts
+    const scriptParts = [
+      '00',  // OP_FALSE
+      '63',  // OP_IF
+      pushdataMetadata.toString('hex'),
+      '68',  // OP_ENDIF
+      p2pkhScript.toHex()
+    ];
 
-    if (outputScriptHex !== transferScriptHex) {
-      throw new BSVError('SCRIPT_ERROR', 'Output script does not match transfer script');
-    }
+    return Script.fromHex(scriptParts.join(''));
+  }
 
-    console.log('Transaction verification passed ✓');
-    console.log('- Inscription input verified');
-    console.log('- Script format verified');
-    console.log('- Output value is 1 satoshi');
-    console.log('- Transfer script matches');
+  private calculateHash(data: Buffer): Buffer {
+    return createHash('sha256').update(data).digest();
   }
 } 

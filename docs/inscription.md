@@ -9,7 +9,7 @@
 ### Data Structure
 The inscription consists of two main parts:
 1. Video inscription data (OP_RETURN)
-2. Holder UTXO with metadata
+2. Holder UTXO with metadata using sCrypt contract
 
 #### 1. Video Inscription Data
 ```json
@@ -38,30 +38,25 @@ The inscription consists of two main parts:
 ```
 
 #### 2. Holder UTXO Format
-The holder UTXO uses a new format combining P2PKH with JSON-serialized metadata using OP_IF:
+The holder UTXO uses a sCrypt contract format that combines:
+1. OP_FALSE and OP_IF for metadata protection
+2. JSON metadata with inscription details
+3. Standard P2PKH script for the owner
+
+Script format:
 ```
 [OP_FALSE] [OP_IF] [JSON metadata] [OP_ENDIF] [P2PKH script]
-```
-
-Script hex format:
-```
-00           - OP_FALSE
-63           - OP_IF
-<pushdata>   - JSON metadata length
-<metadata>   - JSON-serialized metadata
-68           - OP_ENDIF
-76a914...88ac - P2PKH script
+00 + 63 + <pushdata><metadata> + 68 + 76a914<pubKeyHash>88ac
 ```
 
 Metadata structure for initial inscription:
 ```json
 {
-  "version": 1,
+  "version": "1",
   "prefix": "meme",
   "operation": "inscribe",
-  "name": "<video name>",
-  "contentID": "<inscription_id>",
-  "txid": "deploy",
+  "contentId": "<inscription_id>",
+  "timestamp": 1736706811212,
   "creator": "<creator wallet address>"
 }
 ```
@@ -69,42 +64,80 @@ Metadata structure for initial inscription:
 Metadata structure for transfers:
 ```json
 {
-  "version": 1,
+  "version": "1",
   "prefix": "meme",
   "operation": "transfer",
-  "name": "<video name>",
-  "contentID": "<inscription_id>",
-  "txid": "<original inscription txid>",
-  "creator": "<creator wallet address>"
+  "contentId": "<inscription_id>",
+  "timestamp": 1736706811212,
+  "creator": "<creator wallet address>",
+  "previousOwner": "<previous owner address>"
 }
 ```
 
-### Script Format
+### sCrypt Contract Format
 
-#### Inscription Holder Script
-The inscription holder script follows this format:
+#### InscriptionHolder Contract
+The inscription holder contract is implemented using sCrypt and includes:
+
+```typescript
+export class InscriptionHolder extends SmartContract {
+    @prop()
+    static readonly TYPE = 'inscription'
+
+    @prop()
+    readonly contentId: ByteString
+
+    @prop()
+    readonly creator: PubKey
+
+    @prop(true)
+    owner: PubKey
+
+    @prop(true)
+    metadata: ByteString
+
+    constructor(contentId: ByteString, creator: PubKey, owner: PubKey, metadata: ByteString) {
+        super(...arguments)
+        this.contentId = contentId
+        this.creator = creator
+        this.owner = owner
+        this.metadata = metadata
+    }
+
+    @method()
+    public transfer(newOwner: PubKey, sig: Sig) {
+        // Verify current owner's signature
+        assert(this.checkSig(sig, this.owner), 'signature check failed')
+        // Update owner
+        this.owner = newOwner
+        // Build new state output
+        const output = this.buildStateOutput(this.ctx.utxo.value)
+        // Verify outputs
+        assert(this.ctx.hashOutputs == hash256(output + this.buildChangeOutput()), 'hashOutputs mismatch')
+    }
+}
 ```
-[OP_FALSE] [OP_IF] [JSON metadata] [OP_ENDIF] [P2PKH script]
-00 + 63 + <pushdata><metadata> + 68 + 76a914<pubKeyHash>88ac
-```
 
-Components:
-1. **OP_FALSE and OP_IF** - Start of conditional structure
-   - Format: `00` (OP_FALSE) followed by `63` (OP_IF)
-   - Creates a conditional branch that is never executed
+### Transfer Process
+1. **Input**: Current holder UTXO with sCrypt contract
+   - Value: exactly 1 satoshi
+   - Must include valid contract state
 
-2. **Metadata** - JSON-serialized data
-   - Format: `<pushdata><JSON data>`
-   - Contains inscription metadata
-   - Uses appropriate PUSHDATA opcode based on size
+2. **Contract Verification**:
+   - Validates owner's signature
+   - Verifies transaction structure
+   - Ensures proper state transition
 
-3. **OP_ENDIF** - End of conditional structure
-   - Format: `68`
-   - Closes the conditional branch
+3. **Output**:
+   - New contract state with updated owner
+   - Metadata updated for transfer
+   - Value: 1 satoshi
 
-4. **P2PKH Script** - Standard Pay-to-Public-Key-Hash script
-   - Format: `76a914<pubKeyHash>88ac`
-   - Controls spending authorization
+4. **Validation**:
+   - Contract state verification
+   - Signature validation
+   - Value confirmation
+   - Metadata integrity check
 
 ### Video Data Handling
 The video data is handled in the following way:
@@ -191,46 +224,40 @@ The inscription transfer protocol uses the OP_IF structure to protect inscriptio
 ## Script Format
 
 ### Inscription Holder Script
-The inscription holder script follows a specific format to ensure proper tracking and transfer of inscriptions:
-
+The inscription holder script now uses sCrypt contract format:
 ```
-[P2PKH script] + [OP_RETURN Original TXID] + [OP_RETURN MEME]
-76a914<pubKeyHash>88ac + 6a20<originalTxId> + 6a044d454d45
+[Contract State] [P2PKH script]
 ```
 
 Components:
-1. **P2PKH Script** - Standard Pay-to-Public-Key-Hash script
+1. **Contract State** - sCrypt contract data
+   - Contains inscription metadata
+   - Manages ownership and transfers
+   - Enforces transfer rules
+
+2. **P2PKH Script** - Standard Pay-to-Public-Key-Hash script
    - Format: `76a914<pubKeyHash>88ac`
    - Controls spending authorization
 
-2. **Original TXID** - Reference to original inscription
-   - Format: `6a20<originalTxId>`
-   - 32-byte transaction ID
-   - Maintains link to content
-
-3. **MEME Marker** - Protection marker
-   - Format: `6a044d454d45`
-   - Prevents accidental spending
-   - Identifies inscription holders
-
 ### Transfer Process
-1. **Input**
-   - Current holder UTXO with complete script
-   - Value: exactly 1 satoshi
-   - Must include all three components
+1. **Contract Call**
+   - Load contract from UTXO
+   - Call transfer method with:
+     - New owner's public key
+     - Current owner's signature
+   - Verify contract state transition
 
-2. **Output**
-   - New P2PKH script for recipient
-   - Original TXID preserved
-   - MEME marker maintained
+2. **Output Creation**
+   - New contract state
+   - Updated metadata
+   - P2PKH script for recipient
    - Value: 1 satoshi
 
 3. **Validation**
-   - Script format verification
-   - Original TXID presence
-   - MEME marker check
+   - Contract state verification
+   - Signature validation
+   - Output structure verification
    - Value confirmation
-   - Ownership verification
 
 ## 2. Inscription Process
 
@@ -491,26 +518,6 @@ Inscriptions in the Memepool platform are created using a special transaction fo
    c. **Change Output** (optional):
       - Returns remaining satoshis to sender
       - Standard P2PKH format
-
-## Inscription Holder Script Format
-
-The inscription holder output uses a special script format that combines:
-1. OP_FALSE and OP_IF for metadata protection
-2. JSON metadata with inscription details
-3. Standard P2PKH script for the owner
-
-Script format:
-```
-[OP_FALSE] [OP_IF] [JSON metadata] [OP_ENDIF] [P2PKH script]
-00 + 63 + <pushdata><metadata> + 68 + 76a914<pubKeyHash>88ac
-```
-
-Where:
-- `00`: OP_FALSE opcode
-- `63`: OP_IF opcode
-- `<pushdata><metadata>`: Length-prefixed JSON metadata
-- `68`: OP_ENDIF opcode
-- `76a914<pubKeyHash>88ac`: Standard P2PKH script (25 bytes)
 
 ## Inscription ID Generation
 

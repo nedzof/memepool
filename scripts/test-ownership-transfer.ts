@@ -159,34 +159,49 @@ async function testOwnershipTransfer(inscriptionTxId: string, recipientAddress: 
     console.log('\nExtracting JSON metadata:');
     console.log('Full script hex:', inscriptionUtxo.script.toHex());
     
+    // Extract metadata from between OP_IF and OP_ENDIF
+    const fullScriptHex = inscriptionUtxo.script.toHex();
+    
+    // Skip OP_FALSE (00) and OP_IF (63)
+    let metadataHex = fullScriptHex.slice(4);
+    
+    // Find OP_ENDIF (68)
+    const endifPos = metadataHex.indexOf('68');
+    if (endifPos === -1) {
+      throw new BSVError('SCRIPT_ERROR', 'Invalid script format: missing OP_ENDIF');
+    }
+    
+    // Extract metadata between OP_IF and OP_ENDIF
+    metadataHex = metadataHex.slice(0, endifPos);
+    
+    // Handle PUSHDATA prefixes
     let jsonStartIndex = 0;
     let jsonLength = 0;
     
-    // Handle PUSHDATA prefixes
-    if (scriptHex.startsWith('4c')) {
-      jsonLength = parseInt(scriptHex.slice(2, 4), 16);
+    if (metadataHex.startsWith('4c')) {
+      jsonLength = parseInt(metadataHex.slice(2, 4), 16);
       jsonStartIndex = 4;
       console.log('Found PUSHDATA1 prefix, length:', jsonLength);
-    } else if (scriptHex.startsWith('4d')) {
-      jsonLength = parseInt(scriptHex.slice(2, 6).match(/../g)!.reverse().join(''), 16);
+    } else if (metadataHex.startsWith('4d')) {
+      jsonLength = parseInt(metadataHex.slice(2, 6).match(/../g)!.reverse().join(''), 16);
       jsonStartIndex = 6;
       console.log('Found PUSHDATA2 prefix, length:', jsonLength);
-    } else if (scriptHex.startsWith('4e')) {
-      jsonLength = parseInt(scriptHex.slice(2, 10).match(/../g)!.reverse().join(''), 16);
+    } else if (metadataHex.startsWith('4e')) {
+      jsonLength = parseInt(metadataHex.slice(2, 10).match(/../g)!.reverse().join(''), 16);
       jsonStartIndex = 10;
       console.log('Found PUSHDATA4 prefix, length:', jsonLength);
     } else {
-      jsonLength = parseInt(scriptHex.slice(0, 2), 16);
+      jsonLength = parseInt(metadataHex.slice(0, 2), 16);
       jsonStartIndex = 2;
       console.log('Found direct push prefix, length:', jsonLength);
     }
 
-    const jsonHex = scriptHex.slice(jsonStartIndex, jsonStartIndex + (jsonLength * 2));
-    console.log('JSON hex:', jsonHex);
-    console.log('JSON length:', jsonLength);
+    const jsonHex = metadataHex.slice(jsonStartIndex, jsonStartIndex + (jsonLength * 2));
+    console.log('Metadata hex:', jsonHex);
+    console.log('Metadata length:', jsonLength);
     
     const jsonBuffer = Buffer.from(jsonHex, 'hex');
-    console.log('JSON buffer length:', jsonBuffer.length);
+    console.log('Metadata buffer length:', jsonBuffer.length);
     console.log('First few bytes:', jsonBuffer.slice(0, 10));
     
     try {

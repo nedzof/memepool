@@ -14,21 +14,31 @@ import {
 import { SignedTransaction } from '../types/services'
 import { InscriptionMetadata } from '../types/inscription'
 import crypto from 'crypto'
+import { bsv } from 'scrypt-ts'
+
+export interface BSVServiceInterface {
+    getTransaction(txId: string): Promise<Transaction>;
+    getUTXO(txId: string): Promise<UTXO>;
+    getUTXOs(): Promise<UTXO[]>;
+    getPrivateKey(): Promise<PrivateKey>;
+    broadcastTx(tx: Transaction): Promise<string>;
+}
 
 /**
  * Service for handling BSV blockchain interactions
  */
 export class BSVService implements BSVServiceInterface {
-  private network: 'mainnet' | 'testnet'
+  private network: bsv.Networks.Network
   private connected: boolean
   public wallet: WalletProvider
   private bsv: typeof bsvSdk
   private securityService: InscriptionSecurityService
   private feeRate: number
   private apiUrl: string
+  private privateKey: PrivateKey
 
-  constructor(isTestMode = false) {
-    this.network = 'testnet'
+  constructor(isTestMode = false, privateKey?: string) {
+    this.network = bsv.Networks.testnet
     this.connected = false
     this.bsv = bsvSdk
     this.feeRate = 1 // Standard fee rate (1 sat/kb)
@@ -45,11 +55,15 @@ export class BSVService implements BSVServiceInterface {
 
     // Initialize security service with this instance
     this.securityService = new InscriptionSecurityService(this)
+
+    this.privateKey = privateKey ? 
+      PrivateKey.fromWIF(privateKey) : 
+      PrivateKey.fromRandom()
   }
 
   private createDefaultWalletProvider(): WalletProvider {
     return {
-      privateKey: new PrivateKey(),
+      privateKey: this.privateKey,
       fetchWithRetry: async (url: string, options?: RequestInit) => {
         const response = await fetch(url, options)
         if (!response.ok) {
@@ -658,5 +672,67 @@ export class BSVService implements BSVServiceInterface {
       typeof metadata.metadata.attributes.format === 'string' &&
       typeof metadata.metadata.attributes.dimensions === 'string'
     );
+  }
+
+  async getUTXO(txId: string): Promise<UTXO> {
+    try {
+      const tx = await this.getTransaction(txId);
+      // For inscription UTXOs, we always use output index 0
+      return {
+        tx,
+        outputIndex: 0,
+        satoshis: 1,
+        script: tx.outputs[0].script
+      };
+    } catch (error) {
+      throw new BSVError('UTXO_ERROR', 'Failed to fetch UTXO');
+    }
+  }
+
+  async getUTXOs(): Promise<UTXO[]> {
+    try {
+      const address = this.privateKey.toAddress();
+      const response = await fetch(
+        `https://api.whatsonchain.com/v1/bsv/test/address/${address}/unspent`
+      );
+      const utxos = await response.json();
+      
+      return Promise.all(
+        utxos.map(async (utxo: any) => {
+          const tx = await this.getTransaction(utxo.tx_hash);
+          return {
+            txId: utxo.tx_hash,
+            outputIndex: utxo.tx_pos,
+            satoshis: utxo.value,
+            script: tx.outputs[utxo.tx_pos].script
+          };
+        })
+      );
+    } catch (error) {
+      throw new BSVError('UTXO_ERROR', 'Failed to fetch UTXOs');
+    }
+  }
+
+  async getPrivateKey(): Promise<PrivateKey> {
+    return this.privateKey;
+  }
+
+  async broadcastTx(tx: Transaction): Promise<string> {
+    try {
+      const response = await fetch('https://api.whatsonchain.com/v1/bsv/test/tx/raw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txhex: tx.toString() })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.txid;
+    } catch (error) {
+      throw new BSVError('BROADCAST_ERROR', 'Failed to broadcast transaction');
+    }
   }
 } 

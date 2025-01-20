@@ -262,13 +262,13 @@ export interface InscriptionMetadata {
 export type InscriptionOperation = 'inscribe' | 'transfer';
 
 export interface HolderMetadata {
-  version: number;
-  prefix: 'meme';
+  version: string;
+  prefix: string;
   operation: InscriptionOperation;
-  name: string;
-  contentID: string;
-  txid: string;
-  creator: string;
+  contentId: string;
+  timestamp: number;
+  creator?: string;
+  previousOwner?: string;
 }
 
 export interface ContentIDComponents {
@@ -298,7 +298,6 @@ export interface InscriptionTransaction {
   timestamp: number;
   fee: number;
   blockHeight: number;
-  chunks?: ChunkTracking;
 }
 
 export interface Inscription {
@@ -345,38 +344,62 @@ interface InscriptionTransferResult {
 
 ### BSV Service
 ```typescript
-interface BSVService {
-  getUTXOs(address: string): Promise<UTXO[]>
-  createTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Promise<SignedTransaction>
-  broadcastTransaction(transaction: SignedTransaction): Promise<string>
-  getTransactionDetails(txid: string): Promise<any>
-  estimateFee(inputs: number, outputs: number): number
+interface BSVServiceInterface {
+  wallet: WalletProvider;
+  getWalletAddress(): Promise<string>;
+  getTransactionStatus(txid: string): Promise<TransactionStatus>;
+  getTransaction(txid: string): Promise<Transaction>;
+  getUTXO(txid: string): Promise<UTXO | null>;
+  getPrivateKey(): Promise<PrivateKey>;
+  broadcastTx(tx: Transaction): Promise<string>;
+}
+
+interface WalletProvider {
+  privateKey: PrivateKey;
+  fetchWithRetry(url: string, options?: RequestInit): Promise<Response>;
+  getUtxos(): Promise<UTXO[]>;
+  broadcastTransaction(tx: Transaction): Promise<string>;
+}
+
+interface TransactionStatus {
+  confirmations: number;
+  timestamp: number;
 }
 ```
 
 ### Inscription Service
 ```typescript
 interface InscriptionService {
-  createInscription(content: InscriptionContent, metadata: InscriptionMetadata, owner: WalletKeys): Promise<Inscription>
-  validateInscription(inscription: Inscription): Promise<InscriptionValidation>
-  generateContentID(components: ContentIDComponents): string
-  serializeMetadata(metadata: HolderMetadata): Buffer
-  deserializeMetadata(buffer: Buffer): HolderMetadata
-  getInscriptionById(id: string): Promise<Inscription | null>
-  listInscriptionsByOwner(address: string): Promise<Inscription[]>
+  createInscription(content: InscriptionContent, metadata: InscriptionMetadata, owner: WalletKeys): Promise<Inscription>;
+  validateInscription(inscription: Inscription): Promise<InscriptionValidation>;
+  generateContentID(components: ContentIDComponents): string;
+  serializeMetadata(metadata: HolderMetadata): Buffer;
+  deserializeMetadata(buffer: Buffer): HolderMetadata;
+  getInscriptionById(id: string): Promise<Inscription | null>;
+  listInscriptionsByOwner(address: string): Promise<Inscription[]>;
 }
 ```
 
 ### Ownership Transfer Service
 ```typescript
 interface OwnershipTransferService {
-  prepareTransfer(inscription: Inscription, toAddress: string): Promise<InscriptionTransfer>
-  validateTransfer(transfer: InscriptionTransfer): Promise<InscriptionTransferValidation>
-  transferInscription(transfer: InscriptionTransfer, senderKeys: WalletKeys): Promise<InscriptionTransferResult>
-  verifyOwnership(inscription: Inscription, address: string): Promise<boolean>
-  getTransferHistory(inscriptionId: string): Promise<InscriptionTransfer[]>
-  getTransferStatus(transferId: string): Promise<InscriptionTransferStatus>
-  updateHolderMetadata(metadata: HolderMetadata, operation: InscriptionOperation, newTxid?: string): HolderMetadata
+  createTransferTransaction(inscriptionTxId: string, recipientAddress: string, options?: TransferOptions): Promise<string>;
+  verifyTransfer(transferTxId: string, recipientAddress: string): Promise<boolean>;
+  getTransferStatus(transferTxId: string): Promise<TransferStatus>;
+}
+
+interface TransferOptions {
+  value?: number;
+  preserveScript?: boolean;
+  utxoData?: Record<string, any>;
+  originalInscriptionId?: string;
+}
+
+interface TransferStatus {
+  confirmed: boolean;
+  confirmations: number;
+  timestamp: number;
+  complete: boolean;
 }
 ```
 
