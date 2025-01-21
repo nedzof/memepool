@@ -1,4 +1,4 @@
-import { PrivateKey, P2PKH, Transaction, Script, PublicKey } from '@bsv/sdk'
+import { bsv, Utils, toByteString, hash160 } from 'scrypt-ts'
 import { BSVError } from '../types'
 import type { UnlockingTemplate, UTXO } from '../types/bsv'
 
@@ -13,27 +13,25 @@ interface FetchOptions extends RequestInit {
 }
 
 /**
- * Simple testnet wallet service for development
- * This is a temporary solution for testing purposes
+ * Simple testnet wallet service for development using sCrypt
  */
 export class TestnetWallet {
-  private privateKey: PrivateKey
-  private network: 'testnet'
+  private privateKey: bsv.PrivateKey
+  private network: bsv.Networks.Network
   private address: string | null
   
   constructor(wifKey: string = 'cRsKt5VevoePWtgn31nQT52PXMLaVDiALouhYUw2ogtNFMC5RPBy') {
-    this.privateKey = PrivateKey.fromWif(wifKey)
-    this.network = 'testnet'
+    this.privateKey = bsv.PrivateKey.fromWIF(wifKey)
+    this.network = bsv.Networks.testnet
     this.address = null
     this.initialize()
   }
 
   private initialize(): void {
     try {
-      // Convert private key to address
-      const pubKey = this.privateKey.toPublicKey()
-      // Get address from public key
-      this.address = pubKey.toAddress('testnet')
+      // Convert private key to address using sCrypt's utilities
+      const pubKey = this.privateKey.publicKey
+      this.address = pubKey.toAddress(this.network).toString()
       console.log('Testnet wallet initialized with address:', this.address)
     } catch (error) {
       console.error('Failed to initialize testnet wallet:', error)
@@ -49,11 +47,11 @@ export class TestnetWallet {
   }
 
   getPrivateKey(): string {
-    return this.privateKey.toWif([0xef]);
+    return this.privateKey.toWIF()
   }
 
   // Utility function for API calls with retry logic
-  private async fetchWithRetry(
+  async fetchWithRetry(
     url: string, 
     options: FetchOptions = {}, 
     retries = 3, 
@@ -80,7 +78,6 @@ export class TestnetWallet {
           const errorText = await response.text()
           console.error(`Response error (${response.status}):`, errorText)
           
-          // Try to parse as JSON for more details
           try {
             const errorJson = JSON.parse(errorText)
             console.error('Parsed error details:', errorJson)
@@ -102,18 +99,12 @@ export class TestnetWallet {
     throw new BSVError('MAX_RETRIES_ERROR', 'Max retries exceeded')
   }
 
-  private async lock(pubKey: PublicKey): Promise<Script> {
-    const p2pkh = new P2PKH()
-    return p2pkh.lock(pubKey.toAddress(this.network))
-  }
-
   // Get UTXOs from testnet
   async getUtxos(): Promise<UTXO[]> {
     try {
       const address = this.getAddress()
       console.log('Fetching UTXOs for address:', address)
       
-      // Fetch UTXOs from WhatsOnChain API with retry
       const response = await this.fetchWithRetry(
         `https://api.whatsonchain.com/v1/bsv/test/address/${address}/unspent`
       )
@@ -121,91 +112,74 @@ export class TestnetWallet {
       const utxos: WhatsOnChainUTXO[] = await response.json()
       console.log('Raw UTXOs from API:', utxos)
 
-      // Create P2PKH script for our address
-      const pubKey = this.privateKey.toPublicKey()
-      const p2pkh = new P2PKH()
+      // Create P2PKH script using sCrypt's Utils
+      const pubKey = this.privateKey.publicKey
+      const pubKeyHash = hash160(toByteString(pubKey.toBuffer().toString('hex')))
 
-      // Transform WhatsOnChain UTXO format to BSV SDK format and fetch source transactions
+      // Transform WhatsOnChain UTXO format to sCrypt format
       const formattedUtxos = await Promise.all(utxos.map(async utxo => {
         try {
-          // Try to fetch source transaction with retry
           const txResponse = await this.fetchWithRetry(
             `https://api.whatsonchain.com/v1/bsv/test/tx/${utxo.tx_hash}/hex`
           )
           
           const txHex = await txResponse.text()
-          const sourceTransaction = Transaction.fromHex(txHex)
+          const sourceTransaction = new bsv.Transaction(txHex)
 
-          // Create unlocking template
+          // Create unlocking template using sCrypt's Utils
           const unlockingTemplate: UnlockingTemplate = {
-            script: Script.fromHex(''),
+            script: new bsv.Script(''),
             satoshis: utxo.value,
-            sign: async (tx: Transaction, inputIndex: number) => {
+            sign: async (tx: bsv.Transaction, inputIndex: number) => {
               const input = tx.inputs[inputIndex]
-              if (!input.satoshis) {
+              if (!input.output?.satoshis) {
                 throw new BSVError('VALIDATION_ERROR', 'Input satoshis must be defined')
               }
 
-              const pubKey = this.privateKey.toPublicKey()
-              const p2pkh = new P2PKH()
-              const lockingScript = p2pkh.lock(pubKey.toAddress(this.network))
-              const sigtype = 0x41 // SIGHASH_ALL | SIGHASH_FORKID
-              const preimage = tx.getSignaturePreimage(inputIndex, lockingScript, input.satoshis, sigtype)
-              const signature = this.privateKey.sign(preimage)
-              
-              const unlockingScript = Script.fromHex('')
-              unlockingScript.add(signature.toBuffer())
-              unlockingScript.add(pubKey.toBuffer())
-              
-              ;(input as any).script = unlockingScript
-              return unlockingScript
+              const lockingScript = Utils.buildPublicKeyHashOutput(pubKeyHash, BigInt(input.output.satoshis))
+              tx.sign(this.privateKey)
+              return input.script
             },
             estimateLength: () => 108 // Approximate length of signature + pubkey
           }
+
+          const script = new bsv.Script(Utils.buildPublicKeyHashOutput(pubKeyHash, BigInt(utxo.value)))
 
           return {
             txId: utxo.tx_hash,
             outputIndex: utxo.tx_pos,
             satoshis: utxo.value,
-            script: p2pkh.lock(pubKey.toAddress(this.network)),
-            unlockingTemplate: unlockingTemplate,
+            script,
+            unlockingTemplate,
             sourceTransaction
           } as UTXO
         } catch (error) {
           console.warn(`Error fetching source transaction ${utxo.tx_hash}:`, error)
           // Create unlocking template for error case
           const unlockingTemplate: UnlockingTemplate = {
-            script: Script.fromHex(''),
+            script: new bsv.Script(''),
             satoshis: utxo.value,
-            sign: async (tx: Transaction, inputIndex: number) => {
+            sign: async (tx: bsv.Transaction, inputIndex: number) => {
               const input = tx.inputs[inputIndex]
-              if (!input.satoshis) {
+              if (!input.output?.satoshis) {
                 throw new BSVError('VALIDATION_ERROR', 'Input satoshis must be defined')
               }
 
-              const pubKey = this.privateKey.toPublicKey()
-              const p2pkh = new P2PKH()
-              const lockingScript = p2pkh.lock(pubKey.toAddress(this.network))
-              const sigtype = 0x41 // SIGHASH_ALL | SIGHASH_FORKID
-              const preimage = tx.getSignaturePreimage(inputIndex, lockingScript, input.satoshis, sigtype)
-              const signature = this.privateKey.sign(preimage)
-              
-              const unlockingScript = Script.fromHex('')
-              unlockingScript.add(signature.toBuffer())
-              unlockingScript.add(pubKey.toBuffer())
-              
-              ;(input as any).script = unlockingScript
-              return unlockingScript
+              const lockingScript = Utils.buildPublicKeyHashOutput(pubKeyHash, BigInt(input.output.satoshis))
+              tx.sign(this.privateKey)
+              return input.script
             },
-            estimateLength: () => 108 // Approximate length of signature + pubkey
+            estimateLength: () => 108
           }
-          // Continue without source transaction
+
+          const script = new bsv.Script(Utils.buildPublicKeyHashOutput(pubKeyHash, BigInt(utxo.value)))
+
           return {
             txId: utxo.tx_hash,
             outputIndex: utxo.tx_pos,
             satoshis: utxo.value,
-            script: p2pkh.lock(pubKey.toAddress(this.network)),
-            unlockingTemplate: unlockingTemplate
+            script,
+            unlockingTemplate
           } as UTXO
         }
       }))
@@ -221,7 +195,7 @@ export class TestnetWallet {
     }
   }
 
-  async signTransaction(tx: Transaction): Promise<Transaction> {
+  async signTransaction(tx: bsv.Transaction): Promise<bsv.Transaction> {
     console.log('Starting transaction signing...')
     try {
       // Validate inputs and check for insufficient funds
@@ -230,13 +204,10 @@ export class TestnetWallet {
 
       // Check inputs
       for (const input of tx.inputs) {
-        if (!input.unlockingScriptTemplate) {
-          throw new BSVError('VALIDATION_ERROR', 'Unlocking script template is required')
-        }
-        if (!input.sourceSatoshis) {
+        if (!input.output?.satoshis) {
           throw new BSVError('VALIDATION_ERROR', 'Input satoshis must be defined')
         }
-        totalInput += input.sourceSatoshis
+        totalInput += input.output.satoshis
       }
 
       // Calculate total output amount
@@ -252,17 +223,9 @@ export class TestnetWallet {
         throw new BSVError('INSUFFICIENT_FUNDS', `Total input (${totalInput}) is less than total output (${totalOutput})`)
       }
 
-      // Validate locktime if set
-      if (tx.lockTime > 0) {
-        // Check if any input has sequence number that would disable locktime
-        const hasValidSequence = tx.inputs.some(input => (input.sequenceNumber || 0xffffffff) < 0xffffffff)
-        if (!hasValidSequence) {
-          throw new BSVError('VALIDATION_ERROR', 'Locktime is set but all inputs have max sequence number')
-        }
-      }
+      // Sign transaction
+      tx.sign(this.privateKey)
 
-      // Sign all inputs using the SDK's sign() method
-      await tx.sign()
       console.log('Transaction signed successfully')
       return tx
     } catch (error: any) {
@@ -271,65 +234,41 @@ export class TestnetWallet {
     }
   }
 
-  async broadcastTransaction(tx: Transaction): Promise<string> {
+  async broadcastTransaction(tx: bsv.Transaction): Promise<string> {
     try {
       console.log('Broadcasting transaction...')
-      const txHex = tx.toHex()
-      console.log('Transaction hex:', txHex)
-
-      // Try broadcasting with retry logic
+      console.log('Transaction hex:', tx.toString())
+      
       const response = await this.fetchWithRetry(
         'https://api.whatsonchain.com/v1/bsv/test/tx/raw',
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ txhex: txHex })
+          body: JSON.stringify({ txhex: tx.toString() })
         }
       )
 
       const result = await response.text()
-      console.log('Broadcast result:', result)
-
-      // If we got an error response, try to parse it
-      if (!response.ok) {
-        try {
-          const errorData = JSON.parse(result)
-          throw new BSVError('BROADCAST_ERROR', `Broadcast failed: ${errorData.message || result}`)
-        } catch (e) {
-          throw new BSVError('BROADCAST_ERROR', `Broadcast failed: ${result}`)
-        }
+      
+      // WoC returns txid as plain text
+      if (result.match(/^[0-9a-f]{64}$/i)) {
+        console.log('Transaction broadcast successful. TXID:', result)
+        return result
       }
       
-      // The API can return the txid in multiple formats:
-      // 1. JSON object with txid field: { txid: "hash" }
-      // 2. Plain string hash: "hash"
-      // 3. JSON-encoded string: "\"hash\""
-      
+      // Try to parse as JSON in case it's an error response
       try {
-        // Try parsing as JSON first
         const jsonResult = JSON.parse(result)
-        
-        // Case 1: JSON object with txid field
-        if (typeof jsonResult === 'object' && jsonResult.txid) {
-          console.log('Transaction broadcast successful with JSON object response. TXID:', jsonResult.txid)
+        if (jsonResult.txid) {
+          console.log('Transaction broadcast successful. TXID:', jsonResult.txid)
           return jsonResult.txid
         }
-        
-        // Case 3: JSON-encoded string
-        if (typeof jsonResult === 'string' && jsonResult.match(/^[0-9a-f]{64}$/i)) {
-          console.log('Transaction broadcast successful with JSON string response. TXID:', jsonResult)
-          return jsonResult
-        }
       } catch (e) {
-        // Case 2: Plain string hash
-        if (result && typeof result === 'string' && result.match(/^[0-9a-f]{64}$/i)) {
-          console.log('Transaction broadcast successful with plain string response. TXID:', result)
-          return result
-        }
+        // Not JSON, continue to error
       }
-
+      
       throw new BSVError('INVALID_RESPONSE', `Invalid response format from broadcast API: ${result}`)
     } catch (error) {
       console.error('Failed to broadcast transaction:', error)

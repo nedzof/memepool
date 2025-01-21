@@ -6,6 +6,8 @@ import type {
   NetworkConfig
 } from './bsv'
 import { Transaction } from '@bsv/sdk'
+import { bsv, ByteString } from 'scrypt-ts'
+import { SignedTransaction } from './bsv'
 
 import type {
   Inscription,
@@ -15,11 +17,16 @@ import type {
 } from './inscription'
 
 // Transaction types
-export interface SignedTransaction {
-  tx: Transaction;
-  inputs: TransactionInput[];
-  outputs: TransactionOutput[];
-  fee: number;
+export interface TransactionStatus {
+  confirmed: boolean;
+  blockHeight?: number;
+  confirmations?: number;
+}
+
+export interface TransactionVerificationService {
+  verifyTransaction(txid: string): Promise<boolean>;
+  verifySignature(signature: ByteString, message: ByteString, publicKey: bsv.PublicKey): boolean;
+  verifyScriptTemplate(script: ByteString, template: ByteString): boolean;
 }
 
 // Transfer types
@@ -73,10 +80,9 @@ export interface OwnershipTransferService {
 }
 
 export interface InscriptionSecurityService {
-  validateContent(content: InscriptionContent): Promise<InscriptionValidation>;
-  validateMetadata(metadata: InscriptionMetadata): Promise<InscriptionValidation>;
-  validateTransfer(transfer: InscriptionTransfer): Promise<InscriptionValidation>;
-  checkPermissions(address: string, inscription: Inscription): Promise<boolean>;
+  validateInscriptionData(data: ByteString): boolean;
+  validateHolderScript(script: ByteString): boolean;
+  verifyOwnership(publicKey: bsv.PublicKey, script: ByteString): boolean;
 }
 
 export interface WalletService {

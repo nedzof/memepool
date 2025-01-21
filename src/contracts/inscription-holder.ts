@@ -14,16 +14,6 @@ import {
     pubKey2Addr
 } from 'scrypt-ts'
 
-export interface HolderMetadata {
-    version: number;
-    prefix: string;
-    operation: 'inscribe' | 'transfer';
-    contentId: string;
-    timestamp: number;
-    creator?: string;
-    previousOwner?: string;
-}
-
 export class InscriptionHolder extends SmartContract {
     @prop()
     static readonly TYPE = 'inscription'
@@ -50,8 +40,27 @@ export class InscriptionHolder extends SmartContract {
 
     @method()
     public validateMetadata(metadata: ByteString): boolean {
-        // Validate metadata format and content
-        return true
+        try {
+            // Parse metadata JSON
+            const metadataObj = JSON.parse(metadata.toString())
+            
+            // Validate required fields
+            assert(
+                typeof metadataObj.version === 'string' &&
+                typeof metadataObj.prefix === 'string' &&
+                (metadataObj.operation === 'inscribe' || metadataObj.operation === 'transfer') &&
+                typeof metadataObj.contentId === 'string' &&
+                typeof metadataObj.timestamp === 'number',
+                'invalid metadata format'
+            )
+
+            // Validate prefix
+            assert(metadataObj.prefix === 'meme', 'invalid prefix')
+
+            return true
+        } catch (e) {
+            return false
+        }
     }
 
     @method()
@@ -61,6 +70,13 @@ export class InscriptionHolder extends SmartContract {
 
         // Update owner
         this.owner = newOwner
+
+        // Update metadata for transfer
+        const metadataObj = JSON.parse(this.metadata.toString())
+        metadataObj.operation = 'transfer'
+        metadataObj.previousOwner = pubKey2Addr(this.owner)
+        metadataObj.timestamp = Date.now()
+        this.metadata = toByteString(JSON.stringify(metadataObj))
 
         // Build new state output
         const output = this.buildStateOutput(this.ctx.utxo.value)
@@ -81,8 +97,8 @@ export class InscriptionHolder extends SmartContract {
         assert(this.ctx.hashOutputs == hash256(output + this.buildChangeOutput()), 'hashOutputs mismatch')
     }
 
-    static fromTx<T extends SmartContract>(tx: any, outputIndex = 0): T {
-        const instance = super.fromTx(tx, outputIndex) as T
+    static fromTx<T extends SmartContract>(tx: any, atOutputIndex = 0, prevouts?: ByteString[]): T {
+        const instance = super.fromTx(tx, atOutputIndex, prevouts) as T
         if (!(instance instanceof InscriptionHolder)) {
             throw new Error('Invalid instance type')
         }
@@ -105,8 +121,7 @@ export class InscriptionHolder extends SmartContract {
         outputs += instance.buildStateOutput(1n)
 
         // Add inscription data output
-        const metadataObj = JSON.parse(metadata.toString()) as HolderMetadata
-        outputs += Utils.buildPublicKeyHashOutput(pubKey2Addr(owner), 0n)
+        outputs += Utils.buildPublicKeyHashOutput(pubKey2Addr(owner), amount - 1n)
 
         return outputs
     }

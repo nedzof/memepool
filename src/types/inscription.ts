@@ -1,6 +1,5 @@
-import { Script } from '@bsv/sdk';
-import { SignedTransaction } from './services';
-import { ByteString, PubKey } from 'scrypt-ts';
+import { bsv } from 'scrypt-ts';
+import { SignedTransaction } from './bsv';
 
 export interface InscriptionCreationParams {
   videoFile: {
@@ -81,9 +80,9 @@ export interface InscriptionMetadata {
 export type InscriptionOperation = 'inscribe' | 'transfer';
 
 export interface HolderMetadata {
-  version: string;
+  version: number;
   prefix: string;
-  operation: 'inscribe' | 'transfer';
+  operation: InscriptionOperation;
   contentId: string;
   timestamp: number;
   creator?: string;
@@ -105,7 +104,7 @@ export interface InscriptionHolderScript {
 export interface InscriptionLocation {
   txid: string;
   vout: number;
-  script: Script;
+  script: bsv.Script;
   satoshis: number;
   height: number;
   metadata: HolderMetadata;
@@ -139,15 +138,4 @@ export interface MetadataValidator {
   validateMetadata(metadata: HolderMetadata): InscriptionValidation;
   validateContentID(contentID: string): boolean;
   validateOperation(operation: string, context: any): boolean;
-}
-
-export interface InscriptionMetadata {
-  version: string;
-  prefix: string;
-  operation: 'inscribe' | 'transfer';
-  contentId: string;
-  timestamp: number;
-  creator?: string;
-  previousOwner?: string;
-  tx?: string;
 } 
