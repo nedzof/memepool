@@ -11,7 +11,9 @@ export function createSession(sessionData) {
   const session = {
     ...sessionData,
     sessionId,
-    expiresAt
+    expiresAt,
+    connectedAt: Date.now(),
+    lastHeartbeat: Date.now()
   };
   
   localStorage.setItem('memepire_wallet_session', JSON.stringify(session));
@@ -67,4 +69,10 @@ export function terminateSession() {
   localStorage.removeItem('memepire_wallet_session');
   
   logSecurityEvent('Session terminated', { sessionId: session.sessionId });
+}
+
+// Clear session data from localStorage
+export function clearSessionData() {
+  localStorage.removeItem('memepire_wallet_session');
+  logSecurityEvent('Session data cleared');
 } 

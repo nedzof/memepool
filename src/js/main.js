@@ -1,6 +1,6 @@
 import { showModal, hideModal, initializeModal, showError } from './modal.js';
-import { showWalletSelection, setupWalletSelectionEvents } from './wallet/walletSelection.js';
-import { detectAvailableWallets } from './wallet/config.js';
+import { showWalletSelection, setupWalletSelectionEvents, handleConnectWalletClick } from './wallet/walletSelection.js';
+import { detectAvailableWallets, initializeWallet } from './wallet/config.js';
 import { initializeSeedModal } from './wallet/modals/seedModal.js';
 import { startWalletSetup } from './wallet/setup.js';
 import { initializeBlocks, shiftBlocks } from './blocks.js';
@@ -172,11 +172,17 @@ async function loadWalletModals() {
                 console.log(`Critical modal ${modalId} loaded successfully`);
             }
 
-            // Setup wallet selection events
-            console.log('Setting up initial wallet selection events...');
-            const availableWallets = detectAvailableWallets();
-            setupWalletSelectionEvents(availableWallets);
-            console.log('Initial wallet selection events setup complete');
+            // Only set up wallet selection events if not already initialized
+            const walletSelectionModal = document.getElementById('walletSelectionModal');
+            if (walletSelectionModal && !walletSelectionModal.hasAttribute('data-events-initialized')) {
+                console.log('Setting up initial wallet selection events...');
+                const availableWallets = detectAvailableWallets();
+                setupWalletSelectionEvents(availableWallets);
+                walletSelectionModal.setAttribute('data-events-initialized', 'true');
+                console.log('Initial wallet selection events setup complete');
+            } else {
+                console.log('Wallet selection events already initialized, skipping setup');
+            }
 
             return true;
         }
@@ -195,7 +201,7 @@ async function initializeApp() {
         const appElement = document.getElementById('app');
         console.log('App element:', appElement);
         
-        // Load included content
+        // Load included content first
         console.log('Loading included content...');
         const includedContentLoaded = await loadIncludedContent(appElement);
         if (!includedContentLoaded.every(Boolean)) {
@@ -203,6 +209,10 @@ async function initializeApp() {
             throw new Error('Failed to load included content');
         }
         console.log('All included content loaded successfully');
+
+        // Initialize header first since it's critical
+        console.log('Initializing header...');
+        initializeHeader();
         
         // Load main content
         console.log('Loading main content...');
@@ -248,7 +258,7 @@ async function initializeApp() {
 
         // Show wallet selection
         showWalletSelection();
-        
+
         console.log('App initialization complete');
         
     } catch (error) {
@@ -257,11 +267,108 @@ async function initializeApp() {
     }
 }
 
-// Initialize when DOM is loaded
+async function restoreSession() {
+    try {
+        console.log('Attempting to restore wallet session...');
+        
+        // Check if we have a wallet initialized
+        const isWalletInitialized = sessionStorage.getItem('wallet_initialized') === 'true';
+        const walletType = sessionStorage.getItem('wallet_type');
+        const walletAddress = sessionStorage.getItem('wallet_address');
+        
+        if (!isWalletInitialized || !walletType || !walletAddress) {
+            console.log('No wallet session to restore');
+            updateHeaderWalletButton(false);
+            return;
+        }
+        
+        console.log('Found existing wallet session:', { walletType, walletAddress });
+        
+        // Check if the wallet is available
+        const availableWallets = detectAvailableWallets();
+        if (!availableWallets[walletType]) {
+            console.log('Wallet not available, cannot restore session');
+            updateHeaderWalletButton(false);
+            return;
+        }
+        
+        // Try to initialize the wallet
+        try {
+            console.log('Attempting to initialize wallet...');
+            const wallet = await initializeWallet(walletType);
+            
+            if (wallet) {
+                console.log('Wallet reconnected successfully');
+                
+                // Initialize main wallet modal and its events
+                const mainWalletModal = document.getElementById('mainWalletModal');
+                if (mainWalletModal && !mainWalletModal.hasAttribute('data-initialized')) {
+                    console.log('Initializing main wallet modal...');
+                    setupMainWalletEvents();
+                    mainWalletModal.setAttribute('data-initialized', 'true');
+                }
+                
+                // Retrieve wallet balance
+                let balance = 0;
+                if (wallet.getBalance) {
+                    try {
+                        console.log('Retrieving wallet balance...');
+                        balance = await wallet.getBalance();
+                        console.log('Wallet balance:', balance);
+                    } catch (error) {
+                        console.error('Error retrieving wallet balance:', error);
+                    }
+                }
+                
+                // Update wallet UI with connected state and balance
+                await updateWalletUI(balance);
+                
+                // Update header wallet button state
+                updateHeaderWalletButton(true, balance);
+                
+                return true;
+            }
+        } catch (error) {
+            console.error('Failed to restore wallet session:', error);
+            // Clear session data on failure
+            sessionStorage.removeItem('wallet_type');
+            sessionStorage.removeItem('wallet_address');
+            sessionStorage.removeItem('wallet_public_key');
+            sessionStorage.removeItem('wallet_initialized');
+            updateHeaderWalletButton(false);
+        }
+    } catch (error) {
+        console.error('Error in restoreSession:', error);
+        updateHeaderWalletButton(false);
+    }
+    return false;
+}
+
+function saveSessionState() {
+    const session = getSession();
+
+    if (session) {
+        localStorage.setItem('memepire_wallet_session_state', JSON.stringify(session));
+    }
+}
+
+function restoreSessionState() {
+    const sessionState = localStorage.getItem('memepire_wallet_session_state');
+
+    if (sessionState) {
+        const session = JSON.parse(sessionState);
+        updateSession(session);
+        localStorage.removeItem('memepire_wallet_session_state');
+    }
+}
+
+// Save session state before page unload
+window.addEventListener('beforeunload', saveSessionState);
+
+// Restore session state on page load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing app...');
+    restoreSessionState();
     initializeApp();
-    initializeMainWalletModal();
 });
 
 // Initialize submissions refresh

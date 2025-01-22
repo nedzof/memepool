@@ -19,7 +19,7 @@ export class Modal {
 
         // Set up close button handlers
         this.closeButtons = this.modal.querySelectorAll('.modal-close');
-        this.closeHandler = () => this.hide();
+        this.closeHandler = () => this.hide(true);
         this.closeButtons.forEach(button => {
             button.addEventListener('click', this.closeHandler);
         });
@@ -93,11 +93,11 @@ export class Modal {
         });
     }
 
-    hide() {
+    hide(fromCloseButton = false) {
         if (!this.modal || this.isTransitioning) return;
         
-        // Don't hide the main wallet modal if it's being shown
-        if (this.modal.id === 'mainWalletModal' && !this.modal.classList.contains('hidden')) {
+        // Don't hide the main wallet modal if it's being shown, unless it's from the close button
+        if (this.modal.id === 'mainWalletModal' && !this.modal.classList.contains('hidden') && !fromCloseButton) {
             console.log('Preventing main wallet modal from being hidden');
             return;
         }
