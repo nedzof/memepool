@@ -7,7 +7,7 @@ import { initializeBlocks, shiftBlocks } from './blocks.js';
 import { initializeSubmissions } from './submissions.js';
 import { initializeWalletUI } from './wallet/walletUIManager.js';
 import { setupMainWalletEvents } from './wallet/walletEvents.js';
-import { VideoUploader } from './video-upload.js';
+import { VideoUploader } from './video-upload';
 
 // Initialize main wallet modal when loaded
 function initializeMainWalletModal() {

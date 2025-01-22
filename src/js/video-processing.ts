@@ -1,6 +1,6 @@
-import { VideoProcessor } from '../services/video-processor.js';
-import { InscriptionService } from '../services/inscription-service.js';
-import { BSVService } from '../services/bsv-service.js';
+import { VideoProcessor } from '../services/video-processor';
+import { InscriptionService } from '../services/inscription-service';
+import { BSVService } from '../services/bsv-service';
 
 export class VideoProcessingUI {
     constructor() {

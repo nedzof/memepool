@@ -32,20 +32,36 @@ export default defineConfig({
       'crypto': 'crypto-browserify',
       'stream': 'stream-browserify',
       'buffer': 'buffer',
-      'bip39': 'bip39'
-    }
+      'bip39': 'bip39',
+      'process': 'process/browser',
+      'util': 'util',
+      'assert': 'assert'
+    },
+    extensions: ['.ts', '.js']
   },
   optimizeDeps: {
     esbuildOptions: {
-      target: 'esnext'
+      target: 'esnext',
+      define: {
+        global: 'globalThis',
+        'process.env.NODE_DEBUG': 'false'
+      }
     },
     include: [
       'buffer',
       'crypto-browserify',
       'stream-browserify',
       'bip39',
-      '@bsv/sdk'
+      '@bsv/sdk',
+      'process',
+      'util',
+      'assert'
     ]
+  },
+  define: {
+    'process.env': {},
+    'process.browser': true,
+    'process.version': '"v16.0.0"'
   },
   css: {
     devSourcemap: true

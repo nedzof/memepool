@@ -33,6 +33,5 @@ export const MIN_SATS_PER_BYTE = 0.5;
 export const MAX_INSCRIPTION_SIZE = 100 * 1024 * 1024; // 100MB
 
 // Re-export types from other modules
-export { UTXO, TransactionOutput, TransactionInput, UnlockingTemplate, WalletProvider, NetworkConfig, SignedTransaction, TransactionStatus } from './bsv';
-export { InscriptionService, OwnershipTransferService } from './services';
+export type { UTXO, TransactionOutput, TransactionInput, UnlockingTemplate, WalletProvider, NetworkConfig, SignedTransaction, TransactionStatus } from './bsv';
 export * from './inscription'; 

@@ -1,4 +1,4 @@
-import { VideoProcessingUI } from './video-processing.ts';
+import { VideoProcessingUI } from './video-processing';
 
 export class VideoUploader {
     constructor() {

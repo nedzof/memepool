@@ -1,25 +1,40 @@
 import { bsv } from 'scrypt-ts';
 
-export interface TransactionOutput {
+// Export all interfaces as type declarations
+export type {
+  TransactionOutput,
+  TransactionInput,
+  UnlockingTemplate,
+  WalletProvider,
+  UTXO,
+  TransactionStatus,
+  BSVServiceInterface,
+  SignedTransaction,
+  NetworkType,
+  NetworkConfig,
+  WalletKeys
+};
+
+interface TransactionOutput {
   script: bsv.Script;
   satoshis: number;
 }
 
-export interface TransactionInput {
+interface TransactionInput {
   sourceTXID: string;
   sourceOutputIndex: number;
   sourceSatoshis: number;
   script: bsv.Script;
 }
 
-export interface UnlockingTemplate {
+interface UnlockingTemplate {
   script: bsv.Script;
   satoshis: number;
   sign: (tx: bsv.Transaction, inputIndex: number) => Promise<bsv.Script>;
   estimateLength: () => number;
 }
 
-export interface WalletProvider {
+interface WalletProvider {
   getAddress(): string;
   getPrivateKey(): string;
   getUtxos(): Promise<UTXO[]>;
@@ -27,7 +42,7 @@ export interface WalletProvider {
   broadcastTransaction(tx: bsv.Transaction): Promise<string>;
 }
 
-export interface UTXO {
+interface UTXO {
   txId: string;
   outputIndex: number;
   satoshis: number;
@@ -36,12 +51,12 @@ export interface UTXO {
   unlockingTemplate?: UnlockingTemplate;
 }
 
-export interface TransactionStatus {
+interface TransactionStatus {
   confirmations: number;
   timestamp: number;
 }
 
-export interface BSVServiceInterface {
+interface BSVServiceInterface {
   connect(): Promise<boolean>;
   getWalletAddress(): Promise<string>;
   getPrivateKey(): Promise<bsv.PrivateKey>;
@@ -54,19 +69,19 @@ export interface BSVServiceInterface {
   estimateFee(inputCount: number, outputCount: number): number;
 }
 
-export interface SignedTransaction {
+interface SignedTransaction {
   tx: bsv.Transaction;
   fee: number;
 }
 
-export type NetworkType = 'mainnet' | 'testnet';
+type NetworkType = 'mainnet' | 'testnet';
 
-export interface NetworkConfig {
+interface NetworkConfig {
   apiUrl: string;
   feeRate: number;
 }
 
-export interface WalletKeys {
+interface WalletKeys {
   privateKey: bsv.PrivateKey;
   publicKey: bsv.PublicKey;
   address: string;
