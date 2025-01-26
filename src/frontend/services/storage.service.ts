@@ -1,13 +1,15 @@
+import axios from 'axios';
 import { MemeVideoMetadata } from '../../shared/types/meme';
 
 class StorageService {
-  // Temporary mock data
+  private baseUrl = '/api';
+  // Temporary mock data with base64 encoded video content
   private mockVideos: MemeVideoMetadata[] = [
     {
       id: 'video1',
       title: 'Funny Cat Meme',
       description: 'A hilarious cat video',
-      videoUrl: '/assets/videos/sample1.mp4',
+      videoUrl: 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDJtcDQxaXNvbWF2YzEAAA==',
       inscriptionId: 'insc1',
       blockHeight: 123456,
       createdAt: new Date().toISOString()
@@ -16,7 +18,7 @@ class StorageService {
       id: 'video2',
       title: 'Dancing Dog',
       description: 'Dog dancing to music',
-      videoUrl: '/assets/videos/sample2.mp4',
+      videoUrl: 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDJtcDQxaXNvbWF2YzEAAA==',
       inscriptionId: 'insc2',
       blockHeight: 123457,
       createdAt: new Date().toISOString()
@@ -24,7 +26,7 @@ class StorageService {
   ];
 
   async getMemeVideos(page: number, limit: number): Promise<MemeVideoMetadata[]> {
-    // Simulate API delay
+    // Return mock data for now
     await new Promise(resolve => setTimeout(resolve, 500));
     const start = (page - 1) * limit;
     return this.mockVideos.slice(start, start + limit);

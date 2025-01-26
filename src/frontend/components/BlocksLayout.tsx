@@ -18,6 +18,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   const upcomingBlocksRef = useRef<HTMLDivElement>(null);
 
   const [videoErrors, setVideoErrors] = useState<Record<string, boolean>>({});
+  const [loadedVideos, setLoadedVideos] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     animationService.initialize();
@@ -26,6 +27,10 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
 
   const handleVideoError = (videoId: string) => {
     setVideoErrors(prev => ({ ...prev, [videoId]: true }));
+  };
+
+  const handleVideoLoaded = (videoId: string) => {
+    setLoadedVideos(prev => ({ ...prev, [videoId]: true }));
   };
 
   const handleBeatIt = () => {
@@ -50,7 +55,6 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
 
     animationService.moveToPastBlock(currentMemeRef.current, startPos, endPos);
 
-    // Move first upcoming block to current position
     if (upcomingBlocksRef.current && upcomingBlocksRef.current.firstElementChild) {
       const targetPos: AnimationPosition = {
         x: currentRect.left,
@@ -66,32 +70,38 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     }
   };
 
+  const renderPlaceholder = (blockHeight: number) => (
+    <div className="w-full h-full bg-[#2A2A40] flex flex-col items-center justify-center">
+      <div className="animate-pulse w-16 h-16 mb-4 rounded-full bg-[#00ffa3]/20"></div>
+      <span className="text-[#00ffa3]">Loading Block #{blockHeight}</span>
+    </div>
+  );
+
   const renderBlock = (block: MemeVideoMetadata, isSmall = true) => (
     <div key={block.id} className={`meme-block ${isSmall ? 'slide-left' : ''}`}>
-      {videoErrors[block.id] ? (
-        <div className="w-full h-full bg-[#2A2A40] flex items-center justify-center">
-          <span className="text-[#00ffa3]">Loading...</span>
-        </div>
+      {videoErrors[block.id] || !loadedVideos[block.id] ? (
+        renderPlaceholder(block.blockHeight)
       ) : (
         <video
+          key={block.id}
           src={block.videoUrl}
           className="w-full h-full object-cover"
           muted
           loop
+          playsInline
+          preload="metadata"
           onError={() => handleVideoError(block.id)}
+          onLoadedData={() => handleVideoLoaded(block.id)}
           onMouseEnter={(e) => {
-            try {
-              e.currentTarget.play();
-            } catch (error) {
-              console.error('Failed to play video:', error);
+            const video = e.currentTarget;
+            if (video.readyState >= 3) {
+              video.play().catch(error => {
+                console.error('Failed to play video:', error);
+              });
             }
           }}
           onMouseLeave={(e) => {
-            try {
-              e.currentTarget.pause();
-            } catch (error) {
-              console.error('Failed to pause video:', error);
-            }
+            e.currentTarget.pause();
           }}
         />
       )}
@@ -116,18 +126,19 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
         <div className="mb-8">
           <h3 className="section-label mb-4">Current Meme</h3>
           <div className="current-meme" ref={currentMemeRef}>
-            {videoErrors[currentMeme.id] ? (
-              <div className="w-full h-full bg-[#2A2A40] flex items-center justify-center rounded-xl">
-                <span className="text-[#00ffa3]">Loading...</span>
-              </div>
+            {videoErrors[currentMeme.id] || !loadedVideos[currentMeme.id] ? (
+              renderPlaceholder(currentMeme.blockHeight)
             ) : (
               <video
+                key={currentMeme.id}
                 src={currentMeme.videoUrl}
                 className="w-full h-full object-cover rounded-xl"
                 controls
-                autoPlay
+                playsInline
+                preload="metadata"
                 loop
                 onError={() => handleVideoError(currentMeme.id)}
+                onLoadedData={() => handleVideoLoaded(currentMeme.id)}
               />
             )}
             <button 
