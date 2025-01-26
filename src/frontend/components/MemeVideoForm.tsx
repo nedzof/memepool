@@ -7,7 +7,7 @@ interface MemeVideoFormProps {
   onSubmit: (metadata: MemeVideoMetadata) => void;
 }
 
-export const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit }) => {
+const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -113,4 +113,6 @@ export const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit }) => {
       </button>
     </form>
   );
-}; 
+};
+
+export default MemeVideoForm; 

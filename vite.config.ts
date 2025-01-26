@@ -12,6 +12,12 @@ export default defineConfig({
     },
     global: {},
   },
+  css: {
+    postcss: './postcss.config.js',
+    modules: {
+      localsConvention: 'camelCase',
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
