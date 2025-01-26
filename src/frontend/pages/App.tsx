@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import WalletModal from '../components/modals/WalletModal';
 import MemeSubmissionGrid from '../components/MemeSubmissionGrid';
 import SearchBar from '../components/SearchBar';
+import MemeBlocks from '../components/MemeBlocks';
 import { Wallet } from '../../shared/types/wallet';
+import { MemeVideoMetadata } from '../../shared/types/meme';
 
 const App: React.FC = () => {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [pastBlocks, setPastBlocks] = useState<MemeVideoMetadata[]>([]);
+  const [currentMeme, setCurrentMeme] = useState<MemeVideoMetadata | null>(null);
+  const [upcomingBlocks, setUpcomingBlocks] = useState<MemeVideoMetadata[]>([]);
 
   const handleWalletSuccess = (wallet: Wallet) => {
     setWallet(wallet);
@@ -46,6 +51,11 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        <MemeBlocks
+          pastBlocks={pastBlocks}
+          currentMeme={currentMeme}
+          upcomingBlocks={upcomingBlocks}
+        />
         <MemeSubmissionGrid />
       </main>
 
