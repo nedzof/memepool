@@ -6,22 +6,33 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   define: {
-    'process.env': {},
+    'process.env': {
+      NODE_ENV: JSON.stringify(process.env.NODE_ENV),
+      VITE_BSV_NETWORK: JSON.stringify(process.env.VITE_BSV_NETWORK || 'testnet'),
+    },
     global: {},
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      crypto: 'crypto-browserify',
       stream: 'stream-browserify',
+      crypto: 'crypto-browserify',
       assert: 'assert',
       http: 'stream-http',
       https: 'https-browserify',
       os: 'os-browserify',
-      url: 'url'
+      url: 'url',
+      buffer: 'buffer',
+      process: 'process/browser',
+      path: 'path-browserify',
+      fs: path.resolve(__dirname, './src/frontend/utils/empty-module.ts'),
+      net: path.resolve(__dirname, './src/frontend/utils/empty-module.ts'),
+      tls: path.resolve(__dirname, './src/frontend/utils/empty-module.ts'),
+      child_process: path.resolve(__dirname, './src/frontend/utils/empty-module.ts'),
     },
   },
   optimizeDeps: {
+    exclude: ['scrypt-ord', '@bsv/sdk', 'aerospike'],
     esbuildOptions: {
       define: {
         global: 'globalThis'
@@ -42,5 +53,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      external: ['scrypt-ord', '@bsv/sdk', 'aerospike'],
+    }
   },
 }) 

@@ -1,121 +1,113 @@
-import { Meme, ListMemesInput } from '../models/meme.model';
-import { db } from '../utils/db';
-import { Collection } from 'mongodb';
-import { File } from 'formidable';
-import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
-import fs from 'fs/promises';
-import ffmpeg from 'fluent-ffmpeg';
+import Aerospike from 'aerospike';
+import { MemeVideoMetadata } from '../../shared/types/metadata';
+import { config } from '../../shared/config/constants';
 
-interface UploadedFile {
-  buffer: Buffer;
-  originalname: string;
-  mimetype: string;
-}
-
-export class StorageService {
-  private get collection(): Collection<Meme> {
-    return db.getDb().collection('memes');
-  }
-
-  private readonly uploadDir: string;
-  private readonly thumbnailDir: string;
+class StorageService {
+  private client: Aerospike.Client;
+  private namespace: string;
+  private set: string;
 
   constructor() {
-    this.uploadDir = path.join(process.cwd(), 'uploads');
-    this.thumbnailDir = path.join(process.cwd(), 'thumbnails');
-    this.ensureDirectories();
+    this.namespace = config.AEROSPIKE_NAMESPACE;
+    this.set = config.AEROSPIKE_SET;
+    this.client = Aerospike.client({
+      hosts: [{ addr: config.AEROSPIKE_HOST, port: config.AEROSPIKE_PORT }],
+    });
   }
 
-  private async ensureDirectories(): Promise<void> {
-    await fs.mkdir(this.uploadDir, { recursive: true });
-    await fs.mkdir(this.thumbnailDir, { recursive: true });
-  }
-
-  async uploadFile(file: UploadedFile): Promise<string> {
+  async connect(): Promise<void> {
     try {
-      const fileId = uuidv4();
-      const extension = path.extname(file.originalname);
-      const fileName = `${fileId}${extension}`;
-      const filePath = path.join(this.uploadDir, fileName);
-
-      await fs.writeFile(filePath, file.buffer);
-      return `/uploads/${fileName}`;
+      await this.client.connect();
+      console.log('Connected to Aerospike');
     } catch (error) {
-      throw new Error('Failed to upload file');
+      console.error('Failed to connect to Aerospike:', error);
+      throw error;
     }
   }
 
-  async generateThumbnail(videoUrl: string): Promise<string> {
+  async disconnect(): Promise<void> {
     try {
-      const thumbnailId = uuidv4();
-      const thumbnailPath = path.join(this.thumbnailDir, `${thumbnailId}.jpg`);
-      const videoPath = path.join(process.cwd(), videoUrl);
+      await this.client.close();
+      console.log('Disconnected from Aerospike');
+    } catch (error) {
+      console.error('Failed to disconnect from Aerospike:', error);
+      throw error;
+    }
+  }
 
-      await new Promise((resolve, reject) => {
-        ffmpeg(videoPath)
-          .screenshots({
-            timestamps: ['50%'],
-            filename: `${thumbnailId}.jpg`,
-            folder: this.thumbnailDir,
-            size: '320x240'
-          })
-          .on('end', resolve)
-          .on('error', reject);
+  async saveMemeVideo(metadata: MemeVideoMetadata): Promise<void> {
+    const key = new Aerospike.Key(this.namespace, this.set, metadata.id);
+    const bins = this.convertToAerospikeBins(metadata);
+    await this.client.put(key, bins);
+  }
+
+  async getMemeVideo(id: string): Promise<MemeVideoMetadata | null> {
+    try {
+      const key = new Aerospike.Key(this.namespace, this.set, id);
+      const record = await this.client.get(key);
+      return this.convertFromAerospikeBins(record.bins);
+    } catch (error: any) {
+      if (error.code === Aerospike.status.AEROSPIKE_ERR_RECORD_NOT_FOUND) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async getMemeVideos(page: number, limit: number): Promise<MemeVideoMetadata[]> {
+    const query = this.client.query(this.namespace, this.set);
+    const stream = query.foreach();
+    const results: MemeVideoMetadata[] = [];
+    
+    return new Promise((resolve, reject) => {
+      stream.on('data', (record) => {
+        results.push(this.convertFromAerospikeBins(record.bins));
       });
 
-      return `/thumbnails/${thumbnailId}.jpg`;
-    } catch (error) {
-      throw new Error('Failed to generate thumbnail');
-    }
+      stream.on('error', (error) => {
+        reject(error);
+      });
+
+      stream.on('end', () => {
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        resolve(results.slice(start, end));
+      });
+    });
   }
 
-  async storeMeme(meme: Meme): Promise<void> {
-    try {
-      await this.collection.insertOne(meme);
-    } catch (error) {
-      throw new Error('Failed to store meme');
-    }
+  async updateMemeVideo(id: string, metadata: Partial<MemeVideoMetadata>): Promise<void> {
+    const key = new Aerospike.Key(this.namespace, this.set, id);
+    const bins = this.convertToAerospikeBins(metadata);
+    await this.client.put(key, bins);
   }
 
-  async getMeme(id: string): Promise<Meme | null> {
-    try {
-      return await this.collection.findOne({ id });
-    } catch (error) {
-      throw new Error('Failed to get meme');
-    }
+  async deleteMemeVideo(id: string): Promise<void> {
+    const key = new Aerospike.Key(this.namespace, this.set, id);
+    await this.client.remove(key);
   }
 
-  async listMemes(input: ListMemesInput): Promise<{ memes: Meme[]; total: number }> {
-    try {
-      const query: any = {};
-      if (input.status) query.status = input.status;
-      if (input.creator) query.creator = input.creator;
-
-      const skip = (input.page - 1) * input.limit;
-      const [memes, total] = await Promise.all([
-        this.collection
-          .find(query)
-          .skip(skip)
-          .limit(input.limit)
-          .toArray(),
-        this.collection.countDocuments(query)
-      ]);
-
-      return { memes, total };
-    } catch (error) {
-      throw new Error('Failed to list memes');
-    }
+  private convertToAerospikeBins(metadata: Partial<MemeVideoMetadata>): { [key: string]: any } {
+    return Object.entries(metadata).reduce((bins, [key, value]) => {
+      if (value instanceof Date) {
+        bins[key] = value.getTime();
+      } else {
+        bins[key] = value;
+      }
+      return bins;
+    }, {} as { [key: string]: any });
   }
 
-  async updateMeme(meme: Meme): Promise<void> {
-    try {
-      await this.collection.updateOne(
-        { id: meme.id },
-        { $set: meme }
-      );
-    } catch (error) {
-      throw new Error('Failed to update meme');
-    }
+  private convertFromAerospikeBins(bins: { [key: string]: any }): MemeVideoMetadata {
+    const metadata = { ...bins };
+    
+    // Convert timestamp back to Date objects
+    if (metadata.createdAt) metadata.createdAt = new Date(metadata.createdAt);
+    if (metadata.updatedAt) metadata.updatedAt = new Date(metadata.updatedAt);
+    
+    return metadata as MemeVideoMetadata;
   }
-} 
+}
+
+export const storageService = new StorageService();
+export default storageService; 

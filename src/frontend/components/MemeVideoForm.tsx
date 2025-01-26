@@ -1,112 +1,116 @@
-import React, { useState, useContext } from 'react';
-import axios from 'axios';
-import { MemeVideoMetadata } from '../../shared/types/metadata';
-import { generateVideo } from '../../backend/services/aituboService';
-import { AuthContext } from '../../shared/context/AuthContext';
-import { inscribeMeme } from '../../backend/services/scryptOrdService';
-import { generateThumbnail } from '../../backend/services/thumbnailService';
+import React, { useState } from 'react';
+import { blockchainService } from '../services/blockchain.service';
+import { storageService } from '../services/storage.service';
+import { MemeVideoMetadata } from '../../shared/types/meme';
 
 interface MemeVideoFormProps {
   onSubmit: (metadata: MemeVideoMetadata) => void;
-  onCancel: () => void;
-  initialValues?: MemeVideoMetadata;
 }
 
-const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, initialValues }) => {
-  const [prompt, setPrompt] = useState(initialValues?.prompt || '');
-  const [style, setStyle] = useState(initialValues?.style || '');
-  const [isCreating, setIsCreating] = useState(false);
-  const { user } = useContext(AuthContext);
+export const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit }) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsCreating(true);
+    if (!videoFile) {
+      setError('Please select a video file');
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
 
     try {
-      // Generate meme video using AiTubo API
-      const videoResponse = await generateVideo({ prompt, style, duration: 10, format: 'mp4' });
+      // First, upload the video file and get its URL
+      const formData = new FormData();
+      formData.append('video', videoFile);
+      const videoUrl = await storageService.uploadVideo(formData);
 
-      // Generate thumbnail for the meme video
-      const thumbnailUrl = await generateThumbnail(videoResponse.videoUrl);
+      // Then, inscribe the video on the blockchain
+      const { inscriptionId, blockHeight } = await blockchainService.inscribeMeme(videoUrl);
 
-      // Inscribe the meme video on-chain using scrypt-ord
-      const inscriptionId = await inscribeMeme(videoResponse.videoUrl);
-
-      const metadata: MemeVideoMetadata = {
-        id: '',
-        title: prompt,
-        description: '',
-        prompt,
-        style,
-        duration: videoResponse.metadata.duration,
-        format: videoResponse.metadata.format,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        creatorId: user.id,
-        videoUrl: videoResponse.videoUrl,
-        thumbnailUrl,
-        tags: [],
-        nsfw: false,
-        visibility: 'public',
-        license: '',
-        blockchain: {
-          txId: inscriptionId,
-          blockHeight: 0, // TODO: Retrieve block height from BSV blockchain
-          mintedAt: new Date(),
-        },
-        nft: {
-          tokenId: '',
-          contractAddress: '',
-          ownerAddress: '', // TODO: Get owner address from wallet
-          mintedAt: new Date(),
-          marketplaceUrl: '',
-        },
-        revenue: {
-          totalEarned: 0,
-          totalPaidOut: 0,
-          outstandingBalance: 0,
-        },
+      // Finally, save the metadata
+      const metadata: Omit<MemeVideoMetadata, 'id'> = {
+        title,
+        description,
+        videoUrl,
+        inscriptionId,
+        blockHeight,
+        createdAt: new Date().toISOString(),
       };
 
-      onSubmit(metadata);
-    } catch (error) {
-      console.error('Failed to create meme video:', error);
-      // TODO: Handle error and show user-friendly message
+      await storageService.saveMemeVideo(metadata);
+      onSubmit(metadata as MemeVideoMetadata);
+
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setVideoFile(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload video');
     } finally {
-      setIsCreating(false);
+      setIsUploading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="prompt">Prompt:</label>
+        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+          Title
+        </label>
         <input
           type="text"
-          id="prompt"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           required
         />
       </div>
+
       <div>
-        <label htmlFor="style">Style:</label>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          Description
+        </label>
+        <textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="video" className="block text-sm font-medium text-gray-700">
+          Video File
+        </label>
         <input
-          type="text"
-          id="style"
-          value={style}
-          onChange={(e) => setStyle(e.target.value)}
+          type="file"
+          id="video"
+          accept="video/*"
+          onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+          className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
           required
         />
       </div>
-      <button type="submit" disabled={isCreating}>
-        {isCreating ? 'Creating...' : 'Create Meme'}
-      </button>
-      <button type="button" onClick={onCancel} disabled={isCreating}>
-        Cancel
+
+      {error && (
+        <div className="text-red-600 text-sm">{error}</div>
+      )}
+
+      <button
+        type="submit"
+        disabled={isUploading}
+        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+      >
+        {isUploading ? 'Uploading...' : 'Upload Video'}
       </button>
     </form>
   );
-};
-
-export default MemeVideoForm; 
+}; 

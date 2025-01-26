@@ -50,8 +50,11 @@ export const config = {
   STORAGE_BUCKET: process.env.STORAGE_BUCKET || 'memepool-storage',
   STORAGE_REGION: process.env.STORAGE_REGION || 'us-east-1',
 
-  // Database Configuration
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/memepool',
+  // Aerospike Configuration
+  AEROSPIKE_HOST: process.env.AEROSPIKE_HOST || 'localhost',
+  AEROSPIKE_PORT: parseInt(process.env.AEROSPIKE_PORT || '3000', 10),
+  AEROSPIKE_NAMESPACE: process.env.AEROSPIKE_NAMESPACE || 'memepool',
+  AEROSPIKE_SET: process.env.AEROSPIKE_SET || 'memes',
 
   // Cache Configuration
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
