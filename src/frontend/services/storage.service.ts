@@ -3,13 +3,13 @@ import { MemeVideoMetadata } from '../../shared/types/meme';
 
 class StorageService {
   private baseUrl = '/api';
-  // Temporary mock data with base64 encoded video content
+  // Temporary mock data with data URLs for testing
   private mockVideos: MemeVideoMetadata[] = [
     {
       id: 'video1',
       title: 'Funny Cat Meme',
       description: 'A hilarious cat video',
-      videoUrl: 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDJtcDQxaXNvbWF2YzEAAA==',
+      videoUrl: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=',
       inscriptionId: 'insc1',
       blockHeight: 123456,
       createdAt: new Date().toISOString()
@@ -18,7 +18,7 @@ class StorageService {
       id: 'video2',
       title: 'Dancing Dog',
       description: 'Dog dancing to music',
-      videoUrl: 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDJtcDQxaXNvbWF2YzEAAA==',
+      videoUrl: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=',
       inscriptionId: 'insc2',
       blockHeight: 123457,
       createdAt: new Date().toISOString()
@@ -40,7 +40,8 @@ class StorageService {
   async saveMemeVideo(metadata: Omit<MemeVideoMetadata, 'id'>): Promise<MemeVideoMetadata> {
     const newVideo = {
       id: `video${this.mockVideos.length + 1}`,
-      ...metadata
+      ...metadata,
+      videoUrl: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=' // Use a test WebM data URL
     };
     this.mockVideos.push(newVideo);
     return newVideo;
@@ -66,17 +67,9 @@ class StorageService {
   }
 
   async uploadVideo(formData: FormData): Promise<string> {
-    try {
-      const response = await axios.post(`${this.baseUrl}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data.url;
-    } catch (error) {
-      console.error('Failed to upload video:', error);
-      throw error;
-    }
+    // For testing, return a mock data URL
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=';
   }
 }
 

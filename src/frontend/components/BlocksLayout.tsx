@@ -70,40 +70,45 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     }
   };
 
-  const renderPlaceholder = (blockHeight: number) => (
-    <div className="w-full h-full bg-[#2A2A40] flex flex-col items-center justify-center">
+  const renderPlaceholder = (blockHeight: number, id: string) => (
+    <div key={`placeholder-${id}`} className="w-full h-full bg-[#2A2A40] flex flex-col items-center justify-center">
       <div className="animate-pulse w-16 h-16 mb-4 rounded-full bg-[#00ffa3]/20"></div>
       <span className="text-[#00ffa3]">Loading Block #{blockHeight}</span>
     </div>
   );
 
-  const renderBlock = (block: MemeVideoMetadata, isSmall = true) => (
-    <div key={block.id} className={`meme-block ${isSmall ? 'slide-left' : ''}`}>
+  const renderVideo = (block: MemeVideoMetadata, isSmall: boolean) => (
+    <video
+      key={`video-${block.id}`}
+      src={block.videoUrl}
+      className={`w-full h-full object-cover ${!isSmall ? 'rounded-xl' : ''}`}
+      muted={isSmall}
+      controls={!isSmall}
+      loop
+      playsInline
+      preload="metadata"
+      onError={() => handleVideoError(block.id)}
+      onLoadedData={() => handleVideoLoaded(block.id)}
+      onMouseEnter={isSmall ? (e) => {
+        const video = e.currentTarget;
+        if (video.readyState >= 3) {
+          video.play().catch(error => {
+            console.error('Failed to play video:', error);
+          });
+        }
+      } : undefined}
+      onMouseLeave={isSmall ? (e) => {
+        e.currentTarget.pause();
+      } : undefined}
+    />
+  );
+
+  const renderBlock = (block: MemeVideoMetadata, isSmall = true, direction: 'left' | 'right' = 'left') => (
+    <div key={`block-${block.id}-${direction}`} className={`meme-block ${isSmall ? `slide-${direction}` : ''}`}>
       {videoErrors[block.id] || !loadedVideos[block.id] ? (
-        renderPlaceholder(block.blockHeight)
+        renderPlaceholder(block.blockHeight, block.id)
       ) : (
-        <video
-          key={block.id}
-          src={block.videoUrl}
-          className="w-full h-full object-cover"
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          onError={() => handleVideoError(block.id)}
-          onLoadedData={() => handleVideoLoaded(block.id)}
-          onMouseEnter={(e) => {
-            const video = e.currentTarget;
-            if (video.readyState >= 3) {
-              video.play().catch(error => {
-                console.error('Failed to play video:', error);
-              });
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.pause();
-          }}
-        />
+        renderVideo(block, isSmall)
       )}
       <div className="block-number-display absolute bottom-0 left-0 right-0 p-2 text-center">
         <span className="text-[#00ffa3]">#{block.blockHeight}</span>
@@ -117,7 +122,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
       <div className="mb-8">
         <h3 className="section-label mb-4">Past Blocks</h3>
         <div id="pastBlocks" className="blocks-container" ref={pastBlocksRef}>
-          {pastBlocks.map(block => renderBlock(block))}
+          {pastBlocks.map(block => renderBlock(block, true, 'left'))}
         </div>
       </div>
 
@@ -127,19 +132,9 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
           <h3 className="section-label mb-4">Current Meme</h3>
           <div className="current-meme" ref={currentMemeRef}>
             {videoErrors[currentMeme.id] || !loadedVideos[currentMeme.id] ? (
-              renderPlaceholder(currentMeme.blockHeight)
+              renderPlaceholder(currentMeme.blockHeight, currentMeme.id)
             ) : (
-              <video
-                key={currentMeme.id}
-                src={currentMeme.videoUrl}
-                className="w-full h-full object-cover rounded-xl"
-                controls
-                playsInline
-                preload="metadata"
-                loop
-                onError={() => handleVideoError(currentMeme.id)}
-                onLoadedData={() => handleVideoLoaded(currentMeme.id)}
-              />
+              renderVideo(currentMeme, false)
             )}
             <button 
               onClick={handleBeatIt}
@@ -155,7 +150,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
       <div>
         <h3 className="section-label mb-4">Upcoming Blocks</h3>
         <div id="upcomingBlocks" className="blocks-container" ref={upcomingBlocksRef}>
-          {upcomingBlocks.map(block => renderBlock(block))}
+          {upcomingBlocks.map(block => renderBlock(block, true, 'right'))}
         </div>
       </div>
     </div>
