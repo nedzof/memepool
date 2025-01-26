@@ -23,7 +23,7 @@ const App: React.FC = () => {
       <header className="bg-[#222235] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between gap-4">
           <div className="flex-shrink-0">
-            <img src="/Memepool_Logo.png" alt="Memepool Logo" className="h-10" />
+            <img src="/assets/images/Memepool_Logo.svg" alt="Memepool Logo" className="h-10" />
           </div>
           
           <div className="flex-grow flex justify-center">
