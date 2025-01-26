@@ -1,69 +1,57 @@
-# 🎮 Memepool - AI-Powered 2D to 3D Meme Competition Platform
+# Memepool - BSV Meme Platform
 
-Welcome to Memepool, where creativity meets AI technology in an exciting meme competition platform! Transform 2D memes into stunning 3D animations and compete for rewards.
+A decentralized platform for AI-generated memes powered by BSV blockchain, enabling creators to earn through micropayments and viewers to gain stake in viral success.
 
-## 🚀 What is Memepool?
+## Project Structure
 
-Memepool is a revolutionary platform that allows creators to:
-- Transform static 2D memes into dynamic 3D animations using AI
-- Compete in real-time meme creation contests
-- Earn rewards for the most creative and engaging submissions
-- Build a community around meme creation and innovation
+```
+memepool/
+  ├── src/
+  │   ├── backend/        # Backend services and API
+  │   ├── frontend/       # React components and UI
+  │   ├── shared/         # Shared types and utilities
+  │   └── index.tsx       # Application entry point
+  ├── public/            # Static assets
+  ├── tests/            # Test files
+  ├── docs/             # Documentation
+  └── config files      # Various configuration files
+```
 
-## 🎯 How It Works
+## Setup
 
-1. **Current Meme Challenge**
-   - Each block features a new 2D meme template
-   - Use our AI-powered tools to transform it into a 3D animation
-   - Submit your creation to compete with other creators
+1. Install dependencies:
+```bash
+npm install
+```
 
-2. **Competition System**
-   - Submissions are ranked based on:
-     - Viewer engagement
-     - Watch time
-     - Community votes
-     - Creative innovation
-   - Top creators earn rewards and recognition
+2. Start development server:
+```bash
+npm run dev
+```
 
-3. **Real-Time Engagement**
-   - Watch live as new submissions come in
-   - Interact with other creators
-   - Track your submission's performance in real-time
+3. Build for production:
+```bash
+npm run build
+```
 
-## 🏆 Rewards
+## Features
 
-- Top submissions earn rewards for each block
-- Special achievements for consistent high performers
-- Community recognition and creator rankings
+- AI-generated 3D memes
+- BSV blockchain integration
+- Micropayments for creators
+- Viral success staking
+- Community fund and jackpot system
 
-## 🛠️ Technical Features
+## Technologies
 
-- AI-powered 2D to 3D transformation
-- Real-time submission tracking
-- Live viewer statistics
-- Secure blockchain-based voting system
-- Creator profiles and rankings
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- BSV SDK
+- Scrypt-ORD
+- Scrypt-TS
 
-## 🔗 Getting Started
+## License
 
-1. Connect your wallet
-2. Choose the current meme challenge
-3. Create your 3D animation
-4. Submit and compete!
-
-## 🤝 Community
-
-Join our growing community of creative minds:
-- Share tips and techniques
-- Collaborate with other creators
-- Learn from top performers
-- Participate in special events
-
-## 🎨 Example Transformations
-
-Check out some amazing 2D to 3D transformations from our community:
-[Coming Soon]
-
----
-
-Join Memepool today and be part of the next generation of meme creation! 🚀
+[MIT License](LICENSE)

@@ -2,27 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memepire</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="src/css/styles.css" rel="stylesheet">
-    <script type="module">
-        import { Buffer } from 'https://cdn.jsdelivr.net/npm/buffer@6.0.3/+esm';
-        window.Buffer = Buffer;
-    </script>
-    <script type="module">
-        import * as bitcoin from 'https://cdn.jsdelivr.net/npm/bitcoinjs-lib@6.1.7/+esm';
-        import * as nobleHashes from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.0.0/+esm';
-
-        console.log('Loading bitcoinjs-lib...');
-        window.bitcoin = bitcoin;
-        window.sha256 = nobleHashes.sha256;
-        console.log('Loaded bitcoinjs-lib:', window.bitcoin);
-        console.log('Bitcoin networks available:', window.bitcoin.networks);
-    </script>
-    <script type="module" src="src/js/main.js"></script>
+    <title>Memepool - BSV Meme Platform</title>
 </head>
-<body class="bg-black text-white min-h-screen">
-    <main></main>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
 </body>
 </html> 

@@ -1,0 +1,606 @@
+:root {
+  --solana-primary: #9945FF;
+  --solana-secondary: #14F195;
+  --solana-text: #FFFFFF;
+  --solana-background: #1A1A1A;
+  --solana-surface: #2C2C2C;
+  --solana-border: rgba(255, 255, 255, 0.1);
+  --solana-success: #14F195;
+  --solana-error: #FF3B3B;
+}
+
+.container {
+  transition-duration: 200ms;
+  box-sizing: border-box;
+  position: relative; 
+  padding: 24px;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+}
+
+.introModal {
+  display: inherit;
+  box-sizing: border-box;
+  flex-direction: column;
+  width: 100%;  
+}
+
+.introContent {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.introTitle {
+  box-sizing: border-box;
+  font-size: 22.4px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.introText {
+  box-sizing: border-box;  
+  line-height: 17.28px;
+  font-size: 14.4px;
+  text-align: center;
+}
+
+.introActions {
+  box-sizing: border-box;
+  padding: 16px;
+  margin-top: auto;
+}
+
+.createWalletButton {
+  background-color: rgb(255, 255, 255);  
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0);
+  padding: 11.2px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'JetBrains Mono', sans-serif;
+  transition: 0.2s ease-in-out;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.importWalletButton {
+  cursor: pointer;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0);
+  padding: 8px 16px; 
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'JetBrains Mono', sans-serif;
+  background-color: rgb(219, 189, 249);
+  transition: 0.2s ease-in-out;
+  box-sizing: border-box;
+  width: 100%;
+  color: rgb(128, 0, 255);
+}
+
+.mainModal {
+  display: inherit;
+  box-sizing: border-box;
+  flex-direction: column;
+  width: 100%;
+}
+
+.mainContent {
+  box-sizing: border-box;
+}
+
+.header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.body {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;  
+}
+
+.balanceContainer {
+  box-sizing: border-box;
+  margin: 0.5rem 0px;
+  display: flex;
+  align-items: center;
+}
+
+.solanaLogo {
+  width: 1.1em;
+  height: 17.5938px;
+  margin-right: 6.4px;
+  margin-bottom: -3.2px;
+  box-sizing: border-box;
+}
+
+.balanceLabel {
+  box-sizing: border-box;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.balanceValue {
+  box-sizing: border-box;
+  font-size: 14.4px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.receiveLink {
+  font-weight: 600;
+  color: rgb(200, 145, 255);
+  text-decoration: none solid rgb(200, 145, 255);
+  cursor: pointer;
+  box-sizing: border-box;
+  margin-left: auto;
+}
+
+.tabList {
+  scrollbar-width: none;
+  list-style-type: none;
+  margin: 3.2px 0px;
+  padding: 0px;
+  box-sizing: border-box;
+  font-size: 14.4px;
+  display: flex;
+  overflow-x: auto;
+  user-select: none;
+}
+
+.tabItem {
+  box-sizing: border-box;
+  padding: 3.2px 6.4px;
+  color: var(--solana-text);
+  background-color: var(--solana-background);
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tabItem:not(:first-child) {  
+  margin-left: 8px;
+}
+
+.tabContent {
+  box-sizing: border-box;  
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--solana-text);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.closeIcon {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.activeTab {
+  background-color: var(--solana-primary);
+  color: var(--solana-text);
+}
+
+/* Token List Styles */
+.tokenList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.tokenItem {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--solana-surface);
+  border-radius: 12px;
+  border: 1px solid var(--solana-border);
+}
+
+.tokenSymbol {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--solana-text);
+  width: 80px;
+}
+
+.tokenAmount {
+  flex: 1;
+  color: var(--solana-text);
+  text-align: right;
+}
+
+.tokenValue {
+  color: var(--solana-secondary);
+  width: 100px;
+  text-align: right;
+  margin-right: 16px;
+}
+
+.sendButton {
+  background: var(--solana-primary);
+  color: var(--solana-text);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.sendButton:hover {
+  opacity: 0.9;
+}
+
+/* NFT Grid Styles */
+.nftGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.nftCard {
+  background: var(--solana-surface);
+  border-radius: 12px;
+  border: 1px solid var(--solana-border);
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.nftCard:hover {
+  transform: translateY(-2px);
+}
+
+.nftImage {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.nftInfo {
+  padding: 12px;
+}
+
+.nftName {
+  font-weight: 600;
+  color: var(--solana-text);
+  margin-bottom: 4px;
+}
+
+.nftCollection {
+  font-size: 14px;
+  color: var(--solana-secondary);
+}
+
+/* Activity List Styles */
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.activityItem {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--solana-surface);
+  border-radius: 12px;
+  border: 1px solid var(--solana-border);
+}
+
+.activityType {
+  width: 80px;
+  text-transform: capitalize;
+  font-weight: 500;
+  color: var(--solana-text);
+}
+
+.activityAddress {
+  flex: 1;
+  color: var(--solana-text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.activityAmount {
+  width: 120px;
+  text-align: right;
+  font-weight: 500;
+  color: var(--solana-text);
+}
+
+.activityAmount[data-type="receive"] {
+  color: var(--solana-success);
+}
+
+.activityAmount[data-type="send"] {
+  color: var(--solana-error);
+}
+
+.activityDate {
+  width: 100px;
+  text-align: right;
+  color: var(--solana-text);
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.error {
+  color: var(--solana-error);
+  background: rgba(255, 59, 59, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 12px 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Import Modal Styles */
+.importModal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  background: var(--solana-background);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.importContent {
+  width: 100%;
+}
+
+.importTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--solana-text);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.importText {
+  color: var(--solana-text);
+  opacity: 0.8;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.seedPhraseInput {
+  width: 100%;
+  background: var(--solana-surface);
+  border: 1px solid var(--solana-border);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--solana-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  resize: none;
+  margin-bottom: 24px;
+}
+
+.seedPhraseInput:focus {
+  outline: none;
+  border-color: var(--solana-primary);
+}
+
+.seedPhraseInput::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.importActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  background: var(--solana-surface);
+  color: var(--solana-text);
+  border: 1px solid var(--solana-border);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: var(--solana-surface);
+  opacity: 0.9;
+}
+
+.importButton {
+  background: var(--solana-primary);
+  color: var(--solana-text);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.importButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* Disabled button styles */
+.createWalletButton:disabled,
+.importWalletButton:disabled,
+.cancelButton:disabled,
+.importButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading state styles */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.createWalletButton:disabled,
+.importButton:disabled {
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.walletTypes {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.walletButton {
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.walletButton:hover {
+  border-color: #4a5568;
+}
+
+.walletButton.active {
+  border-color: #4299e1;
+  background-color: #ebf8ff;
+}
+
+.mnemonicSection {
+  margin-bottom: 1.5rem;
+}
+
+.mnemonicInput {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.generateButton {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.generateButton:hover {
+  background-color: #3182ce;
+}
+
+.generateButton:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #e2e8f0;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelButton:hover {
+  background-color: #cbd5e0;
+}
+
+.connectButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.connectButton:hover {
+  background-color: #3182ce;
+}
+
+.modalContainer {
+  background: var(--solana-background);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+.modalContainer.visible {
+  transform: scale(1);
+  opacity: 1;
+} 
