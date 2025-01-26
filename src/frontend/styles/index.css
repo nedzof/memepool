@@ -1,25 +1,20 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --primary-gradient-from: #9945FF;
-  --primary-gradient-to: #14F195;
-  --background-dark: #1A1B23;
-  --background-light: #222235;
-  --text-primary: #FFFFFF;
-  --text-secondary: #94A3B8;
+  --primary-gradient: linear-gradient(to right, #9945FF, #14F195);
+  --bg-dark: #13131A;
+  --text-primary: #F3F3F3;
+  --block-size: 120px;
+  --block-gap: 1rem;
+  --container-padding: 2rem;
 }
 
 @layer base {
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    @apply bg-[#1A1B23] text-white;
+    @apply bg-[#13131A] text-[#F3F3F3] min-h-screen;
+    font-family: 'Inter', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -28,38 +23,176 @@
 }
 
 @layer components {
-  .btn {
-    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200;
+  .app-container {
+    @apply max-w-7xl mx-auto px-4 py-8;
   }
 
-  .btn-gradient {
-    @apply bg-gradient-to-r from-[#9945FF] to-[#14F195] text-white hover:opacity-90;
+  .section-label {
+    @apply text-xl font-semibold text-[#00ffa3] mb-4;
   }
 
-  .btn-secondary {
-    @apply bg-[#222235] text-white hover:bg-[#2A2A40];
+  /* Past Blocks Section */
+  .past-blocks-section {
+    @apply mb-12;
   }
 
-  .input {
-    @apply w-full px-4 py-3 bg-[#1A1B23] border border-[#2A2A40] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#9945FF] focus:border-transparent transition-colors;
+  .blocks-container {
+    @apply flex gap-4 overflow-x-auto pb-4;
+    min-height: var(--block-size);
+    scroll-snap-type: x mandatory;
   }
 
-  .card {
-    @apply bg-[#222235] rounded-xl overflow-hidden hover:shadow-lg hover:shadow-[#9945FF]/20 transition-all duration-300;
+  .meme-block {
+    @apply relative bg-[#2A2A40] rounded-lg overflow-hidden flex-shrink-0;
+    width: var(--block-size);
+    height: var(--block-size);
+    scroll-snap-align: start;
   }
 
-  .gradient-text {
-    @apply bg-gradient-to-r from-[#9945FF] to-[#14F195] bg-clip-text text-transparent;
+  .meme-block-content {
+    @apply absolute inset-0 flex flex-col items-center justify-center;
+  }
+
+  .loading-indicator {
+    @apply w-16 h-16 rounded-full bg-[#00ffa3]/20 mb-4;
+    animation: pulse 2s infinite;
+  }
+
+  .block-number {
+    @apply text-[#00ffa3] font-bold;
+  }
+
+  /* Current Meme Section */
+  .current-meme-section {
+    @apply mb-12;
+  }
+
+  .current-meme-container {
+    @apply relative max-w-2xl mx-auto aspect-square bg-[#2A2A40] rounded-xl overflow-hidden;
+  }
+
+  .current-meme {
+    @apply absolute inset-0;
+  }
+
+  .beat-button {
+    @apply absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10
+           px-6 py-3 bg-gradient-to-r from-[#9945FF] to-[#14F195]
+           rounded-lg font-semibold text-white hover:opacity-90
+           transition-all duration-300 shadow-lg;
+  }
+
+  /* Upcoming Blocks Section */
+  .upcoming-blocks-section {
+    @apply mb-12;
+  }
+
+  /* Common Block Styles */
+  .block-image {
+    @apply w-full h-full object-cover;
+  }
+
+  .block-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none;
+  }
+
+  .block-info {
+    @apply absolute bottom-0 left-0 right-0 p-2 text-center;
+  }
+
+  /* Buttons */
+  .shift-button {
+    @apply px-4 py-2 bg-[#2A2A40] text-[#00ffa3] rounded-lg font-semibold
+           hover:bg-[#353555] transition-colors shadow-md
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Loading States */
+  .loading-block {
+    @apply flex flex-col items-center justify-center;
+  }
+
+  .loading-text {
+    @apply text-[#00ffa3] text-sm mt-2;
   }
 }
 
-@layer utilities {
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+/* Animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
   }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+}
 
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+@keyframes slideFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.blocks-container::-webkit-scrollbar {
+  display: none;
+}
+
+.blocks-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animation states */
+.animated-element {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Layout helpers */
+.section-header {
+  @apply flex justify-between items-center mb-4;
+}
+
+/* Ensure proper stacking context */
+.section-container {
+  @apply relative;
+  z-index: 1;
+}
+
+/* Media queries for responsive layout */
+@screen sm {
+  .blocks-container {
+    @apply gap-6;
+  }
+}
+
+@screen md {
+  .blocks-container {
+    @apply gap-8;
   }
 } 
