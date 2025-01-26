@@ -3,22 +3,22 @@ import { MemeVideoMetadata } from '../../shared/types/meme';
 
 class StorageService {
   private baseUrl = '/api';
-  // Temporary mock data with data URLs for testing
+  // Temporary mock data with static images for testing
   private mockVideos: MemeVideoMetadata[] = [
     {
-      id: 'video1',
+      id: 'past-block-1',
       title: 'Funny Cat Meme',
       description: 'A hilarious cat video',
-      videoUrl: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=',
+      videoUrl: 'https://placehold.co/400x400/222235/00ffa3?text=Block+123456',
       inscriptionId: 'insc1',
       blockHeight: 123456,
       createdAt: new Date().toISOString()
     },
     {
-      id: 'video2',
+      id: 'past-block-2',
       title: 'Dancing Dog',
       description: 'Dog dancing to music',
-      videoUrl: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=',
+      videoUrl: 'https://placehold.co/400x400/222235/00ffa3?text=Block+123457',
       inscriptionId: 'insc2',
       blockHeight: 123457,
       createdAt: new Date().toISOString()
@@ -38,10 +38,12 @@ class StorageService {
   }
 
   async saveMemeVideo(metadata: Omit<MemeVideoMetadata, 'id'>): Promise<MemeVideoMetadata> {
+    const blockHeight = metadata.blockHeight || Math.floor(Math.random() * 1000000);
     const newVideo = {
-      id: `video${this.mockVideos.length + 1}`,
+      id: `block-${this.mockVideos.length + 1}`,
       ...metadata,
-      videoUrl: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=' // Use a test WebM data URL
+      videoUrl: `https://placehold.co/400x400/222235/00ffa3?text=Block+${blockHeight}`,
+      blockHeight
     };
     this.mockVideos.push(newVideo);
     return newVideo;
@@ -67,9 +69,10 @@ class StorageService {
   }
 
   async uploadVideo(formData: FormData): Promise<string> {
-    // For testing, return a mock data URL
+    // For testing, return a mock image URL
     await new Promise(resolve => setTimeout(resolve, 1000));
-    return 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=';
+    const blockHeight = Math.floor(Math.random() * 1000000);
+    return `https://placehold.co/400x400/222235/00ffa3?text=Block+${blockHeight}`;
   }
 }
 

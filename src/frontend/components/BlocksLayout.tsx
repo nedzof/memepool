@@ -17,20 +17,20 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   const currentMemeRef = useRef<HTMLDivElement>(null);
   const upcomingBlocksRef = useRef<HTMLDivElement>(null);
 
-  const [videoErrors, setVideoErrors] = useState<Record<string, boolean>>({});
-  const [loadedVideos, setLoadedVideos] = useState<Record<string, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     animationService.initialize();
     return () => animationService.cleanup();
   }, []);
 
-  const handleVideoError = (videoId: string) => {
-    setVideoErrors(prev => ({ ...prev, [videoId]: true }));
+  const handleImageError = (id: string) => {
+    setImageErrors(prev => ({ ...prev, [id]: true }));
   };
 
-  const handleVideoLoaded = (videoId: string) => {
-    setLoadedVideos(prev => ({ ...prev, [videoId]: true }));
+  const handleImageLoaded = (id: string) => {
+    setLoadedImages(prev => ({ ...prev, [id]: true }));
   };
 
   const handleBeatIt = () => {
@@ -77,38 +77,26 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     </div>
   );
 
-  const renderVideo = (block: MemeVideoMetadata, isSmall: boolean) => (
-    <video
-      key={`video-${block.id}`}
-      src={block.videoUrl}
-      className={`w-full h-full object-cover ${!isSmall ? 'rounded-xl' : ''}`}
-      muted={isSmall}
-      controls={!isSmall}
-      loop
-      playsInline
-      preload="metadata"
-      onError={() => handleVideoError(block.id)}
-      onLoadedData={() => handleVideoLoaded(block.id)}
-      onMouseEnter={isSmall ? (e) => {
-        const video = e.currentTarget;
-        if (video.readyState >= 3) {
-          video.play().catch(error => {
-            console.error('Failed to play video:', error);
-          });
-        }
-      } : undefined}
-      onMouseLeave={isSmall ? (e) => {
-        e.currentTarget.pause();
-      } : undefined}
-    />
+  const renderImage = (block: MemeVideoMetadata, isSmall: boolean) => (
+    <div className="relative w-full h-full">
+      <img
+        key={`image-${block.id}`}
+        src={block.videoUrl}
+        alt={`Block ${block.blockHeight}`}
+        className={`w-full h-full object-cover ${!isSmall ? 'rounded-xl' : ''}`}
+        onError={() => handleImageError(block.id)}
+        onLoad={() => handleImageLoaded(block.id)}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+    </div>
   );
 
   const renderBlock = (block: MemeVideoMetadata, isSmall = true, direction: 'left' | 'right' = 'left') => (
     <div key={`block-${block.id}-${direction}`} className={`meme-block ${isSmall ? `slide-${direction}` : ''}`}>
-      {videoErrors[block.id] || !loadedVideos[block.id] ? (
+      {imageErrors[block.id] || !loadedImages[block.id] ? (
         renderPlaceholder(block.blockHeight, block.id)
       ) : (
-        renderVideo(block, isSmall)
+        renderImage(block, isSmall)
       )}
       <div className="block-number-display absolute bottom-0 left-0 right-0 p-2 text-center">
         <span className="text-[#00ffa3]">#{block.blockHeight}</span>
@@ -131,10 +119,10 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
         <div className="mb-8">
           <h3 className="section-label mb-4">Current Meme</h3>
           <div className="current-meme" ref={currentMemeRef}>
-            {videoErrors[currentMeme.id] || !loadedVideos[currentMeme.id] ? (
+            {imageErrors[currentMeme.id] || !loadedImages[currentMeme.id] ? (
               renderPlaceholder(currentMeme.blockHeight, currentMeme.id)
             ) : (
-              renderVideo(currentMeme, false)
+              renderImage(currentMeme, false)
             )}
             <button 
               onClick={handleBeatIt}
