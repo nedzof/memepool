@@ -1,23 +1,31 @@
 declare module '@bsv/sdk' {
+  interface TransactionInput {
+    address: string;
+    amount: number;
+  }
+
+  interface TransactionOutput {
+    address: string;
+    amount: number;
+  }
+
+  interface TransactionRequest {
+    inputs: TransactionInput[];
+    outputs: TransactionOutput[];
+  }
+
   interface Transaction {
     id: string;
-    inputs: Array<{
-      address: string;
-      value: number;
-    }>;
-    outputs: Array<{
-      address: string;
-      value: number;
-    }>;
+    inputs: TransactionInput[];
+    outputs: TransactionOutput[];
   }
 
   interface Block {
     hash: string;
     height: number;
+    timestamp: Date;
     transactions: Transaction[];
-    metadata?: {
-      threshold?: number;
-    };
+    metadata?: Record<string, any>;
   }
 
   interface SendPaymentParams {
@@ -27,14 +35,15 @@ declare module '@bsv/sdk' {
   }
 
   interface BSV {
-    requestAccounts(): Promise<string[]>;
-    getAccounts(): Promise<string[]>;
-    getBalance(address: string): Promise<string>;
+    getAddress(): Promise<string>;
+    getBalance(): Promise<number>;
     getBlocks(params: { limit: number }): Promise<Block[]>;
     getLatestBlock(): Promise<Block>;
     sendPayment(params: SendPaymentParams): Promise<Transaction>;
-    signMessage(message: string, address: string): Promise<string>;
-    verifyMessage(message: string, signature: string, address: string): Promise<boolean>;
+    signMessage(message: string): Promise<string>;
+    verifyMessage(message: string, signature: string): Promise<boolean>;
+    createTransaction(request: TransactionRequest): Promise<Transaction>;
+    broadcastTransaction(transaction: Transaction): Promise<void>;
   }
 
   export const bsv: BSV;

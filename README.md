@@ -1,57 +1,60 @@
-# Memepool - BSV Meme Platform
+# MemePool
 
-A decentralized platform for AI-generated memes powered by BSV blockchain, enabling creators to earn through micropayments and viewers to gain stake in viral success.
+A decentralized meme platform built on BSV blockchain.
 
-## Project Structure
+## Features
 
+- Upload and share memes
+- BSV-based reward system
+- Viral meme detection
+- Community participation through BSV locks
+- Thumbnail generation for video memes
+
+## Prerequisites
+
+- Node.js >= 18
+- Aerospike database
+- FFmpeg for video processing
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/memepool.git
+cd memepool
 ```
-memepool/
-  ├── src/
-  │   ├── backend/        # Backend services and API
-  │   ├── frontend/       # React components and UI
-  │   ├── shared/         # Shared types and utilities
-  │   └── index.tsx       # Application entry point
-  ├── public/            # Static assets
-  ├── tests/            # Test files
-  ├── docs/             # Documentation
-  └── config files      # Various configuration files
-```
 
-## Setup
-
-1. Install dependencies:
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Start development server:
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-3. Build for production:
-```bash
-npm run build
-```
+## Environment Variables
 
-## Features
+- `MEMEPOOL_ADDRESS`: BSV address for the meme pool
+- `AEROSPIKE_HOST`: Aerospike database host
+- `AEROSPIKE_PORT`: Aerospike database port
+- `AEROSPIKE_NAMESPACE`: Aerospike namespace
+- `AEROSPIKE_SET`: Aerospike set name
 
-- AI-generated 3D memes
-- BSV blockchain integration
-- Micropayments for creators
-- Viral success staking
-- Community fund and jackpot system
+## Architecture
 
-## Technologies
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- BSV SDK
-- Scrypt-ORD
-- Scrypt-TS
+- Frontend: React + Vite
+- Backend: Node.js + Express
+- Storage: Aerospike + Local file system
+- Blockchain: BSV for transactions and rewards
 
 ## License
 
-[MIT License](LICENSE)
+MIT

@@ -1,80 +1,100 @@
+import { Transaction } from '../../shared/types/wallet';
 import { bsv } from '@bsv/sdk';
+import { AerospikeService } from './aerospikeService';
+
+export class BSV {
+  private address: string | null = null;
+  private balance: number = 0;
+
+  async getAddress(): Promise<string> {
+    if (!this.address) {
+      // TODO: Implement actual BSV address generation
+      this.address = 'dummy_bsv_address';
+    }
+    return this.address;
+  }
+
+  async getBalance(): Promise<number> {
+    // TODO: Implement actual BSV balance retrieval
+    return this.balance;
+  }
+
+  async sendPayment(params: { from: string; to: string; amount: number }): Promise<Transaction> {
+    // TODO: Implement actual BSV payment transaction
+    const transaction: Transaction = {
+      id: `tx_${Date.now()}`,
+      from: params.from,
+      to: params.to,
+      amount: params.amount,
+      timestamp: new Date()
+    };
+    return transaction;
+  }
+}
+
+export const bsvService = new BSV();
 
 export class BSVService {
-  private readonly MEMEPOOL_ADDRESS = process.env.MEMEPOOL_ADDRESS as string;
+  private aerospikeService: AerospikeService;
+  private readonly MEMEPOOL_ADDRESS: string;
+
+  constructor() {
+    this.aerospikeService = new AerospikeService();
+    this.MEMEPOOL_ADDRESS = process.env.MEMEPOOL_ADDRESS || '';
+    if (!this.MEMEPOOL_ADDRESS) {
+      throw new Error('MEMEPOOL_ADDRESS environment variable is not set');
+    }
+  }
 
   async getCurrentThreshold(): Promise<number> {
     try {
-      // Get total BSV locked in previous 12 blocks
-      const last12Blocks = await this.getLast12BlocksLocks();
-      const prevThreshold = await this.getPreviousThreshold();
+      // Get total BSV locked in current round
+      const currentRound = await this.aerospikeService.getCurrentRound();
+      const totalLocked = currentRound?.totalBSVLocked || 0;
 
-      // Calculate new threshold using formula:
-      // Tₙ = 0.7T_{prev} + 0.3(1/12∑S_{last12})
-      const avgLocks = last12Blocks.reduce((sum, locks) => sum + locks, 0) / 12;
-      const newThreshold = 0.7 * prevThreshold + 0.3 * avgLocks;
-
-      return newThreshold;
+      // Calculate threshold based on formula from README
+      const baseThreshold = 0.001; // 0.001 BSV
+      const multiplier = 1.1;
+      return baseThreshold * Math.pow(multiplier, Math.floor(totalLocked));
     } catch (error) {
       throw new Error('Failed to get current threshold');
     }
   }
 
   calculateLockDifficulty(threshold: number): number {
-    // Dₙ = max($0.01, 0.000004Tₙ^1.2)
-    const calculated = 0.000004 * Math.pow(threshold, 1.2);
-    return Math.max(0.01, calculated);
+    // Calculate lock difficulty based on formula from README
+    const baseDifficulty = threshold;
+    const varianceFactor = 0.2; // 20% variance
+    const randomVariance = Math.random() * varianceFactor * 2 - varianceFactor;
+    return baseDifficulty * (1 + randomVariance);
   }
 
-  async lockBSV(from: string, amount: number) {
+  async lockBSV(from: string, amount: number): Promise<Transaction> {
     try {
-      const tx = await bsv.sendPayment({
-        from,
-        to: this.MEMEPOOL_ADDRESS,
-        amount
+      // Create and sign transaction
+      const tx = await bsv.createTransaction({
+        inputs: [{
+          address: from,
+          amount
+        }],
+        outputs: [{
+          address: this.MEMEPOOL_ADDRESS,
+          amount
+        }]
       });
 
-      return tx;
+      // Broadcast transaction
+      await bsv.broadcastTransaction(tx);
+
+      return {
+        id: tx.id,
+        from,
+        to: this.MEMEPOOL_ADDRESS,
+        amount,
+        timestamp: new Date()
+      };
     } catch (error) {
       throw new Error('Failed to lock BSV');
     }
-  }
-
-  private async getLast12BlocksLocks(): Promise<number[]> {
-    try {
-      // Fetch and return total locks for each of the last 12 blocks
-      const blocks = await bsv.getBlocks({ limit: 12 });
-      return blocks.map(block => this.calculateBlockLocks(block));
-    } catch (error) {
-      throw new Error('Failed to get last 12 blocks locks');
-    }
-  }
-
-  private async getPreviousThreshold(): Promise<number> {
-    try {
-      // Get the threshold used in the previous block
-      const lastBlock = await bsv.getLatestBlock();
-      return this.extractThresholdFromBlock(lastBlock);
-    } catch (error) {
-      throw new Error('Failed to get previous threshold');
-    }
-  }
-
-  private calculateBlockLocks(block: any): number {
-    // Calculate total BSV locked in a block
-    return block.transactions.reduce((sum: number, tx: any) => {
-      if (tx.outputs.some((out: any) => out.address === this.MEMEPOOL_ADDRESS)) {
-        return sum + tx.outputs.reduce((outSum: number, out: any) => {
-          return out.address === this.MEMEPOOL_ADDRESS ? outSum + out.value : outSum;
-        }, 0);
-      }
-      return sum;
-    }, 0);
-  }
-
-  private extractThresholdFromBlock(block: any): number {
-    // Extract threshold value from block metadata
-    // This is a placeholder - actual implementation would depend on where/how we store the threshold
-    return block.metadata?.threshold || 1000; // Default to 1000 if not found
   }
 } 

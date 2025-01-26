@@ -1,4 +1,6 @@
 import Aerospike from 'aerospike';
+import { MemeVideoMetadata } from '../../shared/types/metadata';
+import { UserParticipation, UserRewards } from './meme.service';
 
 const AEROSPIKE_CONFIG = {
   host: process.env.AEROSPIKE_HOST || 'localhost',
@@ -65,4 +67,70 @@ export const deleteMetadata = async (key: string): Promise<void> => {
     console.error('Failed to delete metadata from Aerospike:', error);
     throw error;
   }
-}; 
+};
+
+export interface Round {
+  id: string;
+  startTime: Date;
+  endTime: Date;
+  totalBSVLocked: number;
+  threshold: number;
+  status: 'active' | 'completed';
+  memeIds: string[];
+}
+
+export class AerospikeService {
+  private client: any; // TODO: Add proper Aerospike client type
+
+  constructor() {
+    // TODO: Initialize Aerospike client with connection details
+    this.client = null;
+  }
+
+  async createMeme(meme: MemeVideoMetadata): Promise<void> {
+    // TODO: Implement actual Aerospike write operation
+    console.log('Creating meme in Aerospike:', meme);
+  }
+
+  async getMemes(skip: number, limit: number): Promise<MemeVideoMetadata[]> {
+    // TODO: Implement actual Aerospike query with pagination
+    return [];
+  }
+
+  async getMemeById(id: string): Promise<MemeVideoMetadata | null> {
+    // TODO: Implement actual Aerospike read operation
+    return null;
+  }
+
+  async getUserParticipation(userId: string): Promise<UserParticipation> {
+    // TODO: Implement actual Aerospike read operation
+    return {
+      totalLocks: 0,
+      totalBSVLocked: 0,
+      successfulPredictions: 0
+    };
+  }
+
+  async getUserRewards(userId: string): Promise<UserRewards> {
+    // TODO: Implement actual Aerospike read operation
+    return {
+      totalEarned: 0,
+      pendingRewards: 0,
+      rewardHistory: []
+    };
+  }
+
+  async getCurrentRound(): Promise<Round | null> {
+    // TODO: Implement actual Aerospike read operation
+    // For now, return a mock round
+    return {
+      id: 'current_round',
+      startTime: new Date(),
+      endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+      totalBSVLocked: 0,
+      threshold: 0.001,
+      status: 'active',
+      memeIds: []
+    };
+  }
+} 

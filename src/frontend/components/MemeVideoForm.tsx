@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { MemeVideoMetadata } from '../../shared/types/metadata';
 import { generateVideo } from '../../backend/services/aituboService';
+import { AuthContext } from '../../shared/context/AuthContext';
+import { inscribeMeme } from '../../backend/services/scryptOrdService';
+import { generateThumbnail } from '../../backend/services/thumbnailService';
 
 interface MemeVideoFormProps {
   onSubmit: (metadata: MemeVideoMetadata) => void;
@@ -13,6 +16,7 @@ const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, initi
   const [prompt, setPrompt] = useState(initialValues?.prompt || '');
   const [style, setStyle] = useState(initialValues?.style || '');
   const [isCreating, setIsCreating] = useState(false);
+  const { user } = useContext(AuthContext);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +25,12 @@ const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, initi
     try {
       // Generate meme video using AiTubo API
       const videoResponse = await generateVideo({ prompt, style, duration: 10, format: 'mp4' });
+
+      // Generate thumbnail for the meme video
+      const thumbnailUrl = await generateThumbnail(videoResponse.videoUrl);
+
+      // Inscribe the meme video on-chain using scrypt-ord
+      const inscriptionId = await inscribeMeme(videoResponse.videoUrl);
 
       const metadata: MemeVideoMetadata = {
         id: '',
@@ -32,20 +42,16 @@ const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, initi
         format: videoResponse.metadata.format,
         createdAt: new Date(),
         updatedAt: new Date(),
-        creatorId: '', // TODO: Get creator ID from authentication context
+        creatorId: user.id,
         videoUrl: videoResponse.videoUrl,
-        thumbnailUrl: '', // TODO: Generate thumbnail and get URL
-        views: 0,
-        likes: 0,
-        dislikes: 0,
-        shares: 0,
+        thumbnailUrl,
         tags: [],
         nsfw: false,
         visibility: 'public',
         license: '',
         blockchain: {
-          txId: '',
-          blockHeight: 0,
+          txId: inscriptionId,
+          blockHeight: 0, // TODO: Retrieve block height from BSV blockchain
           mintedAt: new Date(),
         },
         nft: {

@@ -1,39 +1,22 @@
 export interface MemeVideoMetadata {
   id: string;
+  creator: string;
   title: string;
   description: string;
   prompt: string;
   style: string;
   duration: number;
   format: string;
-  createdAt: Date;
-  updatedAt: Date;
-  creatorId: string;
-  videoUrl: string;
+  fileUrl: string;
   thumbnailUrl: string;
+  txId: string;
+  locks: number;
+  status: 'pending' | 'minted' | 'viral' | 'failed';
+  tags: string[];
   views: number;
   likes: number;
   dislikes: number;
   shares: number;
-  tags: string[];
-  nsfw: boolean;
-  visibility: 'public' | 'private' | 'unlisted';
-  license: string;
-  blockchain: {
-    txId: string;
-    blockHeight: number;
-    mintedAt: Date;
-  };
-  nft: {
-    tokenId: string;
-    contractAddress: string;
-    ownerAddress: string;
-    mintedAt: Date;
-    marketplaceUrl: string;
-  };
-  revenue: {
-    totalEarned: number;
-    totalPaidOut: number;
-    outstandingBalance: number;
-  };
+  createdAt: Date;
+  updatedAt: Date;
 } 
