@@ -70,9 +70,9 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   };
 
   // Function to render a block image with loading state
-  const renderBlockImage = (block: Block, isCurrentMeme: boolean = false) => (
+  const renderBlockImage = (block: Block) => (
     <div className="relative w-full h-full">
-      {!isCurrentMeme && (loadingBlocks[block.blockHeight] || block.isLoading) && (
+      {(loadingBlocks[block.blockHeight] || block.isLoading) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
           <div className="loading-spinner"></div>
         </div>
@@ -187,15 +187,14 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
         <div className="flex-shrink-0 w-[400px]">
           {currentMeme && (
             <div className="current-meme relative">
-              {renderBlockImage(convertToBlock(currentMeme), true)}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+              <div className="compete-button">
                 <button
                   onClick={() => setShowCreateMemeModal(true)}
-                  className="gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20"
                 >
                   COMPETE
                 </button>
               </div>
+              {renderBlockImage(convertToBlock(currentMeme))}
               <div className="absolute top-4 left-4 bg-black/90 backdrop-blur-md rounded-md px-3 py-1.5 border-l-2 border-[#00ffa3]">
                 <span className="text-sm font-mono text-[#00ffa3]">#{currentHeight}</span>
               </div>

@@ -159,78 +159,38 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 20;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0;
+    opacity: 1;
   }
 
   .current-meme:hover .compete-button {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1);
+    transform: translate(-50%, -50%);
   }
 
   .current-meme .compete-button button {
-    @apply px-10 py-4 rounded-2xl font-bold text-2xl text-white uppercase tracking-wider;
-    background: linear-gradient(135deg, #9945FF, #14F195);
-    background-size: 200% 200%;
-    animation: gradientShift 4s ease infinite;
-    transform-origin: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 
-      0 0 20px rgba(153, 69, 255, 0.4),
-      0 0 40px rgba(20, 241, 149, 0.2),
-      inset 0 0 10px rgba(255, 255, 255, 0.2);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(5px);
+    @apply px-8 py-3 rounded-lg font-bold text-xl text-white uppercase;
+    background: linear-gradient(90deg, #9945FF, #14F195);
+    border: none;
+    box-shadow: 0 4px 12px rgba(153, 69, 255, 0.3);
+    letter-spacing: 0.05em;
   }
 
   .current-meme .compete-button button:hover {
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 
-      0 0 30px rgba(153, 69, 255, 0.6),
-      0 0 60px rgba(20, 241, 149, 0.3),
-      inset 0 0 15px rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 0.1em;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(153, 69, 255, 0.4);
+    letter-spacing: 0.05em;
   }
 
   .current-meme .compete-button button:active {
-    transform: scale(0.95) translateY(2px);
-    box-shadow: 
-      0 0 15px rgba(153, 69, 255, 0.5),
-      0 0 30px rgba(20, 241, 149, 0.2),
-      inset 0 0 5px rgba(255, 255, 255, 0.2);
-  }
-
-  @keyframes gradientShift {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(153, 69, 255, 0.2);
   }
 
   .block-number-display {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 8px;
-    background: linear-gradient(to bottom, 
-        rgba(0, 0, 0, 0.95) 0%,
-        rgba(0, 0, 0, 0.98) 100%
-    );
-    border-top: 1px solid rgba(0, 255, 163, 0.3);
-    backdrop-filter: blur(8px);
+    display: none;
   }
 
   .block-number {
-    @apply text-[#00ffa3] font-semibold text-sm text-center;
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
+    display: none;
   }
 
   .meme-actions {
@@ -330,10 +290,12 @@
   }
 
   .submissions-title {
-    @apply text-[#00ffa3] text-center text-2xl font-bold mb-8;
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5),
-                 0 0 20px rgba(0, 255, 163, 0.3);
-    animation: neonPulse 1.5s ease-in-out infinite alternate;
+    @apply text-center text-2xl font-bold mb-8;
+    background: linear-gradient(45deg, #9945FF, #14F195);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.02em;
   }
 
   @keyframes borderRotate {
