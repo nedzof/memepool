@@ -5,11 +5,11 @@ import { createMetadata, getMetadata } from './services/aerospikeService.js';
 import blockMemeRoutes from './routes/blockMeme.routes';
 
 const app = express();
-const port = process.env.PORT || 4000;
+const port = 4000; // Always use port 4000 for backend
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // Allow both Vite dev server and production server
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'], // Allow multiple frontend ports
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
