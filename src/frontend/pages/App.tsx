@@ -5,6 +5,7 @@ import BlocksLayout from '../components/BlocksLayout';
 import { MemeVideoMetadata } from '../../shared/types/meme';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletName } from '@solana/wallet-adapter-base';
+import { useBlockMemes } from '../hooks/useBlockMemes';
 
 // Add Phantom provider type to the window object
 declare global {
@@ -17,6 +18,7 @@ declare global {
 
 const App: React.FC = () => {
   const { select, connected, publicKey, disconnect } = useWallet();
+  const { currentHeight } = useBlockMemes();
   // Mock data for blocks layout
   const [pastBlocks] = useState<MemeVideoMetadata[]>([
     {
@@ -151,6 +153,9 @@ const App: React.FC = () => {
         />
         
         <div className="max-w-7xl mx-auto px-4 py-8">
+          <h2 className="submissions-title">
+            Submissions for Block #{currentHeight}
+          </h2>
           <MemeSubmissionGrid />
         </div>
       </main>

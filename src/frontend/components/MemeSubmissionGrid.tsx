@@ -73,18 +73,6 @@ const MemeSubmissionGrid: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#1A1B23] text-white p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-[#9945FF] to-[#14F195] bg-clip-text text-transparent">
-            Meme Pool
-          </h2>
-          <button
-            className="px-6 py-3 bg-gradient-to-r from-[#9945FF] to-[#14F195] rounded-lg font-semibold text-white hover:opacity-90 transition-opacity"
-            onClick={handleCreateMemeClick}
-          >
-            Create Meme
-          </button>
-        </div>
-        
         {isLoading && memeVideos.length === 0 ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#9945FF]"></div>
@@ -169,7 +157,6 @@ const MemeSubmissionGrid: React.FC = () => {
       </div>
       
       <CreateMemeModal
-        isOpen={isCreateMemeModalOpen}
         onClose={() => {
           setIsCreateMemeModalOpen(false);
           setCurrentBlock(undefined);

@@ -133,7 +133,7 @@
     border: 3px solid rgba(0, 255, 163, 0.8);
     background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 163, 0.05));
     border-radius: 16px;
-    z-index: 500;
+    z-index: 1;
   }
 
   .current-meme::before,
@@ -150,7 +150,68 @@
     );
     mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
     mask-composite: exclude;
-    animation: borderRotate 4s linear infinite, glowPulse 2s ease-in-out infinite;
+    opacity: 0.5;
+  }
+
+  .current-meme .compete-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+  }
+
+  .current-meme:hover .compete-button {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+
+  .current-meme .compete-button button {
+    @apply px-10 py-4 rounded-2xl font-bold text-2xl text-white uppercase tracking-wider;
+    background: linear-gradient(135deg, #9945FF, #14F195);
+    background-size: 200% 200%;
+    animation: gradientShift 4s ease infinite;
+    transform-origin: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+      0 0 20px rgba(153, 69, 255, 0.4),
+      0 0 40px rgba(20, 241, 149, 0.2),
+      inset 0 0 10px rgba(255, 255, 255, 0.2);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+  }
+
+  .current-meme .compete-button button:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 
+      0 0 30px rgba(153, 69, 255, 0.6),
+      0 0 60px rgba(20, 241, 149, 0.3),
+      inset 0 0 15px rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.1em;
+  }
+
+  .current-meme .compete-button button:active {
+    transform: scale(0.95) translateY(2px);
+    box-shadow: 
+      0 0 15px rgba(153, 69, 255, 0.5),
+      0 0 30px rgba(20, 241, 149, 0.2),
+      inset 0 0 5px rgba(255, 255, 255, 0.2);
+  }
+
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   .block-number-display {
@@ -265,6 +326,13 @@
     text-shadow: 0 0 5px #00ffa3,
                  0 0 10px #00ffa3,
                  0 0 20px #00ffa3;
+    animation: neonPulse 1.5s ease-in-out infinite alternate;
+  }
+
+  .submissions-title {
+    @apply text-[#00ffa3] text-center text-2xl font-bold mb-8;
+    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5),
+                 0 0 20px rgba(0, 255, 163, 0.3);
     animation: neonPulse 1.5s ease-in-out infinite alternate;
   }
 
