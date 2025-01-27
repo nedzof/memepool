@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { MemeVideoMetadata } from '../../shared/types/meme';
+import { MemeVideoMetadata } from '../../shared/types/metadata';
 
 interface Block {
   id: string;
@@ -204,14 +204,14 @@ class StorageService {
     switch (this.currentFilter) {
       case 'latest':
         return [...submissions].sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          b.createdAt.getTime() - a.createdAt.getTime()
         );
       case 'oldest':
         return [...submissions].sort((a, b) => 
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          a.createdAt.getTime() - b.createdAt.getTime()
         );
       case 'popular':
-        return [...submissions].sort((a, b) => b.blockHeight - a.blockHeight);
+        return [...submissions].sort((a, b) => b.locks - a.locks);
       default:
         return submissions;
     }
@@ -223,13 +223,26 @@ class StorageService {
     for (let i = 0; i < count; i++) {
       const blockHeight = this.latestBlockHeight - (count - i);
       videos.push({
-        id: `block-${blockHeight}`, // Using block height as part of ID ensures uniqueness
+        id: `block-${blockHeight}`,
+        creator: `creator-${blockHeight}`,
         title: `Meme Block #${blockHeight}`,
         description: `A meme from block ${blockHeight}`,
-        videoUrl: `https://placehold.co/400x400/222235/00ffa3?text=Block+${blockHeight}`,
-        inscriptionId: `insc-${blockHeight}`,
-        blockHeight,
-        createdAt: new Date(Date.now() - (count - i) * 60000).toISOString()
+        prompt: `Generate meme for block ${blockHeight}`,
+        style: 'viral',
+        duration: 30,
+        format: 'video/mp4',
+        fileUrl: `https://placehold.co/400x400/222235/00ffa3?text=Block+${blockHeight}`,
+        thumbnailUrl: `https://placehold.co/400x400/222235/00ffa3?text=Block+${blockHeight}`,
+        txId: `tx-${blockHeight}`,
+        locks: Math.floor(Math.random() * 100),
+        status: 'minted',
+        tags: ['meme', 'viral', `block-${blockHeight}`],
+        views: Math.floor(Math.random() * 1000),
+        likes: Math.floor(Math.random() * 100),
+        dislikes: Math.floor(Math.random() * 20),
+        shares: Math.floor(Math.random() * 50),
+        createdAt: new Date(Date.now() - (count - i) * 60000),
+        updatedAt: new Date(Date.now() - (count - i) * 60000),
       });
     }
     return videos;
@@ -251,12 +264,12 @@ class StorageService {
 
   async saveMemeVideo(metadata: Omit<MemeVideoMetadata, 'id'>): Promise<MemeVideoMetadata> {
     this.latestBlockHeight++;
-    const newVideo = {
+    const newVideo: MemeVideoMetadata = {
       id: `block-${this.latestBlockHeight}`,
       ...metadata,
-      videoUrl: `https://placehold.co/400x400/222235/00ffa3?text=Block+${this.latestBlockHeight}`,
-      blockHeight: this.latestBlockHeight,
-      createdAt: new Date().toISOString()
+      fileUrl: `https://placehold.co/400x400/222235/00ffa3?text=Block+${this.latestBlockHeight}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     return newVideo;
   }

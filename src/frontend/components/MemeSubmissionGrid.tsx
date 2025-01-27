@@ -9,13 +9,17 @@ const MemeSubmissionGrid: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMemeVideos = async () => {
       setIsLoading(true);
       try {
         const newMemeVideos = await storageService.getMemeVideos(currentPage, 10);
-        setMemeVideos((prevMemeVideos) => [...prevMemeVideos, ...newMemeVideos]);
+        setMemeVideos((prevMemeVideos: MemeVideoMetadata[]) => {
+          const updatedMemeVideos: MemeVideoMetadata[] = [...prevMemeVideos, ...newMemeVideos];
+          return updatedMemeVideos;
+        });
         setHasMore(newMemeVideos.length === 10);
       } catch (error) {
         console.error('Failed to fetch meme videos:', error);
@@ -32,11 +36,18 @@ const MemeSubmissionGrid: React.FC = () => {
   };
 
   const handleMemeCreated = (metadata: MemeVideoMetadata) => {
-    setMemeVideos([metadata, ...memeVideos]);
+    setMemeVideos((prevMemeVideos: MemeVideoMetadata[]) => {
+      const updatedMemeVideos: MemeVideoMetadata[] = [metadata, ...prevMemeVideos];
+      return updatedMemeVideos;
+    });
   };
 
   const handleLoadMore = () => {
     setCurrentPage((prevPage) => prevPage + 1);
+  };
+
+  const handleVideoClick = (videoId: string) => {
+    setActiveVideo(activeVideo === videoId ? null : videoId);
   };
 
   return (
@@ -60,38 +71,60 @@ const MemeSubmissionGrid: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {memeVideos.map((video) => (
+            {memeVideos.map((video, index) => (
               <div
                 key={video.id}
-                className="bg-[#222235] rounded-xl overflow-hidden hover:shadow-lg hover:shadow-[#9945FF]/20 transition-all duration-300"
+                className={`bg-[#222235] rounded-xl overflow-hidden transition-all duration-300 aspect-square relative group
+                  ${index < 3 ? 'viral-submission' : ''}
+                  hover:transform hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,255,163,0.2)]`}
+                onClick={() => handleVideoClick(video.id)}
               >
-                <video
-                  src={video.fileUrl}
-                  controls
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="text-xl font-bold mb-2 text-white">{video.title}</h3>
-                  <p className="text-gray-400 mb-4">{video.description}</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[#14F195]">{video.likes}</span>
-                      <span className="text-gray-400">Likes</span>
+                {activeVideo === video.id ? (
+                  <video
+                    src={video.fileUrl}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    loop
+                    controls
+                  />
+                ) : (
+                  <div className="relative w-full h-full">
+                    <video
+                      src={video.fileUrl}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="stats-overlay">
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="stats-icon">
+                          <span className="text-[#14F195] text-2xl font-bold">{video.locks}</span>
+                          <span className="text-gray-400">🔒</span>
+                        </div>
+                        <div className="stats-icon">
+                          <span className="text-[#9945FF] text-2xl font-bold">{video.views}</span>
+                          <span className="text-gray-400">👁️</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="stats-icon">
+                          <span className="text-[#14F195] text-xl font-bold">{video.likes}</span>
+                          <span className="text-gray-400">❤️</span>
+                        </div>
+                        <div className="stats-icon">
+                          <span className="text-[#9945FF] text-xl font-bold">{video.shares}</span>
+                          <span className="text-gray-400">🔄</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[#9945FF]">{video.views}</span>
-                      <span className="text-gray-400">Views</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[#14F195]">{video.shares}</span>
-                      <span className="text-gray-400">Shares</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[#9945FF]">{video.dislikes}</span>
-                      <span className="text-gray-400">Dislikes</span>
+                    <div className="play-button">
+                      <svg className="w-8 h-8 text-[#14F195]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
                     </div>
                   </div>
-                </div>
+                )}
+                {index < 3 && (
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#9945FF] via-[#14F195] to-[#9945FF] animate-gradient-x"></div>
+                )}
               </div>
             ))}
           </div>
