@@ -5,75 +5,130 @@ export interface AnimationPosition {
   height: number;
 }
 
+const ANIMATION_DURATION = 800; // Base duration for animations in ms
+
 class AnimationService {
   private animationContainer: HTMLDivElement | null = null;
+  private isAnimating = false;
+  private animationQueue: (() => Promise<void>)[] = [];
 
   initialize() {
-    this.animationContainer = document.createElement('div');
-    this.animationContainer.id = 'animationContainer';
-    document.body.appendChild(this.animationContainer);
-  }
-
-  moveToPastBlock(element: HTMLElement, startPos: AnimationPosition, endPos: AnimationPosition) {
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.position = 'fixed';
-    clone.style.top = `${startPos.y}px`;
-    clone.style.left = `${startPos.x}px`;
-    clone.style.width = `${startPos.width}px`;
-    clone.style.height = `${startPos.height}px`;
-    clone.style.zIndex = '1000';
-    clone.classList.add('animated-element', 'move-to-past');
-
-    // Set CSS custom properties for animation
-    clone.style.setProperty('--start-x', `${startPos.x}px`);
-    clone.style.setProperty('--start-y', `${startPos.y}px`);
-    clone.style.setProperty('--end-x', `${endPos.x}px`);
-    clone.style.setProperty('--end-y', `${endPos.y}px`);
-
-    this.animationContainer?.appendChild(clone);
-
-    // Remove the clone after animation
-    setTimeout(() => {
-      clone.remove();
-    }, 1500);
-  }
-
-  moveToCurrentMeme(element: HTMLElement, targetPos: AnimationPosition) {
-    const rect = element.getBoundingClientRect();
-    const clone = element.cloneNode(true) as HTMLElement;
-    
-    clone.style.position = 'fixed';
-    clone.style.top = `${rect.top}px`;
-    clone.style.left = `${rect.left}px`;
-    clone.style.width = `${rect.width}px`;
-    clone.style.height = `${rect.height}px`;
-    clone.style.zIndex = '1000';
-    clone.classList.add('animated-element', 'move-to-current');
-
-    // Set CSS custom properties for animation
-    clone.style.setProperty('--target-x', `${targetPos.x - rect.left}px`);
-    clone.style.setProperty('--target-y', `${targetPos.y - rect.top}px`);
-
-    this.animationContainer?.appendChild(clone);
-
-    // Remove the clone after animation
-    setTimeout(() => {
-      clone.remove();
-    }, 800);
-  }
-
-  slideBlock(element: HTMLElement, direction: 'left' | 'right') {
-    element.classList.add(direction === 'left' ? 'slide-left' : 'slide-right');
-  }
-
-  slideUpcomingBlock(element: HTMLElement) {
-    element.classList.add('slide-upcoming-right');
+    if (!this.animationContainer) {
+      this.animationContainer = document.createElement('div');
+      this.animationContainer.id = 'animationContainer';
+      this.animationContainer.style.position = 'fixed';
+      this.animationContainer.style.top = '0';
+      this.animationContainer.style.left = '0';
+      this.animationContainer.style.width = '100%';
+      this.animationContainer.style.height = '100%';
+      this.animationContainer.style.pointerEvents = 'none';
+      this.animationContainer.style.zIndex = '9999';
+      document.body.appendChild(this.animationContainer);
+    }
   }
 
   cleanup() {
-    this.animationContainer?.remove();
-    this.animationContainer = null;
+    if (this.animationContainer) {
+      document.body.removeChild(this.animationContainer);
+      this.animationContainer = null;
+    }
+  }
+
+  private queueAnimation(callback: () => Promise<void>) {
+    this.animationQueue.push(callback);
+    this.processAnimationQueue();
+  }
+
+  private async processAnimationQueue() {
+    if (this.isAnimating || this.animationQueue.length === 0) return;
+    
+    this.isAnimating = true;
+    const nextAnimation = this.animationQueue.shift();
+    if (nextAnimation) {
+      await nextAnimation();
+      setTimeout(() => {
+        this.isAnimating = false;
+        this.processAnimationQueue();
+      }, ANIMATION_DURATION);
+    }
+  }
+
+  async animateBlockShift(
+    currentElement: HTMLElement,
+    targetElement: HTMLElement,
+    direction: 'left' | 'right'
+  ): Promise<void> {
+    if (!this.animationContainer) return;
+
+    const currentRect = currentElement.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
+
+    // Calculate midpoint for arc movement
+    const midX = (currentRect.left + targetRect.left) / 2;
+    const midY = Math.min(currentRect.top, targetRect.top) - 100; // Arc height
+    const midScale = direction === 'left' 
+      ? Math.min(currentRect.width, 120) / currentRect.width
+      : Math.max(currentRect.width, 120) / targetRect.width;
+
+    // Create animated element
+    const animatedElement = currentElement.cloneNode(true) as HTMLElement;
+    animatedElement.style.position = 'fixed';
+    animatedElement.style.top = `${currentRect.top}px`;
+    animatedElement.style.left = `${currentRect.left}px`;
+    animatedElement.style.width = `${currentRect.width}px`;
+    animatedElement.style.height = `${currentRect.height}px`;
+    animatedElement.style.margin = '0';
+    animatedElement.style.transition = `all ${ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+    animatedElement.style.transform = 'translate(0, 0) scale(1)';
+    animatedElement.style.zIndex = '9999';
+
+    // Add animated element to container
+    this.animationContainer.appendChild(animatedElement);
+
+    // Force reflow
+    animatedElement.offsetHeight;
+
+    // Start animation
+    animatedElement.style.transform = `
+      translate(
+        ${targetRect.left - currentRect.left}px,
+        ${targetRect.top - currentRect.top}px
+      )
+      scale(${direction === 'left' ? 0.3 : 3.33})
+    `;
+
+    // Hide original element during animation
+    currentElement.style.opacity = '0';
+
+    // Wait for animation to complete
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        if (this.animationContainer) {
+          this.animationContainer.removeChild(animatedElement);
+        }
+        currentElement.style.opacity = '1';
+        resolve();
+      }, ANIMATION_DURATION);
+    });
+  }
+
+  async animateBlockExchange(
+    currentBlock: HTMLElement,
+    upcomingBlock: HTMLElement,
+    pastContainer: HTMLElement
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      this.queueAnimation(async () => {
+        // First animate current block to past
+        await this.animateBlockShift(currentBlock, pastContainer, 'left');
+        
+        // Then animate upcoming block to current
+        await this.animateBlockShift(upcomingBlock, currentBlock, 'right');
+      });
+      resolve();
+    });
   }
 }
 
-export const animationService = new AnimationService(); 
+export const animationService = new AnimationService();
+export default animationService; 

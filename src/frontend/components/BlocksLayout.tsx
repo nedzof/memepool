@@ -1,146 +1,406 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MemeVideoMetadata } from '../../shared/types/meme';
-import { animationService, AnimationPosition } from '../services/animation.service';
+import React, { useEffect, useState } from 'react';
+import { twMerge } from 'tailwind-merge';
+import { useBlocksAnimation } from '../hooks/useBlocksAnimation';
+import { storageService } from '../services/storage.service';
+import { FiSearch, FiX, FiCopy, FiCheck, FiClock, FiTrendingUp, FiFilter } from 'react-icons/fi';
+
+interface Block {
+  id: string;
+  imageUrl: string;
+  blockNumber: number;
+  txId?: string;
+  creator?: string;
+  timestamp?: Date;
+}
 
 interface BlocksLayoutProps {
-  pastBlocks: MemeVideoMetadata[];
-  currentMeme: MemeVideoMetadata | null;
-  upcomingBlocks: MemeVideoMetadata[];
+  upcomingBlocks?: Block[];
+  currentBlock?: Block;
+  pastBlocks?: Block[];
+  onCompete: () => void;
+  onBlockClick: (block: Block) => void;
+  onShiftComplete?: () => void;
 }
 
 const BlocksLayout: React.FC<BlocksLayoutProps> = ({
-  pastBlocks,
-  currentMeme,
-  upcomingBlocks,
+  upcomingBlocks: initialUpcomingBlocks = [],
+  currentBlock: initialCurrentBlock,
+  pastBlocks: initialPastBlocks = [],
+  onCompete,
+  onBlockClick,
+  onShiftComplete,
 }) => {
-  const pastBlocksRef = useRef<HTMLDivElement>(null);
-  const currentMemeRef = useRef<HTMLDivElement>(null);
-  const upcomingBlocksRef = useRef<HTMLDivElement>(null);
+  const [showCompeteButton, setShowCompeteButton] = useState(false);
+  const [showPastModal, setShowPastModal] = useState(false);
+  const [searchTxId, setSearchTxId] = useState('');
+  const [searchCreator, setSearchCreator] = useState('');
+  const [currentTimeRange, setCurrentTimeRange] = useState<'all' | '24h' | '7d' | '30d'>('all');
+  const [currentFilter, setCurrentFilter] = useState<'latest' | 'oldest' | 'popular'>('latest');
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [copiedBlockId, setCopiedBlockId] = useState<string | null>(null);
 
-  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const {
+    upcomingBlocks,
+    currentBlock,
+    pastBlocks,
+    isAnimating,
+    isLoadingMore,
+    hasMorePastBlocks,
+    shiftBlocks,
+    loadMoreUpcomingBlocks,
+    loadMorePastBlocks,
+    resetPastBlocks,
+    searchPastBlocks,
+    setTimeRange,
+    setSortFilter,
+    refs: { currentBlockRef, upcomingBlocksRef, pastBlocksRef },
+  } = useBlocksAnimation({
+    initialUpcomingBlocks,
+    initialCurrentBlock: initialCurrentBlock || {
+      id: 'placeholder',
+      imageUrl: '/placeholder.png',
+      blockNumber: 0,
+    },
+    initialPastBlocks,
+    onShiftComplete,
+  });
 
   useEffect(() => {
-    animationService.initialize();
-    return () => animationService.cleanup();
-  }, []);
+    if (currentBlock) {
+      setShowCompeteButton(true);
+    }
+  }, [currentBlock]);
 
-  const handleImageError = (id: string) => {
-    setImageErrors(prev => ({ ...prev, [id]: true }));
+  const handleSearch = async () => {
+    if (!searchTxId && !searchCreator) return;
+    await searchPastBlocks(searchTxId, searchCreator);
   };
 
-  const handleImageLoaded = (id: string) => {
-    setLoadedImages(prev => ({ ...prev, [id]: true }));
+  const handleTimeRangeChange = async (range: 'all' | '24h' | '7d' | '30d') => {
+    setCurrentTimeRange(range);
+    await setTimeRange(range);
   };
 
-  const handleBeatIt = () => {
-    if (!currentMemeRef.current || !pastBlocksRef.current) return;
+  const handleSortChange = async (filter: 'latest' | 'oldest' | 'popular') => {
+    setCurrentFilter(filter);
+    await setSortFilter(filter);
+  };
 
-    const currentRect = currentMemeRef.current.getBoundingClientRect();
-    const pastBlocksRect = pastBlocksRef.current.getBoundingClientRect();
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMorePastBlocks) return;
+    await loadMorePastBlocks();
+  };
 
-    const startPos: AnimationPosition = {
-      x: currentRect.left,
-      y: currentRect.top,
-      width: currentRect.width,
-      height: currentRect.height
-    };
-
-    const endPos: AnimationPosition = {
-      x: pastBlocksRect.left,
-      y: pastBlocksRect.top,
-      width: 120,
-      height: 120
-    };
-
-    animationService.moveToPastBlock(currentMemeRef.current, startPos, endPos);
-
-    if (upcomingBlocksRef.current && upcomingBlocksRef.current.firstElementChild) {
-      const targetPos: AnimationPosition = {
-        x: currentRect.left,
-        y: currentRect.top,
-        width: currentRect.width,
-        height: currentRect.height
-      };
-
-      animationService.moveToCurrentMeme(
-        upcomingBlocksRef.current.firstElementChild as HTMLElement,
-        targetPos
-      );
+  const handleCopyTxId = async (block: Block) => {
+    if (!block.txId) return;
+    
+    try {
+      await navigator.clipboard.writeText(block.txId);
+      setCopiedBlockId(block.id);
+      setTimeout(() => setCopiedBlockId(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy transaction ID:', error);
     }
   };
 
-  const renderPlaceholder = (blockHeight: number, id: string) => (
-    <div key={`placeholder-${id}`} className="w-full h-full bg-[#2A2A40] flex flex-col items-center justify-center">
-      <div className="animate-pulse w-16 h-16 mb-4 rounded-full bg-[#00ffa3]/20"></div>
-      <span className="text-[#00ffa3]">Loading Block #{blockHeight}</span>
-    </div>
-  );
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollTop + clientHeight >= scrollHeight - 100) {
+      handleLoadMore();
+    }
+  };
 
-  const renderImage = (block: MemeVideoMetadata, isSmall: boolean) => (
-    <div className="relative w-full h-full">
-      <img
-        key={`image-${block.id}`}
-        src={block.videoUrl}
-        alt={`Block ${block.blockHeight}`}
-        className={`w-full h-full object-cover ${!isSmall ? 'rounded-xl' : ''}`}
-        onError={() => handleImageError(block.id)}
-        onLoad={() => handleImageLoaded(block.id)}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-    </div>
-  );
+  const formatTimeAgo = (timestamp?: Date) => {
+    if (!timestamp) return '';
+    
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-  const renderBlock = (block: MemeVideoMetadata, isSmall = true, direction: 'left' | 'right' = 'left') => (
-    <div key={`block-${block.id}-${direction}`} className={`meme-block ${isSmall ? `slide-${direction}` : ''}`}>
-      {imageErrors[block.id] || !loadedImages[block.id] ? (
-        renderPlaceholder(block.blockHeight, block.id)
-      ) : (
-        renderImage(block, isSmall)
-      )}
-      <div className="block-number-display absolute bottom-0 left-0 right-0 p-2 text-center">
-        <span className="text-[#00ffa3]">#{block.blockHeight}</span>
-      </div>
-    </div>
-  );
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    return `${minutes}m ago`;
+  };
 
-  return (
-    <div className="section-container my-8">
-      {/* Past Blocks */}
-      <div className="mb-8">
-        <h3 className="section-label mb-4">Past Blocks</h3>
-        <div id="pastBlocks" className="blocks-container" ref={pastBlocksRef}>
-          {pastBlocks.map(block => renderBlock(block, true, 'left'))}
+  if (!currentBlock) {
+    return (
+      <div className="section-container">
+        <div className="flex justify-center items-center h-[600px]">
+          <div className="loading-spinner"></div>
         </div>
       </div>
+    );
+  }
 
-      {/* Current Meme */}
-      {currentMeme && (
-        <div className="mb-8">
-          <h3 className="section-label mb-4">Current Meme</h3>
-          <div className="current-meme" ref={currentMemeRef}>
-            {imageErrors[currentMeme.id] || !loadedImages[currentMeme.id] ? (
-              renderPlaceholder(currentMeme.blockHeight, currentMeme.id)
-            ) : (
-              renderImage(currentMeme, false)
-            )}
+  return (
+    <div className="section-container">
+      {/* Shift Blocks Button */}
+      <div className="text-center mb-8">
+        <button
+          onClick={shiftBlocks}
+          disabled={isAnimating || upcomingBlocks.length === 0}
+          className="gradient-button px-6 py-2 rounded-lg font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-white hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Shift Blocks
+        </button>
+      </div>
+
+      {/* Main horizontal layout with fixed widths */}
+      <div className="flex justify-center items-center gap-8 mb-12 relative">
+        {/* Upcoming Blocks Section */}
+        <div className="w-[400px]">
+          <div className="section-label text-right mb-4 text-xl font-medium text-[#00ffa3]">
+            Upcoming Blocks
+          </div>
+          <div className="flex items-center">
             <button 
-              onClick={handleBeatIt}
-              className="beat-button px-6 py-3 bg-gradient-to-r from-[#9945FF] to-[#14F195] rounded-lg font-semibold text-white hover:opacity-90 transition-all"
+              onClick={loadMoreUpcomingBlocks}
+              disabled={isAnimating}
+              className="flex-shrink-0 mr-4 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Beat It!
+              <svg className="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div ref={upcomingBlocksRef} className="blocks-container flex justify-end gap-4">
+              {upcomingBlocks.map((block) => (
+                <div
+                  key={block.id}
+                  onClick={() => !isAnimating && onBlockClick(block)}
+                  className={twMerge(
+                    "w-[120px] h-[120px] relative overflow-hidden flex-shrink-0 bg-black/20 border border-[#00ffa3]/30 rounded-lg cursor-pointer hover:border-[#00ffa3] transition-all hover:scale-105",
+                    "animate-slideUpcomingRight",
+                    isAnimating && "pointer-events-none"
+                  )}
+                >
+                  <img src={block.imageUrl} alt={`Block ${block.blockNumber}`} className="w-full h-full object-cover" />
+                  <div className="absolute bottom-2 right-2 text-sm font-mono text-[#00ffa3]">#{block.blockNumber}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Current Block Section */}
+        <div className="flex-shrink-0 w-[400px]">
+          <div 
+            ref={currentBlockRef}
+            className="current-meme rounded-xl overflow-hidden relative w-[400px] h-[400px] bg-black/20 border border-[#00ffa3]/30 shadow-[0_0_80px_rgba(0,255,163,0.4)]"
+          >
+            <img
+              src={currentBlock.imageUrl}
+              alt={`Current Block ${currentBlock.blockNumber}`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-3 right-3 text-lg font-mono text-[#00ffa3]">
+              #{currentBlock.blockNumber}
+            </div>
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+              <button
+                onClick={onCompete}
+                disabled={isAnimating}
+                className={twMerge(
+                  "gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20",
+                  isAnimating && "pointer-events-none opacity-50"
+                )}
+              >
+                COMPETE
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Past Blocks Section */}
+        <div className="w-[400px]">
+          <div className="section-label text-left mb-4 text-xl font-medium text-[#00ffa3]">
+            Past Blocks
+          </div>
+          <div className="flex items-center">
+            <div ref={pastBlocksRef} className="blocks-container flex gap-4">
+              {pastBlocks.slice(0, 3).map((block) => (
+                <div
+                  key={block.id}
+                  onClick={() => !isAnimating && onBlockClick(block)}
+                  className={twMerge(
+                    "w-[120px] h-[120px] relative overflow-hidden flex-shrink-0 bg-black/20 border border-[#00ffa3]/30 rounded-lg cursor-pointer hover:border-[#00ffa3] transition-all hover:scale-105",
+                    "animate-slideLeft",
+                    isAnimating && "pointer-events-none"
+                  )}
+                >
+                  <img src={block.imageUrl} alt={`Block ${block.blockNumber}`} className="w-full h-full object-cover" />
+                  <div className="absolute bottom-2 right-2 text-sm font-mono text-[#00ffa3]">#{block.blockNumber}</div>
+                </div>
+              ))}
+            </div>
+            <button 
+              onClick={() => setShowPastModal(true)}
+              className="flex-shrink-0 ml-4 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110"
+            >
+              <svg className="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
-      )}
-
-      {/* Upcoming Blocks */}
-      <div>
-        <h3 className="section-label mb-4">Upcoming Blocks</h3>
-        <div id="upcomingBlocks" className="blocks-container" ref={upcomingBlocksRef}>
-          {upcomingBlocks.map(block => renderBlock(block, true, 'right'))}
-        </div>
       </div>
+
+      {/* Past Submissions Modal */}
+      {showPastModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-[#1A1B23] rounded-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-[#2A2A40]">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-[#00ffa3]">Past Submissions</h2>
+                <button
+                  onClick={() => setShowPastModal(false)}
+                  className="p-2 hover:bg-[#2A2A40] rounded-full transition-colors"
+                >
+                  <FiX className="w-6 h-6 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Search and Filters */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiSearch className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchTxId}
+                    onChange={(e) => setSearchTxId(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="Search by Transaction ID"
+                    className="w-full pl-10 pr-4 py-2 bg-[#2A2A40] border border-[#3D3D60] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00ffa3]"
+                  />
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiSearch className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchCreator}
+                    onChange={(e) => setSearchCreator(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="Search by Creator"
+                    className="w-full pl-10 pr-4 py-2 bg-[#2A2A40] border border-[#3D3D60] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00ffa3]"
+                  />
+                </div>
+              </div>
+
+              {/* Time Range and Sort Filters */}
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex space-x-2">
+                  {(['all', '24h', '7d', '30d'] as const).map((range) => (
+                    <button
+                      key={range}
+                      onClick={() => handleTimeRangeChange(range)}
+                      className={twMerge(
+                        "px-3 py-1 rounded-lg font-medium transition-colors flex items-center space-x-1",
+                        currentTimeRange === range
+                          ? "bg-[#00ffa3] text-black"
+                          : "bg-[#2A2A40] text-gray-400 hover:text-white"
+                      )}
+                    >
+                      <FiClock className="w-4 h-4" />
+                      <span>{range === 'all' ? 'All Time' : range}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex space-x-2">
+                  {(['latest', 'oldest', 'popular'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => handleSortChange(filter)}
+                      className={twMerge(
+                        "px-3 py-1 rounded-lg font-medium transition-colors flex items-center space-x-1",
+                        currentFilter === filter
+                          ? "bg-[#00ffa3] text-black"
+                          : "bg-[#2A2A40] text-gray-400 hover:text-white"
+                      )}
+                    >
+                      {filter === 'popular' ? (
+                        <FiTrendingUp className="w-4 h-4" />
+                      ) : (
+                        <FiFilter className="w-4 h-4" />
+                      )}
+                      <span>{filter.charAt(0).toUpperCase() + filter.slice(1)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Past Submissions Grid */}
+            <div 
+              className="p-6 overflow-y-auto max-h-[calc(80vh-200px)]"
+              onScroll={handleScroll}
+            >
+              <div className="grid grid-cols-3 gap-6">
+                {pastBlocks.map((block) => (
+                  <div
+                    key={block.id}
+                    onClick={() => !isAnimating && onBlockClick(block)}
+                    className="relative overflow-hidden bg-black/20 border border-[#00ffa3]/30 rounded-lg cursor-pointer hover:border-[#00ffa3] transition-all hover:scale-105 aspect-square group"
+                  >
+                    <img src={block.imageUrl} alt={`Block ${block.blockNumber}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-mono text-[#00ffa3]">#{block.blockNumber}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyTxId(block);
+                              }}
+                              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                              {copiedBlockId === block.id ? (
+                                <FiCheck className="w-4 h-4 text-[#00ffa3]" />
+                              ) : (
+                                <FiCopy className="w-4 h-4 text-gray-400" />
+                              )}
+                            </button>
+                          </div>
+                          {block.creator && (
+                            <div className="text-sm text-gray-400 truncate">
+                              {block.creator}
+                            </div>
+                          )}
+                          {block.timestamp && (
+                            <div className="text-xs text-gray-500">
+                              {formatTimeAgo(block.timestamp)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {isLoadingMore && (
+                <div className="flex justify-center mt-8">
+                  <div className="loading-spinner"></div>
+                </div>
+              )}
+              {!isLoadingMore && !hasMorePastBlocks && pastBlocks.length > 0 && (
+                <div className="text-center mt-8 text-gray-400">
+                  No more blocks to load
+                </div>
+              )}
+              {!isLoadingMore && pastBlocks.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  No blocks found matching your filters
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
