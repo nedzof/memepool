@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useBlocksAnimation } from '../hooks/useBlocksAnimation';
-import { storageService } from '../services/storage.service';
 import { FiSearch, FiX, FiCopy, FiCheck, FiClock, FiTrendingUp, FiFilter } from 'react-icons/fi';
+import CreateMemeModal from './CreateMemeModal';
 
 interface Block {
   id: string;
@@ -11,6 +11,10 @@ interface Block {
   txId?: string;
   creator?: string;
   timestamp?: Date;
+  templateId?: string;
+  topText?: string;
+  bottomText?: string;
+  isLoading?: boolean;
 }
 
 interface BlocksLayoutProps {
@@ -22,37 +26,23 @@ interface BlocksLayoutProps {
   onShiftComplete?: () => void;
 }
 
-// Global state for block numbers (mimicking old implementation)
-let currentBlockNumber = 831000; // Starting block number
-let upcomingStartNumber = currentBlockNumber + 5; // Start 5 blocks ahead
-let pastStartNumber = currentBlockNumber - 1; // Start 1 block behind
+// Global state for block numbers
+let currentBlockNumber = 831000;
+let upcomingStartNumber = currentBlockNumber + 5;
+let pastStartNumber = currentBlockNumber - 1;
 
 const getInitialBlockCount = () => {
   const viewportWidth = window.innerWidth;
-  const blockWidth = 120; // Block width
-  const gap = 20; // Gap between blocks
-  const currentMemeWidth = 400; // Current meme width
-  const sideSpacing = 40; // Minimum spacing on each side
-  
-  // Calculate available width for blocks on each side
+  const blockWidth = 120;
+  const gap = 20;
+  const currentMemeWidth = 400;
+  const sideSpacing = 40;
   const availableWidth = (viewportWidth - currentMemeWidth - (sideSpacing * 2)) / 2;
-  
-  // Initially show only 2 blocks
   return Math.min(2, Math.floor(availableWidth / (blockWidth + gap)));
 };
 
 const getOptimalBlockCount = () => {
-  const viewportWidth = window.innerWidth;
-  const blockWidth = 120; // Block width
-  const gap = 20; // Gap between blocks
-  const currentMemeWidth = 400; // Current meme width
-  const sideSpacing = 40; // Minimum spacing on each side
-  
-  // Calculate available width for blocks on each side
-  const availableWidth = (viewportWidth - currentMemeWidth - (sideSpacing * 2)) / 2;
-  
-  // Always show exactly 3 blocks, matching the old implementation
-  return 3;
+  return 3; // Always show exactly 3 blocks
 };
 
 const BlocksLayout: React.FC<BlocksLayoutProps> = ({
@@ -65,12 +55,15 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
 }) => {
   const [showCompeteButton, setShowCompeteButton] = useState(false);
   const [showPastModal, setShowPastModal] = useState(false);
+  const [showCreateMemeModal, setShowCreateMemeModal] = useState(false);
   const [searchTxId, setSearchTxId] = useState('');
   const [searchCreator, setSearchCreator] = useState('');
   const [currentTimeRange, setCurrentTimeRange] = useState<'all' | '24h' | '7d' | '30d'>('all');
   const [currentFilter, setCurrentFilter] = useState<'latest' | 'oldest' | 'popular'>('latest');
   const [copySuccess, setCopySuccess] = useState(false);
   const [copiedBlockId, setCopiedBlockId] = useState<string | null>(null);
+  const [blockCount, setBlockCount] = useState(getInitialBlockCount());
+  const [loadingBlocks, setLoadingBlocks] = useState<Record<string, boolean>>({});
 
   const {
     upcomingBlocks,
@@ -98,74 +91,12 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     onShiftComplete,
   });
 
-  // Use initial block count before animation
-  const [blockCount, setBlockCount] = useState(getInitialBlockCount());
-  
   // Update block count after animation
   useEffect(() => {
     if (isAnimating) {
       setBlockCount(getOptimalBlockCount());
     }
   }, [isAnimating]);
-  
-  // Keep original block numbers from initialization
-  const [blockNumbers, setBlockNumbers] = useState<Record<string, number>>({});
-
-  // Initialize block numbers on first render
-  useEffect(() => {
-    if (!initialCurrentBlock) return;
-    
-    const numbers: Record<string, number> = {};
-    
-    // Assign numbers to upcoming blocks
-    initialUpcomingBlocks.forEach((block, index) => {
-      numbers[block.id] = initialCurrentBlock.blockNumber + (index + 1);
-    });
-
-    // Assign numbers to past blocks
-    initialPastBlocks.forEach((block, index) => {
-      numbers[block.id] = initialCurrentBlock.blockNumber - (index + 1);
-    });
-
-    setBlockNumbers(numbers);
-  }, [initialUpcomingBlocks, initialPastBlocks, initialCurrentBlock]);
-
-  // Update block numbers when shifting
-  const handleShiftBlocks = () => {
-    if (isAnimating) return;
-    
-    // Update block numbers exactly like the old implementation
-    currentBlockNumber = upcomingStartNumber - 2; // Next block becomes current
-    upcomingStartNumber = currentBlockNumber + 5; // Always 5 blocks ahead
-    pastStartNumber = currentBlockNumber - 1; // Always 1 block behind
-    
-    shiftBlocks();
-  };
-
-  // Always show exactly 3 blocks with consistent numbering
-  const displayedUpcomingBlocks = upcomingBlocks
-    .slice(0, 3)
-    .map((block, index) => ({
-      ...block,
-      // Start from upcomingStartNumber and decrement by 1
-      blockNumber: upcomingStartNumber - index
-    }))
-    .sort((a, b) => a.blockNumber - b.blockNumber); // Sort by block number
-
-  const displayedPastBlocks = pastBlocks
-    .slice(0, 3)
-    .map((block, index) => ({
-      ...block,
-      // Start from pastStartNumber and decrement by 1
-      blockNumber: pastStartNumber - index
-    }))
-    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on the left
-
-  // Update current block number
-  const currentBlockWithNumber = currentBlock ? {
-    ...currentBlock,
-    blockNumber: currentBlockNumber
-  } : undefined;
 
   useEffect(() => {
     if (currentBlock) {
@@ -226,6 +157,110 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     return `${minutes}m ago`;
   };
 
+  const handleCompete = () => {
+    setShowCreateMemeModal(true);
+  };
+
+  const handleMemeCreated = (metadata: any) => {
+    setShowCreateMemeModal(false);
+    if (onCompete) {
+      onCompete();
+    }
+  };
+
+  // Update block numbers when shifting
+  const handleShiftBlocks = () => {
+    if (isAnimating) return;
+    
+    // Update block numbers exactly like the old implementation
+    currentBlockNumber = upcomingStartNumber - 2; // Next block becomes current
+    upcomingStartNumber = currentBlockNumber + 5; // Always 5 blocks ahead
+    pastStartNumber = currentBlockNumber - 1; // Always 1 block behind
+    
+    shiftBlocks();
+  };
+
+  // Always show exactly 3 blocks with consistent numbering but keep original memes
+  const displayedUpcomingBlocks = upcomingBlocks
+    .slice(0, 3)
+    .map((block, index) => ({
+      ...block,
+      blockNumber: upcomingStartNumber - index,
+      // Keep the original imageUrl and templateId
+      imageUrl: block.imageUrl,
+      templateId: block.templateId,
+      topText: block.topText,
+      bottomText: block.bottomText
+    }))
+    .sort((a, b) => a.blockNumber - b.blockNumber);
+
+  const displayedPastBlocks = pastBlocks
+    .slice(0, 3)
+    .map((block, index) => ({
+      ...block,
+      blockNumber: pastStartNumber - index,
+      // Keep the original imageUrl and templateId
+      imageUrl: block.imageUrl,
+      templateId: block.templateId,
+      topText: block.topText,
+      bottomText: block.bottomText
+    }))
+    .sort((a, b) => b.blockNumber - a.blockNumber);
+
+  // Update current block number but keep the original meme
+  const currentBlockWithNumber = currentBlock ? {
+    ...currentBlock,
+    blockNumber: currentBlockNumber,
+    // Keep the original imageUrl and templateId
+    imageUrl: currentBlock.imageUrl,
+    templateId: currentBlock.templateId,
+    topText: currentBlock.topText,
+    bottomText: currentBlock.bottomText
+  } : null;
+
+  const handleImageLoad = (blockId: string) => {
+    setLoadingBlocks(prev => ({ ...prev, [blockId]: false }));
+  };
+
+  const handleImageError = (blockId: string) => {
+    console.error(`Failed to load image for block ${blockId}`);
+    setLoadingBlocks(prev => ({ ...prev, [blockId]: false }));
+  };
+
+  // Function to render a block image with loading state
+  const renderBlockImage = (block: Block) => (
+    <div className="relative w-full h-full">
+      {(loadingBlocks[block.id] || block.isLoading) && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <div className="loading-spinner"></div>
+        </div>
+      )}
+      <img
+        src={block.imageUrl}
+        alt={`Block ${block.blockNumber}`}
+        className={twMerge(
+          "w-full h-full object-cover transition-opacity duration-300",
+          loadingBlocks[block.id] ? "opacity-0" : "opacity-100"
+        )}
+        onLoad={() => handleImageLoad(block.id)}
+        onError={() => handleImageError(block.id)}
+      />
+    </div>
+  );
+
+  // Mark blocks as loading when they're first added
+  useEffect(() => {
+    const newLoadingState: Record<string, boolean> = {};
+    [...upcomingBlocks, ...pastBlocks, currentBlock].forEach(block => {
+      if (block && !loadingBlocks.hasOwnProperty(block.id)) {
+        newLoadingState[block.id] = true;
+      }
+    });
+    if (Object.keys(newLoadingState).length > 0) {
+      setLoadingBlocks(prev => ({ ...prev, ...newLoadingState }));
+    }
+  }, [upcomingBlocks, pastBlocks, currentBlock]);
+
   if (!currentBlock) {
     return (
       <div className="section-container">
@@ -251,8 +286,8 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
 
       {/* Main horizontal layout */}
       <div className="relative w-full h-[600px]">
-        {/* Section titles */}
-        <div className="absolute top-0 left-0 right-0 flex justify-between px-[20%] mb-4">
+        {/* Section titles - Positioned horizontally above blocks */}
+        <div className="absolute top-0 left-0 right-0 flex justify-between px-[calc(50%-480px)] mb-4">
           <div className="text-[#00ffa3] text-xl font-medium">
             Upcoming Blocks
           </div>
@@ -269,26 +304,28 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
               ref={currentBlockRef}
               className="current-meme rounded-xl overflow-hidden relative w-[400px] h-[400px] bg-black/20 border border-[#00ffa3]/30 shadow-[0_0_80px_rgba(0,255,163,0.4)]"
             >
-              <img
-                src={currentBlockWithNumber?.imageUrl}
-                alt={`Current Block ${currentBlockWithNumber?.blockNumber}`}
-                className="w-full h-full object-cover"
-              />
+              {currentBlockWithNumber && renderBlockImage(currentBlockWithNumber)}
               <div className="absolute top-3 right-3 text-lg font-mono text-[#00ffa3]">
                 #{currentBlockWithNumber?.blockNumber}
               </div>
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                <button
-                  onClick={onCompete}
-                  disabled={isAnimating}
-                  className={twMerge(
-                    "gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20",
-                    isAnimating && "pointer-events-none opacity-50"
-                  )}
-                >
-                  COMPETE
-                </button>
-              </div>
+              {showCompeteButton && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                  <button
+                    onClick={handleCompete}
+                    disabled={isAnimating}
+                    className={twMerge(
+                      "gradient-button px-8 py-3 rounded-lg font-bold text-lg",
+                      "bg-gradient-to-r from-[#ff00ff] to-[#00ffff]",
+                      "hover:scale-110 hover:shadow-[0_0_30px_rgba(255,0,255,0.4)]",
+                      "transform transition-all duration-300",
+                      "animate-pulse-subtle",
+                      isAnimating && "pointer-events-none opacity-50"
+                    )}
+                  >
+                    COMPETE
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -313,8 +350,10 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
                     isAnimating && "pointer-events-none"
                   )}
                 >
-                  <img src={block.imageUrl} alt={`Block ${block.blockNumber}`} className="w-full h-full object-cover" />
-                  <div className="absolute bottom-2 right-2 text-sm font-mono text-[#00ffa3]">#{block.blockNumber}</div>
+                  {renderBlockImage(block)}
+                  <div className="absolute bottom-2 right-2 text-sm font-mono text-[#00ffa3]">
+                    #{block.blockNumber}
+                  </div>
                 </div>
               ))}
             </div>
@@ -332,8 +371,10 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
                     isAnimating && "pointer-events-none"
                   )}
                 >
-                  <img src={block.imageUrl} alt={`Block ${block.blockNumber}`} className="w-full h-full object-cover" />
-                  <div className="absolute bottom-2 right-2 text-sm font-mono text-[#00ffa3]">#{block.blockNumber}</div>
+                  {renderBlockImage(block)}
+                  <div className="absolute bottom-2 right-2 text-sm font-mono text-[#00ffa3]">
+                    #{block.blockNumber}
+                  </div>
                 </div>
               ))}
             </div>
@@ -503,6 +544,15 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Create Meme Modal */}
+      {showCreateMemeModal && (
+        <CreateMemeModal
+          onClose={() => setShowCreateMemeModal(false)}
+          onMemeCreated={handleMemeCreated}
+          currentBlock={currentBlockWithNumber}
+        />
       )}
     </div>
   );

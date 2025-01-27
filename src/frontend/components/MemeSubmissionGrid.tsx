@@ -3,6 +3,15 @@ import { MemeVideoMetadata } from '../../shared/types/metadata';
 import CreateMemeModal from './CreateMemeModal';
 import { storageService } from '../services/storage.service';
 
+interface Block {
+  id: string;
+  imageUrl: string;
+  blockNumber: number;
+  txId?: string;
+  creator?: string;
+  timestamp?: Date;
+}
+
 const MemeSubmissionGrid: React.FC = () => {
   const [memeVideos, setMemeVideos] = useState<MemeVideoMetadata[]>([]);
   const [isCreateMemeModalOpen, setIsCreateMemeModalOpen] = useState(false);
@@ -10,6 +19,7 @@ const MemeSubmissionGrid: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const [currentBlock, setCurrentBlock] = useState<Block | undefined>(undefined);
 
   useEffect(() => {
     const fetchMemeVideos = async () => {
@@ -17,8 +27,11 @@ const MemeSubmissionGrid: React.FC = () => {
       try {
         const newMemeVideos = await storageService.getMemeVideos(currentPage, 10);
         setMemeVideos((prevMemeVideos: MemeVideoMetadata[]) => {
-          const updatedMemeVideos: MemeVideoMetadata[] = [...prevMemeVideos, ...newMemeVideos];
-          return updatedMemeVideos;
+          // Filter out duplicates based on id
+          const uniqueVideos = newMemeVideos.filter(
+            (video) => !prevMemeVideos.some((prev) => prev.id === video.id)
+          );
+          return [...prevMemeVideos, ...uniqueVideos];
         });
         setHasMore(newMemeVideos.length === 10);
       } catch (error) {
@@ -32,6 +45,12 @@ const MemeSubmissionGrid: React.FC = () => {
   }, [currentPage]);
 
   const handleCreateMemeClick = () => {
+    setCurrentBlock({
+      id: 'mock-block',
+      imageUrl: 'https://placehold.co/400x400/222235/00ffa3',
+      blockNumber: Math.floor(Math.random() * 1000000),
+      timestamp: new Date()
+    });
     setIsCreateMemeModalOpen(true);
   };
 
@@ -40,6 +59,7 @@ const MemeSubmissionGrid: React.FC = () => {
       const updatedMemeVideos: MemeVideoMetadata[] = [metadata, ...prevMemeVideos];
       return updatedMemeVideos;
     });
+    setCurrentBlock(undefined); // Reset currentBlock after meme is created
   };
 
   const handleLoadMore = () => {
@@ -73,7 +93,7 @@ const MemeSubmissionGrid: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {memeVideos.map((video, index) => (
               <div
-                key={video.id}
+                key={`${video.id}-${index}`}
                 className={`bg-[#222235] rounded-xl overflow-hidden transition-all duration-300 aspect-square relative group
                   ${index < 3 ? 'viral-submission' : ''}
                   hover:transform hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,255,163,0.2)]`}
@@ -150,8 +170,12 @@ const MemeSubmissionGrid: React.FC = () => {
       
       <CreateMemeModal
         isOpen={isCreateMemeModalOpen}
-        onClose={() => setIsCreateMemeModalOpen(false)}
+        onClose={() => {
+          setIsCreateMemeModalOpen(false);
+          setCurrentBlock(undefined);
+        }}
         onMemeCreated={handleMemeCreated}
+        currentBlock={currentBlock}
       />
     </div>
   );

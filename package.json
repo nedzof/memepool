@@ -1,18 +1,22 @@
 {
   "name": "memepool",
-  "version": "1.0.0",
+  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "jest",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "server": "tsx watch src/backend/server.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@types/cors": "^2.8.17",
     "axios": "^1.4.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "gsap": "^3.12.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -23,7 +27,8 @@
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
-    "@types/node": "^20.11.24",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.16",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
@@ -47,7 +52,9 @@
     "stream-http": "^3.2.0",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.1.2",
-    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
     "url": "^0.11.4",
     "vite": "^5.1.4"
   }

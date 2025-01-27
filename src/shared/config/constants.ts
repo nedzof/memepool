@@ -8,7 +8,7 @@ export const config = {
   MEMEPOOL_ADDRESS: process.env.MEMEPOOL_ADDRESS || '',
 
   // API Configuration
-  API_URL: process.env.API_URL || 'http://localhost:3000/api',
+  API_URL: process.env.API_URL || 'http://localhost:4000/api',
   API_VERSION: 'v1',
 
   // Pagination
