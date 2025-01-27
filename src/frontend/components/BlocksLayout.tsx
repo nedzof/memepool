@@ -70,9 +70,9 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   };
 
   // Function to render a block image with loading state
-  const renderBlockImage = (block: Block) => (
+  const renderBlockImage = (block: Block, isCurrentMeme: boolean = false) => (
     <div className="relative w-full h-full">
-      {(loadingBlocks[block.blockHeight] || block.isLoading) && (
+      {!isCurrentMeme && (loadingBlocks[block.blockHeight] || block.isLoading) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
           <div className="loading-spinner"></div>
         </div>
@@ -187,7 +187,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
         <div className="flex-shrink-0 w-[400px]">
           {currentMeme && (
             <div className="current-meme relative">
-              {renderBlockImage(convertToBlock(currentMeme))}
+              {renderBlockImage(convertToBlock(currentMeme), true)}
               <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                 <button
                   onClick={() => setShowCreateMemeModal(true)}
