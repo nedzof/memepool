@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import memegenService from './services/memegen.service.js';
 import { createMetadata, getMetadata } from './services/aerospikeService.js';
+import blockMemeRoutes from './routes/blockMeme.routes';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -14,6 +15,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Block Meme Routes
+app.use('/api/block-memes', blockMemeRoutes);
 
 // Meme API Routes
 app.get('/api/memes/templates', async (req, res) => {
