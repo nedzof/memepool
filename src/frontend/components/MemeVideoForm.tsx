@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MemeVideoMetadata } from '../../shared/types/metadata';
+import { walletManager } from '../utils/wallet';
 
 interface Block {
   id: string;
@@ -21,6 +22,25 @@ const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, curre
   const [viralityScore, setViralityScore] = useState<number | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number>(0);
+  const [inscriptionFee, setInscriptionFee] = useState<number>(0.001); // Default fee in BSV
+
+  useEffect(() => {
+    // Fetch wallet balance
+    const fetchBalance = async () => {
+      try {
+        const wallet = walletManager.getWallet();
+        if (wallet) {
+          const walletBalance = await wallet.getBalance();
+          setBalance(walletBalance);
+        }
+      } catch (err) {
+        console.error('Failed to fetch balance:', err);
+      }
+    };
+
+    fetchBalance();
+  }, []);
 
   useEffect(() => {
     const analyzePrompt = async () => {
@@ -56,6 +76,11 @@ const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, curre
     e.preventDefault();
     if (!prompt) {
       setError('drop some text first! 👆');
+      return;
+    }
+
+    if (balance < inscriptionFee) {
+      setError(`need at least ${inscriptionFee} BSV to create meme! 💸`);
       return;
     }
 
@@ -107,6 +132,20 @@ const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, curre
         )}
       </div>
 
+      {/* Fee and Balance Info */}
+      <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-4 space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-white/60">inscription fee</span>
+          <span className="text-white font-mono">{inscriptionFee} BSV</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-white/60">your balance</span>
+          <span className={`font-mono ${balance < inscriptionFee ? 'text-red-400' : 'text-[#00ffa3]'}`}>
+            {balance.toFixed(8)} BSV
+          </span>
+        </div>
+      </div>
+
       {viralityScore !== null && !isAnalyzing && (
         <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-4">
           <div className="h-2 bg-black/20 rounded-full overflow-hidden">
@@ -136,10 +175,12 @@ const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, curre
 
       <button
         type="submit"
-        disabled={!prompt || isAnalyzing}
+        disabled={!prompt || isAnalyzing || balance < inscriptionFee}
         className="w-full py-4 rounded-2xl font-medium text-lg bg-gradient-to-r from-[#00ffa3] to-[#9945FF] text-black hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
       >
-        {isAnalyzing ? "analyzing..." : "create meme ✨"}
+        {isAnalyzing ? "analyzing..." : 
+         balance < inscriptionFee ? "insufficient balance 💸" :
+         "create meme ✨"}
       </button>
     </form>
   );
