@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import WalletModal from '../components/modals/WalletModal';
 import MemeSubmissionGrid from '../components/MemeSubmissionGrid';
 import SearchBar from '../components/SearchBar';
 import BlocksLayout from '../components/BlocksLayout';
-import { Wallet } from '../../shared/types/wallet';
 import { MemeVideoMetadata } from '../../shared/types/meme';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletName } from '@solana/wallet-adapter-base';
+
+// Add Phantom provider type to the window object
+declare global {
+  interface Window {
+    phantom?: {
+      solana?: any;
+    };
+  }
+}
 
 const App: React.FC = () => {
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [wallet, setWallet] = useState<Wallet | null>(null);
-  
+  const { select, connected, publicKey, disconnect } = useWallet();
   // Mock data for blocks layout
   const [pastBlocks] = useState<MemeVideoMetadata[]>([
     {
@@ -63,14 +70,33 @@ const App: React.FC = () => {
     }
   ]);
 
-  const handleWalletSuccess = (wallet: Wallet) => {
-    setWallet(wallet);
-    setIsWalletModalOpen(false);
-  };
-
   const handleSearch = (query: string) => {
     // TODO: Implement search functionality
     console.log('Search query:', query);
+  };
+
+  const handleCompete = () => {
+    console.log('Compete clicked');
+  };
+
+  const handleBlockClick = (block: any) => {
+    console.log('Block clicked:', block);
+  };
+
+  const handleShiftComplete = () => {
+    console.log('Shift complete');
+  };
+
+  const connectPhantom = async () => {
+    if (typeof window.phantom !== 'undefined') {
+      try {
+        await select('phantom' as WalletName);
+      } catch (error) {
+        console.error('Error connecting to Phantom wallet:', error);
+      }
+    } else {
+      window.open('https://chrome.google.com/webstore/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa', '_blank');
+    }
   };
 
   return (
@@ -84,40 +110,50 @@ const App: React.FC = () => {
           <div className="flex-grow flex justify-center">
             <SearchBar onSearch={handleSearch} />
           </div>
-          
+
           <div className="flex-shrink-0">
-            <button
-              onClick={() => setIsWalletModalOpen(true)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                wallet
-                  ? 'bg-[#14F195] text-[#1A1B23]'
-                  : 'bg-gradient-to-r from-[#9945FF] to-[#14F195] text-white'
-              }`}
-            >
-              {wallet ? 'Connected' : 'Connect Wallet'}
-            </button>
+            {connected ? (
+              <button
+                onClick={disconnect}
+                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <img 
+                  src="/images/phantom-icon.svg" 
+                  alt="Phantom" 
+                  className="w-5 h-5"
+                />
+                <span className="text-white text-sm">
+                  {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={connectPhantom}
+                className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors"
+              >
+                <span className="text-sm">Connect with</span>
+                <img 
+                  src="/images/phantom-icon.svg" 
+                  alt="Phantom" 
+                  className="w-6 h-6"
+                />
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main>
         <BlocksLayout
-          pastBlocks={pastBlocks}
-          currentMeme={currentMeme}
-          upcomingBlocks={upcomingBlocks}
+          onCompete={handleCompete}
+          onBlockClick={handleBlockClick}
+          onShiftComplete={handleShiftComplete}
         />
         
         <div className="max-w-7xl mx-auto px-4 py-8">
           <MemeSubmissionGrid />
         </div>
       </main>
-
-      <WalletModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-        onSuccess={handleWalletSuccess}
-        onCancel={() => setIsWalletModalOpen(false)}
-      />
     </div>
   );
 };
