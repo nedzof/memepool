@@ -50,6 +50,11 @@ const getOptimalBlockCount = () => {
   return 3;
 };
 
+// Global state for block numbers (mimicking old implementation)
+let currentBlockNumber = 803525;
+let upcomingStartNumber = currentBlockNumber + 5;
+let pastStartNumber = currentBlockNumber - 1;
+
 const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   upcomingBlocks: initialUpcomingBlocks = [],
   currentBlock: initialCurrentBlock,
@@ -106,33 +111,39 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   // Keep original block numbers from initialization
   const [blockNumbers, setBlockNumbers] = useState<Record<string, number>>({});
 
-  // Initialize block numbers on first render
+  // Initialize block numbers once at component mount
   useEffect(() => {
     if (!initialCurrentBlock) return;
     
+    // Update global block numbers
+    currentBlockNumber = initialCurrentBlock.blockNumber;
+    upcomingStartNumber = currentBlockNumber + 5;
+    pastStartNumber = currentBlockNumber - 1;
+    
+    // Assign fixed block numbers to each block
     const numbers: Record<string, number> = {};
     
-    // Assign numbers to upcoming blocks
+    // Assign numbers to upcoming blocks (higher numbers on right)
     initialUpcomingBlocks.forEach((block, index) => {
-      numbers[block.id] = initialCurrentBlock.blockNumber + (index + 1);
+      numbers[block.id] = upcomingStartNumber - index;
     });
 
-    // Assign numbers to past blocks
+    // Assign numbers to past blocks (higher numbers on left)
     initialPastBlocks.forEach((block, index) => {
-      numbers[block.id] = initialCurrentBlock.blockNumber - (index + 1);
+      numbers[block.id] = pastStartNumber - index;
     });
 
     setBlockNumbers(numbers);
-  }, [initialUpcomingBlocks, initialPastBlocks, initialCurrentBlock]);
+  }, []); // Empty dependency array to run only once
 
-  // Always show exactly 3 blocks with their original numbers
+  // Always show exactly 3 blocks with their fixed numbers
   const displayedUpcomingBlocks = upcomingBlocks
     .slice(0, 3)
     .map(block => ({
       ...block,
       blockNumber: blockNumbers[block.id] || block.blockNumber
     }))
-    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on the right
+    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on right
 
   const displayedPastBlocks = pastBlocks
     .slice(0, 3)
@@ -140,7 +151,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
       ...block,
       blockNumber: blockNumbers[block.id] || block.blockNumber
     }))
-    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on the left
+    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on left
 
   useEffect(() => {
     if (currentBlock) {
