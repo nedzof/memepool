@@ -22,6 +22,20 @@ interface BlocksLayoutProps {
   onShiftComplete?: () => void;
 }
 
+const getInitialBlockCount = () => {
+  const viewportWidth = window.innerWidth;
+  const blockWidth = 120; // Block width
+  const gap = 20; // Gap between blocks
+  const currentMemeWidth = 400; // Current meme width
+  const sideSpacing = 40; // Minimum spacing on each side
+  
+  // Calculate available width for blocks on each side
+  const availableWidth = (viewportWidth - currentMemeWidth - (sideSpacing * 2)) / 2;
+  
+  // Initially show only 2 blocks
+  return Math.min(2, Math.floor(availableWidth / (blockWidth + gap)));
+};
+
 const getOptimalBlockCount = () => {
   const viewportWidth = window.innerWidth;
   const blockWidth = 120; // Block width
@@ -32,8 +46,8 @@ const getOptimalBlockCount = () => {
   // Calculate available width for blocks on each side
   const availableWidth = (viewportWidth - currentMemeWidth - (sideSpacing * 2)) / 2;
   
-  // Calculate how many blocks can fit on each side, minimum 3 and maximum 5
-  return Math.max(3, Math.min(5, Math.floor(availableWidth / (blockWidth + gap))));
+  // Always show exactly 3 blocks, matching the old implementation
+  return 3;
 };
 
 const BlocksLayout: React.FC<BlocksLayoutProps> = ({
@@ -78,6 +92,35 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     initialPastBlocks,
     onShiftComplete,
   });
+
+  // Use initial block count before animation
+  const [blockCount, setBlockCount] = useState(getInitialBlockCount());
+  
+  // Update block count after animation
+  useEffect(() => {
+    if (isAnimating) {
+      setBlockCount(getOptimalBlockCount());
+    }
+  }, [isAnimating]);
+  
+  // Always show exactly 3 blocks
+  const displayedUpcomingBlocks = upcomingBlocks
+    .slice(0, 3)
+    .map((block, index) => ({
+      ...block,
+      // Numbers increase from left to right
+      blockNumber: currentBlock.blockNumber + (index + 1)
+    }))
+    // Reverse to show highest number on the right
+    .reverse();
+
+  const displayedPastBlocks = pastBlocks
+    .slice(0, 3)
+    .map((block, index) => ({
+      ...block,
+      // Numbers decrease from left to right
+      blockNumber: currentBlock.blockNumber - (index + 1)
+    }));
 
   useEffect(() => {
     if (currentBlock) {
@@ -137,9 +180,6 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     if (hours > 0) return `${hours}h ago`;
     return `${minutes}m ago`;
   };
-
-  // Limit upcoming blocks to optimal count
-  const displayedUpcomingBlocks = upcomingBlocks.slice(0, getOptimalBlockCount());
 
   if (!currentBlock) {
     return (
@@ -207,7 +247,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
             </div>
           </div>
 
-          {/* Upcoming Blocks Section */}
+          {/* Upcoming Blocks Section - Right side */}
           <div className="absolute right-[calc(50%+240px)] top-1/2 -translate-y-1/2 flex items-center">
             <button 
               onClick={loadMoreUpcomingBlocks}
@@ -235,10 +275,10 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
             </div>
           </div>
 
-          {/* Past Blocks Section */}
+          {/* Past Blocks Section - Left side */}
           <div className="absolute left-[calc(50%+240px)] top-1/2 -translate-y-1/2 flex items-center">
             <div ref={pastBlocksRef} className="flex space-x-4">
-              {pastBlocks.slice(0, 3).map((block) => (
+              {displayedPastBlocks.map((block) => (
                 <div
                   key={block.id}
                   onClick={() => !isAnimating && onBlockClick(block)}
