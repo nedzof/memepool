@@ -1,0 +1,248 @@
+<!-- Submission Details Modal -->
+<div id="submissionDetailsModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center p-4">
+    <div class="w-full max-w-6xl rounded-2xl overflow-hidden relative" 
+         style="background: linear-gradient(135deg, rgba(12, 6, 32, 0.9) 0%, rgba(18, 12, 52, 0.9) 100%);
+                border: 1px solid rgba(0, 255, 163, 0.3);
+                box-shadow: 0 0 50px rgba(0, 255, 163, 0.2);">
+        
+        <!-- Navigation Controls -->
+        <button id="prevSubmission" class="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110">
+            <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+        
+        <button id="nextSubmission" class="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110">
+            <svg class="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+
+        <!-- Close Button -->
+        <button id="closeSubmissionModal" class="absolute top-4 right-4 text-[#00ffa3] hover:text-white transition-all hover:scale-110 z-10">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <div class="p-8">
+            <!-- Title with Block Number -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-2xl font-bold bg-gradient-to-r from-[#00ffa3] to-[#00ffff] bg-clip-text text-transparent">
+                        Block <span id="submissionBlockNumber">#803525</span>
+                    </h2>
+                    <div class="px-3 py-1 rounded-full bg-[#00ffa3]/10 border border-[#00ffa3]/30">
+                        <span id="submissionRank" class="text-[#00ffa3] font-bold">#1</span>
+                    </div>
+                    <!-- Add Transaction ID -->
+                    <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-[#00ffa3]/10 border border-[#00ffa3]/30">
+                        <span class="text-[#00ffa3] text-sm">TX:</span>
+                        <span id="submissionTxId" class="text-white font-mono text-sm">0x1234...5678</span>
+                        <button class="text-[#00ffa3] hover:text-white transition-all" onclick="copyTxId()">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-[#00ffa3]/10 border border-[#00ffa3]/30">
+                        <span class="text-[#00ffa3]">Points:</span>
+                        <span id="pointsEarned" class="text-white font-bold">1,234</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 gap-8">
+                <!-- Video Section -->
+                <div class="relative rounded-xl overflow-hidden aspect-video w-full max-w-4xl mx-auto">
+                    <div class="absolute inset-0 glow-border"></div>
+                    <video id="submissionVideo" 
+                           class="w-full h-full object-cover"
+                           controls
+                           poster="">
+                    </video>
+                    
+                    <!-- Live Pulse Indicator -->
+                    <div class="absolute top-4 left-4 flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 border border-red-500">
+                        <span class="animate-pulse w-2 h-2 rounded-full bg-red-500"></span>
+                        <span class="text-white font-medium">LIVE</span>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Live Viewers -->
+                    <div class="stats-card">
+                        <div class="text-[#00ffa3] text-sm mb-1">Live Viewers</div>
+                        <div class="text-2xl font-bold text-white">
+                            <span id="liveViewers" class="live-count">245</span>
+                            <span class="text-[#00ffa3] text-sm">watching</span>
+                        </div>
+                    </div>
+
+                    <!-- Peak Concurrent -->
+                    <div class="stats-card">
+                        <div class="text-[#00ffa3] text-sm mb-1">Peak Concurrent</div>
+                        <div class="text-2xl font-bold text-white">
+                            <span id="peakViewers">1.5K</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Watch Time -->
+                    <div class="stats-card">
+                        <div class="text-[#00ffa3] text-sm mb-1">Total Watch Time</div>
+                        <div class="text-2xl font-bold text-white">
+                            <span id="totalWatchTime">2.5</span>
+                            <span class="text-[#00ffa3] text-sm">hrs</span>
+                        </div>
+                    </div>
+
+                    <!-- Retention Rate -->
+                    <div class="stats-card">
+                        <div class="text-[#00ffa3] text-sm mb-1">Retention Rate</div>
+                        <div class="text-2xl font-bold text-white">
+                            <span id="retentionRate">85</span>
+                            <span class="text-[#00ffa3] text-sm">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Creator Info -->
+                <div class="flex items-center justify-between p-4 rounded-xl bg-black/30 border border-[#00ffa3]/20">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-[#00ffa3] to-[#00ffff] flex items-center justify-center">
+                            <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-medium text-white" id="creatorAddress">Creator</div>
+                            <div class="text-sm text-[#00ffa3]" id="creatorRank">Top Creator #42</div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-400" id="submissionTimestamp">2 hours ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div id="filterModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-2xl overflow-hidden relative bg-[#0c0620] border border-[#00ffa3]/30">
+        <div class="p-6">
+            <h3 class="text-xl font-bold text-[#00ffa3] mb-6">Filter Options</h3>
+            
+            <!-- Sort Options -->
+            <div class="mb-6">
+                <div class="text-[#00ffa3] text-sm mb-3">⏱️ Sort by:</div>
+                <div class="space-y-2">
+                    <label class="filter-option">
+                        <input type="radio" name="sort" value="trending" checked>
+                        <span>Trending</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="sort" value="earnings">
+                        <span>Total Earnings</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="sort" value="viewers">
+                        <span>Current Viewers</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="sort" value="watchTime">
+                        <span>Watch Time</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="sort" value="peakConcurrent">
+                        <span>Peak Concurrent</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Time Range -->
+            <div>
+                <div class="text-[#00ffa3] text-sm mb-3">🎯 Time Range:</div>
+                <div class="space-y-2">
+                    <label class="filter-option">
+                        <input type="radio" name="timeRange" value="current" checked>
+                        <span>Current Round</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="timeRange" value="hour">
+                        <span>Last Hour</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="timeRange" value="day">
+                        <span>Last 24h</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="timeRange" value="allTime">
+                        <span>All Time</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.glow-border {
+    background: linear-gradient(45deg, #00ffa3, #00ffff);
+    padding: 1px;
+    opacity: 0.5;
+    filter: blur(8px);
+    animation: borderGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes borderGlow {
+    0% {
+        opacity: 0.3;
+    }
+    100% {
+        opacity: 0.6;
+    }
+}
+
+.stats-card {
+    @apply p-4 rounded-xl bg-black/30 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-all hover:scale-[1.02];
+    background: linear-gradient(135deg, rgba(0, 255, 163, 0.05), rgba(0, 255, 255, 0.05));
+    box-shadow: 0 0 20px rgba(0, 255, 163, 0.1);
+}
+
+.live-count {
+    animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+    0% {
+        color: white;
+    }
+    50% {
+        color: #00ffa3;
+    }
+    100% {
+        color: white;
+    }
+}
+
+.filter-option {
+    @apply flex items-center gap-3 p-3 rounded-lg bg-black/30 border border-[#00ffa3]/20 hover:border-[#00ffa3]/40 transition-all cursor-pointer;
+}
+
+.filter-option input[type="radio"] {
+    @apply w-4 h-4 rounded-full border-2 border-[#00ffa3] bg-transparent appearance-none cursor-pointer;
+}
+
+.filter-option input[type="radio"]:checked {
+    @apply bg-[#00ffa3];
+    box-shadow: 0 0 10px #00ffa3;
+}
+
+.filter-option span {
+    @apply text-white;
+}
+</style> 

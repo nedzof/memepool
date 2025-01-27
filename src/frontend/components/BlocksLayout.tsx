@@ -22,6 +22,20 @@ interface BlocksLayoutProps {
   onShiftComplete?: () => void;
 }
 
+const getOptimalBlockCount = () => {
+  const viewportWidth = window.innerWidth;
+  const blockWidth = 120; // Block width
+  const gap = 20; // Gap between blocks
+  const currentMemeWidth = 400; // Current meme width
+  const sideSpacing = 40; // Minimum spacing on each side
+  
+  // Calculate available width for blocks on each side
+  const availableWidth = (viewportWidth - currentMemeWidth - (sideSpacing * 2)) / 2;
+  
+  // Calculate how many blocks can fit on each side, minimum 3 and maximum 5
+  return Math.max(3, Math.min(5, Math.floor(availableWidth / (blockWidth + gap))));
+};
+
 const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   upcomingBlocks: initialUpcomingBlocks = [],
   currentBlock: initialCurrentBlock,
@@ -124,6 +138,9 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     return `${minutes}m ago`;
   };
 
+  // Limit upcoming blocks to optimal count
+  const displayedUpcomingBlocks = upcomingBlocks.slice(0, getOptimalBlockCount());
+
   if (!currentBlock) {
     return (
       <div className="section-container">
@@ -147,31 +164,67 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
         </button>
       </div>
 
-      {/* Main horizontal layout with fixed widths */}
-      <div className="flex justify-center items-center gap-8 mb-12 relative">
-        {/* Upcoming Blocks Section */}
-        <div className="w-[400px]">
-          <div className="section-label text-right mb-4 text-xl font-medium text-[#00ffa3]">
+      {/* Main horizontal layout */}
+      <div className="relative w-full h-[600px]">
+        {/* Section titles */}
+        <div className="absolute top-0 left-0 right-0 flex justify-between px-[20%] mb-4">
+          <div className="text-[#00ffa3] text-xl font-medium">
             Upcoming Blocks
           </div>
-          <div className="flex items-center">
+          <div className="text-[#00ffa3] text-xl font-medium">
+            Past Blocks
+          </div>
+        </div>
+
+        {/* Blocks layout */}
+        <div className="absolute inset-0 mt-12">
+          {/* Current Block Section - Centered */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div 
+              ref={currentBlockRef}
+              className="current-meme rounded-xl overflow-hidden relative w-[400px] h-[400px] bg-black/20 border border-[#00ffa3]/30 shadow-[0_0_80px_rgba(0,255,163,0.4)]"
+            >
+              <img
+                src={currentBlock.imageUrl}
+                alt={`Current Block ${currentBlock.blockNumber}`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-3 right-3 text-lg font-mono text-[#00ffa3]">
+                #{currentBlock.blockNumber}
+              </div>
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                <button
+                  onClick={onCompete}
+                  disabled={isAnimating}
+                  className={twMerge(
+                    "gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20",
+                    isAnimating && "pointer-events-none opacity-50"
+                  )}
+                >
+                  COMPETE
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Upcoming Blocks Section */}
+          <div className="absolute right-[calc(50%+240px)] top-1/2 -translate-y-1/2 flex items-center">
             <button 
               onClick={loadMoreUpcomingBlocks}
               disabled={isAnimating}
-              className="flex-shrink-0 mr-4 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="absolute -left-12 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div ref={upcomingBlocksRef} className="blocks-container flex justify-end gap-4">
-              {upcomingBlocks.map((block) => (
+            <div ref={upcomingBlocksRef} className="flex justify-end space-x-4">
+              {displayedUpcomingBlocks.map((block) => (
                 <div
                   key={block.id}
                   onClick={() => !isAnimating && onBlockClick(block)}
                   className={twMerge(
                     "w-[120px] h-[120px] relative overflow-hidden flex-shrink-0 bg-black/20 border border-[#00ffa3]/30 rounded-lg cursor-pointer hover:border-[#00ffa3] transition-all hover:scale-105",
-                    "animate-slideUpcomingRight",
                     isAnimating && "pointer-events-none"
                   )}
                 >
@@ -181,51 +234,16 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Current Block Section */}
-        <div className="flex-shrink-0 w-[400px]">
-          <div 
-            ref={currentBlockRef}
-            className="current-meme rounded-xl overflow-hidden relative w-[400px] h-[400px] bg-black/20 border border-[#00ffa3]/30 shadow-[0_0_80px_rgba(0,255,163,0.4)]"
-          >
-            <img
-              src={currentBlock.imageUrl}
-              alt={`Current Block ${currentBlock.blockNumber}`}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute top-3 right-3 text-lg font-mono text-[#00ffa3]">
-              #{currentBlock.blockNumber}
-            </div>
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-              <button
-                onClick={onCompete}
-                disabled={isAnimating}
-                className={twMerge(
-                  "gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20",
-                  isAnimating && "pointer-events-none opacity-50"
-                )}
-              >
-                COMPETE
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Past Blocks Section */}
-        <div className="w-[400px]">
-          <div className="section-label text-left mb-4 text-xl font-medium text-[#00ffa3]">
-            Past Blocks
-          </div>
-          <div className="flex items-center">
-            <div ref={pastBlocksRef} className="blocks-container flex gap-4">
+          {/* Past Blocks Section */}
+          <div className="absolute left-[calc(50%+240px)] top-1/2 -translate-y-1/2 flex items-center">
+            <div ref={pastBlocksRef} className="flex space-x-4">
               {pastBlocks.slice(0, 3).map((block) => (
                 <div
                   key={block.id}
                   onClick={() => !isAnimating && onBlockClick(block)}
                   className={twMerge(
                     "w-[120px] h-[120px] relative overflow-hidden flex-shrink-0 bg-black/20 border border-[#00ffa3]/30 rounded-lg cursor-pointer hover:border-[#00ffa3] transition-all hover:scale-105",
-                    "animate-slideLeft",
                     isAnimating && "pointer-events-none"
                   )}
                 >
@@ -236,7 +254,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
             </div>
             <button 
               onClick={() => setShowPastModal(true)}
-              className="flex-shrink-0 ml-4 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110"
+              className="absolute -right-12 p-2 rounded-full bg-black/50 border border-[#00ffa3]/30 hover:border-[#00ffa3] transition-all hover:scale-110"
             >
               <svg className="w-6 h-6 text-[#00ffa3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />

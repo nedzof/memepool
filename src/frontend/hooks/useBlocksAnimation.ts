@@ -43,14 +43,31 @@ export const useBlocksAnimation = ({
   // Load initial blocks
   useEffect(() => {
     const loadBlocks = async () => {
+      // Get the current block number from storage service
+      const currentBlockNumber = storageService.getCurrentBlockNumber();
+
+      // Load upcoming and past blocks
       const [upcoming, past] = await Promise.all([
         storageService.getUpcomingBlocks(),
         storageService.getPastBlocks(),
       ]);
+
+      // Set the blocks in state
       setUpcomingBlocks(upcoming);
       setPastBlocks(past);
       setHasMorePastBlocks(past.length === storageService['submissionsPerPage']);
+
+      // If we don't have a current block, use the first upcoming block
+      if (!currentBlock || currentBlock.id === 'placeholder') {
+        const firstUpcoming = upcoming[0];
+        if (firstUpcoming) {
+          setCurrentBlock(firstUpcoming);
+          setUpcomingBlocks(prev => prev.slice(1));
+          storageService.setCurrentBlockNumber(firstUpcoming.blockNumber);
+        }
+      }
     };
+
     loadBlocks();
   }, []);
 

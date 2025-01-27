@@ -1,0 +1,394 @@
+<!-- Wallet Modals -->
+<!-- Main Wallet Modal -->
+<div id="mainWalletModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">My Wallet</h2>
+                <p class="text-gray-400 text-sm mt-1">Connected with BSV</p>
+            </div>
+            <button id="closeMainWalletModal" class="text-white/50 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="space-y-8">
+            <div class="rounded-xl p-6 border border-[#ff00ff]/20 wallet-balance-card">
+                <div class="text-sm text-gray-400 mb-2">Total Balance</div>
+                <div class="flex items-end gap-2">
+                    <div id="walletBalance" class="text-4xl font-bold text-white balance-value">0.00000000</div>
+                    <div class="text-[#00ffa3] text-lg mb-1">BSV</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button id="sendBtn" class="wallet-action-btn py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                        style="border: 1px solid rgba(255, 0, 255, 0.3);
+                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
+                    <div class="relative z-10">
+                        <div class="flex justify-center items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                            </svg>
+                            Send
+                        </div>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#ff00ff]/20 to-[#00ffff]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+                <button id="receiveBtn" class="wallet-action-btn py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                        style="border: 1px solid rgba(255, 0, 255, 0.3);
+                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
+                    <div class="relative z-10">
+                        <div class="flex justify-center items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                            Receive
+                        </div>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#ff00ff]/20 to-[#00ffff]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+            </div>
+
+            <div class="rounded-xl p-6 border border-[#ff00ff]/20 bg-black/30">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-lg font-bold text-white">Recent Activity</div>
+                    <div class="text-sm text-[#00ffa3] cursor-pointer hover:text-[#00ffa3]/80 transition-colors">View All</div>
+                </div>
+                <div id="transactionList" class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <button id="disconnectBtn" class="w-full py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white/50 hover:text-white relative overflow-hidden group"
+                    style="background: rgba(26, 17, 71, 0.6);
+                           border: 1px solid rgba(255, 0, 255, 0.1)">
+                <div class="relative z-10">Disconnect</div>
+                <div class="absolute inset-0 bg-gradient-to-r from-red-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Initial Setup Modal -->
+<div id="initialSetupModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        <button id="closeInitialModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <div class="space-y-8">
+            <div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Connect Wallet</h2>
+                <p class="text-gray-400 text-sm mt-1">Choose how you want to connect</p>
+            </div>
+            <div class="space-y-4">
+                <button id="createNewWalletBtn" class="wallet-action-btn w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                        style="border: 1px solid rgba(255, 0, 255, 0.3);
+                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
+                    <div class="relative z-10">
+                        <div class="flex justify-center items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Create New Wallet
+                        </div>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#ff00ff]/20 to-[#00ffff]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+                <button id="importWalletBtn" class="wallet-action-btn w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group"
+                        style="border: 1px solid rgba(255, 0, 255, 0.3);
+                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
+                    <div class="relative z-10">
+                        <div class="flex justify-center items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                            Import Existing Wallet
+                        </div>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#ff00ff]/20 to-[#00ffff]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seed Phrase Modal -->
+<div id="seedPhraseModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        <button id="closeSeedModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <div class="space-y-8">
+            <div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Your Seed Phrase</h2>
+                <p class="text-gray-400 text-sm mt-1">Write down these words in order and keep them safe</p>
+            </div>
+            <div class="p-6 rounded-xl bg-transparent border border-[#00ffa3]/10 backdrop-blur-sm relative group">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#00ffa3]/5 via-transparent to-[#00ffff]/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div id="seedPhrase" class="grid grid-cols-3 gap-3 relative z-10">
+                    <!-- Words will be inserted here dynamically -->
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button id="copySeedPhrase" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[#00ffa3] hover:text-[#00ffff] transition-colors border border-[#00ffa3]/30 hover:border-[#00ffff] bg-[#0F1825]/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        Copy Seed Phrase
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 rounded-xl bg-[#ff00ff]/10 border border-[#ff00ff]/20">
+                <div class="text-sm text-white/80">
+                    <div class="flex items-start gap-3 mb-2">
+                        <svg class="w-5 h-5 text-[#ff00ff] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Never share your seed phrase. Anyone with these words can access your wallet.
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 p-4 rounded-xl bg-black/30 border border-[#ff00ff]/20">
+                <input type="checkbox" id="seedConfirm" class="rounded bg-transparent border-[#ff00ff]/30">
+                <label for="seedConfirm" class="text-sm text-white/80">I have written down my seed phrase</label>
+            </div>
+            <button id="continueToPassword" disabled 
+                    class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                    style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                           box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                <div class="relative z-10">Continue</div>
+                <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Password Setup Modal -->
+<div id="passwordSetupModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        <div class="space-y-8">
+            <div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Set Password</h2>
+                <p class="text-gray-400 text-sm mt-1">Create a strong password to secure your wallet</p>
+            </div>
+            <form id="passwordSetupForm" class="space-y-6" onsubmit="return false;">
+                <div class="space-y-4">
+                    <div>
+                        <input type="password" id="password" placeholder="Enter password" 
+                               class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
+                               autocomplete="new-password">
+                        <div id="passwordStrength" class="text-sm mt-2 text-gray-400"></div>
+                    </div>
+                    <div>
+                        <input type="password" id="confirmPassword" placeholder="Confirm password" 
+                               class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
+                               autocomplete="new-password">
+                        <div id="passwordMatch" class="text-sm mt-2 text-gray-400"></div>
+                    </div>
+                </div>
+                <button type="submit" id="createWallet" disabled 
+                        class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                        style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                    <div class="relative z-10">Create Wallet</div>
+                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Send Modal -->
+<div id="sendModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        <button id="closeSendModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <div class="space-y-8">
+            <div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Send BSV</h2>
+                <p class="text-gray-400 text-sm mt-1">Send BSV to another wallet</p>
+            </div>
+
+            <div class="space-y-6">
+                <div class="rounded-xl p-6 border border-[#ff00ff]/20 bg-black/30">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="text-sm text-gray-400">Available Balance</div>
+                        <div class="text-lg font-bold text-white balance-value" id="availableBalance">0.00000000 BSV</div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-400 mb-2 block">Recipient Address</label>
+                        <div class="relative">
+                            <input type="text" id="recipientAddress" 
+                                   class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm pr-10"
+                                   placeholder="Enter BSV address">
+                            <button class="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors"
+                                    id="pasteAddress">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm text-gray-400">Amount (BSV)</label>
+                            <button id="maxAmount" 
+                                    class="text-sm text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                MAX
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <input type="number" id="sendAmount" step="0.00000001" 
+                                   class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
+                                   placeholder="0.00000000">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">BSV</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="confirmSend" disabled 
+                        class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                        style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                    <div class="relative z-10">Send BSV</div>
+                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Receive Modal -->
+<div id="receiveModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#00ffa3]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(0, 255, 163, 0.2);">
+        <button id="closeReceiveModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <div class="space-y-6">
+            <h2 class="text-3xl font-bold text-center bg-gradient-to-r from-[#00ffa3] to-[#00ffff] text-transparent bg-clip-text">Receive BSV</h2>
+            
+            <!-- QR Code Container with Solana-style gradient border -->
+            <div class="flex justify-center">
+                <div class="p-4 rounded-2xl relative"
+                     style="background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 255, 0.1));">
+                    <!-- Gradient border effect -->
+                    <div class="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-r from-[#00ffa3] to-[#00ffff] opacity-30"></div>
+                    <!-- QR Code with white background for better visibility -->
+                    <div class="relative bg-white rounded-xl p-4" id="qrCode"></div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-sm text-[#00ffa3]">Your Address</label>
+                <div class="flex gap-2">
+                    <input type="text" id="walletAddress" readonly 
+                           class="flex-1 bg-black/30 rounded-xl p-4 text-white border border-[#00ffa3]/30 backdrop-blur-sm"
+                           style="box-shadow: 0 0 20px rgba(0, 255, 163, 0.1);">
+                    <button id="copyAddress" 
+                            class="px-6 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white relative overflow-hidden group border border-[#00ffa3]/30 bg-[#00ffa3]/10 hover:bg-[#00ffa3]/20">
+                        <div class="relative z-10">Copy</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Wallet Modal -->
+<div id="importWalletModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4">
+    <div class="border border-[#ff00ff]/30 rounded-2xl p-8 max-w-md w-full relative backdrop-blur-xl"
+         style="background: linear-gradient(180deg, rgba(18, 12, 52, 0.95) 0%, rgba(26, 17, 71, 0.95) 100%);
+                box-shadow: 0 0 40px rgba(255, 0, 255, 0.2);">
+        <button id="closeImportModal" class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <div class="space-y-8">
+            <div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-transparent bg-clip-text">Import Wallet</h2>
+                <p class="text-gray-400 text-sm mt-1">Enter your seed phrase or private key</p>
+            </div>
+
+            <form id="importWalletForm" class="space-y-6" onsubmit="return false;">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-400 mb-2 block">Seed Phrase or Private Key</label>
+                        <div class="relative">
+                            <textarea id="importKey" 
+                                class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm h-24 pr-10"
+                                placeholder="Enter your 12-word seed phrase or private key"></textarea>
+                            <button class="absolute right-3 top-3 text-[#00ffa3] hover:text-[#00ffa3]/80 transition-colors"
+                                    id="pasteImportKey">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="importKeyValidation" class="text-sm mt-2 text-gray-400"></div>
+                    </div>
+
+                    <div>
+                        <label class="text-sm text-gray-400 mb-2 block">Password (Optional)</label>
+                        <input type="password" id="importPassword" 
+                               class="w-full bg-black/30 rounded-xl p-4 text-white border border-[#ff00ff]/20 backdrop-blur-sm"
+                               placeholder="Enter password if wallet is encrypted"
+                               autocomplete="new-password">
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-[#ff00ff]/10 border border-[#ff00ff]/20">
+                        <div class="text-sm text-white/80">
+                            <div class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-[#ff00ff] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Your seed phrase or private key never leaves your device. It is only used to restore your wallet locally.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" id="confirmImport" disabled 
+                        class="w-full py-4 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-white disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                        style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                               box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                    <div class="relative z-10">Import Wallet</div>
+                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+</div> 

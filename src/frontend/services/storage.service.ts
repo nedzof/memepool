@@ -31,13 +31,14 @@ class StorageService {
     // Initialize with a random high block number
     this.latestBlockHeight = 830000 + Math.floor(Math.random() * 1000);
     this.currentBlockNumber = this.latestBlockHeight;
-    this.upcomingStartNumber = this.currentBlockNumber + 5;
-    this.pastStartNumber = this.currentBlockNumber - 1;
+    this.upcomingStartNumber = this.currentBlockNumber + 5; // Start upcoming blocks 5 blocks ahead
+    this.pastStartNumber = this.currentBlockNumber - 1; // Start past blocks from the previous block
   }
 
   // Get image for a specific block
   getImageForBlock(blockNumber: number): string {
     if (!blockImages.has(blockNumber)) {
+      const imageIndex = (blockNumber % 10) + 1; // Use modulo to cycle through images
       blockImages.set(blockNumber, `https://picsum.photos/400/400?random=${blockNumber}`);
     }
     return blockImages.get(blockNumber)!;
@@ -51,8 +52,8 @@ class StorageService {
   // Update current block number
   setCurrentBlockNumber(blockNumber: number): void {
     this.currentBlockNumber = blockNumber;
-    this.upcomingStartNumber = blockNumber + 5;
-    this.pastStartNumber = blockNumber - 1;
+    this.upcomingStartNumber = blockNumber + 5; // Keep upcoming blocks 5 ahead
+    this.pastStartNumber = blockNumber - 1; // Keep past blocks right behind
   }
 
   // Get upcoming blocks
@@ -60,6 +61,7 @@ class StorageService {
     const count = this.getOptimalBlockCount();
     const blocks: Block[] = [];
     
+    // Generate upcoming blocks starting from upcomingStartNumber
     for (let i = 0; i < count; i++) {
       const blockNumber = this.upcomingStartNumber + i;
       blocks.push({
@@ -68,7 +70,7 @@ class StorageService {
         blockNumber,
         txId: `tx-${blockNumber}`,
         creator: `creator-${blockNumber}`,
-        timestamp: new Date(Date.now() + i * 60000),
+        timestamp: new Date(Date.now() + i * 60000), // Future timestamps
       });
     }
     
@@ -80,7 +82,7 @@ class StorageService {
     const count = this.submissionsPerPage;
     let blocks: Block[] = [];
     
-    // Generate base blocks
+    // Generate past blocks starting from pastStartNumber going backwards
     for (let i = 0; i < count; i++) {
       const blockNumber = this.pastStartNumber - i;
       blocks.push({
@@ -89,7 +91,7 @@ class StorageService {
         blockNumber,
         txId: `tx-${blockNumber}`,
         creator: `creator-${blockNumber}`,
-        timestamp: new Date(Date.now() - i * 60000),
+        timestamp: new Date(Date.now() - i * 60000), // Past timestamps
       });
     }
 

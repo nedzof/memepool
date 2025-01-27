@@ -1,0 +1,82 @@
+<!-- Video Modal -->
+<div id="videoModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-md rounded-xl overflow-hidden relative" 
+         style="background: linear-gradient(135deg, #0c0620 0%, #120c34 50%, #1a1147 100%); 
+                border: 1px solid rgba(255, 0, 255, 0.3);
+                box-shadow: 0 0 30px rgba(255, 0, 255, 0.2)">
+        <button id="closeModal" class="absolute top-4 right-4 text-white hover:text-white/80 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-6 text-center" 
+                style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                       -webkit-background-clip: text;
+                       -webkit-text-fill-color: transparent;
+                       text-shadow: 0 0 10px rgba(255, 0, 255, 0.3)">
+                Create Your Video
+            </h2>
+
+            <div id="modalContent">
+                <!-- Initial content (prompt step) -->
+                <div id="promptStep">
+                    <div class="rounded-lg overflow-hidden relative p-1" 
+                         style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                                box-shadow: 0 0 20px rgba(255, 0, 255, 0.2)">
+                        <img id="modalImage" src="https://placehold.co/400x400" alt="Current Meme" class="w-full rounded-lg">
+                    </div>
+
+                    <div class="mt-4">
+                        <textarea 
+                            id="promptText"
+                            class="w-full h-24 rounded-lg p-3 text-white mb-4"
+                            style="background: rgba(255, 0, 255, 0.1);
+                                   border: 1px solid rgba(255, 0, 255, 0.3);
+                                   box-shadow: 0 0 10px rgba(255, 0, 255, 0.1)"
+                            placeholder="Enter your creative prompt here..."></textarea>
+                        <button 
+                            id="generateVideo"
+                            class="w-full py-3 rounded-lg font-bold transition-all duration-300 hover:scale-105 text-white"
+                            style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                                   box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                            Generate Video
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview step -->
+                <div id="previewStep" class="hidden">
+                    <div class="rounded-lg overflow-hidden relative p-1" 
+                         style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                                box-shadow: 0 0 20px rgba(255, 0, 255, 0.2)">
+                        <video 
+                            id="previewVideo"
+                            src="https://placehold.co/400x400"
+                            controls
+                            class="w-full rounded-lg">
+                        </video>
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <button 
+                            id="startOver"
+                            class="flex-1 py-3 rounded-lg font-bold transition-all duration-300 hover:scale-105 text-white"
+                            style="background: rgba(255, 0, 255, 0.1);
+                                   border: 1px solid rgba(255, 0, 255, 0.3);
+                                   box-shadow: 0 0 15px rgba(255, 0, 255, 0.2)">
+                            Start Over
+                        </button>
+                        <button 
+                            id="signBroadcast"
+                            class="flex-1 py-3 rounded-lg font-bold transition-all duration-300 hover:scale-105 text-white"
+                            style="background: linear-gradient(45deg, #ff00ff, #00ffff);
+                                   box-shadow: 0 0 15px rgba(255, 0, 255, 0.5)">
+                            Sign & Broadcast
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

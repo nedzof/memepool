@@ -7,11 +7,17 @@
   --bg-dark: #13131A;
   --text-primary: #F3F3F3;
   --block-size: 120px;
-  --block-gap: 1rem;
-  --container-padding: 2rem;
+  --block-gap: 20px;
+  --container-padding: 20px;
+  --neon-glow: 0 0 15px rgba(0, 255, 163, 0.4),
+               0 0 30px rgba(0, 255, 163, 0.2);
 }
 
 @layer base {
+  * {
+    pointer-events: auto;
+  }
+
   body {
     @apply bg-[#13131A] text-[#F3F3F3] min-h-screen;
     font-family: 'Inter', sans-serif;
@@ -23,176 +29,383 @@
 }
 
 @layer components {
-  .app-container {
-    @apply max-w-7xl mx-auto px-4 py-8;
-  }
-
-  .section-label {
-    @apply text-xl font-semibold text-[#00ffa3] mb-4;
-  }
-
-  /* Past Blocks Section */
-  .past-blocks-section {
-    @apply mb-12;
+  .section-container {
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--container-padding);
   }
 
   .blocks-container {
-    @apply flex gap-4 overflow-x-auto pb-4;
-    min-height: var(--block-size);
-    scroll-snap-type: x mandatory;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    width: 100%;
+  }
+
+  .past-blocks,
+  .upcoming-blocks {
+    width: 400px;
+  }
+
+  .past-blocks {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .upcoming-blocks {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .blocks-wrapper {
+    display: flex;
+    gap: var(--block-gap);
+    overflow: visible;
   }
 
   .meme-block {
-    @apply relative bg-[#2A2A40] rounded-lg overflow-hidden flex-shrink-0;
     width: var(--block-size);
     height: var(--block-size);
-    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 255, 163, 0.3);
+    box-shadow: var(--neon-glow);
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    cursor: pointer;
+    z-index: 500;
   }
 
-  .meme-block-content {
-    @apply absolute inset-0 flex flex-col items-center justify-center;
+  .meme-block::before,
+  .meme-block::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(45deg, 
+      rgba(0, 255, 163, 0.3),
+      rgba(0, 255, 163, 0.1),
+      rgba(0, 255, 163, 0.3)
+    );
+    mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
 
-  .loading-indicator {
-    @apply w-16 h-16 rounded-full bg-[#00ffa3]/20 mb-4;
-    animation: pulse 2s infinite;
+  .meme-block:hover {
+    transform: scale(1.05);
+    border-color: rgba(0, 255, 163, 0.8);
   }
 
-  .block-number {
-    @apply text-[#00ffa3] font-bold;
+  .meme-block:hover::before {
+    opacity: 1;
+    animation: borderRotate 4s linear infinite;
   }
 
-  /* Current Meme Section */
-  .current-meme-section {
-    @apply mb-12;
+  .meme-block:hover::after {
+    opacity: 1;
+    animation: blockPulse 2s ease-in-out infinite;
   }
 
   .current-meme-container {
-    @apply relative max-w-2xl mx-auto aspect-square bg-[#2A2A40] rounded-xl overflow-hidden;
+    width: 400px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .current-meme {
-    @apply absolute inset-0;
+    width: 400px;
+    height: 400px;
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 0 30px rgba(0, 255, 163, 0.6),
+        0 0 60px rgba(0, 255, 163, 0.4),
+        0 0 90px rgba(0, 255, 163, 0.2);
+    border: 3px solid rgba(0, 255, 163, 0.8);
+    background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 163, 0.05));
+    border-radius: 16px;
+    z-index: 500;
   }
 
-  .beat-button {
-    @apply absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10
-           px-6 py-3 bg-gradient-to-r from-[#9945FF] to-[#14F195]
-           rounded-lg font-semibold text-white hover:opacity-90
-           transition-all duration-300 shadow-lg;
+  .current-meme::before,
+  .current-meme::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    padding: 3px;
+    background: linear-gradient(45deg, 
+      rgba(0, 255, 163, 0.6),
+      rgba(0, 255, 163, 0.2),
+      rgba(0, 255, 163, 0.6)
+    );
+    mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+    mask-composite: exclude;
+    animation: borderRotate 4s linear infinite, glowPulse 2s ease-in-out infinite;
   }
 
-  /* Upcoming Blocks Section */
-  .upcoming-blocks-section {
-    @apply mb-12;
+  .block-number-display {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px;
+    background: linear-gradient(to bottom, 
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(0, 0, 0, 0.98) 100%
+    );
+    border-top: 1px solid rgba(0, 255, 163, 0.3);
+    backdrop-filter: blur(8px);
   }
 
-  /* Common Block Styles */
-  .block-image {
-    @apply w-full h-full object-cover;
+  .block-number {
+    @apply text-[#00ffa3] font-semibold text-sm text-center;
+    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
   }
 
-  .block-overlay {
-    @apply absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none;
+  .meme-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
   }
 
-  .block-info {
-    @apply absolute bottom-0 left-0 right-0 p-2 text-center;
+  .create-first-meme {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
   }
 
-  /* Buttons */
-  .shift-button {
-    @apply px-4 py-2 bg-[#2A2A40] text-[#00ffa3] rounded-lg font-semibold
-           hover:bg-[#353555] transition-colors shadow-md
-           disabled:opacity-50 disabled:cursor-not-allowed;
+  .more-blocks-button {
+    @apply w-10 h-10 flex items-center justify-center 
+           bg-[#2A2A40]/80 text-[#00ffa3] rounded-full
+           border border-[#00ffa3]/30 backdrop-blur-sm
+           transition-all duration-300 hover:bg-[#2A2A40]
+           hover:border-[#00ffa3]/60 hover:scale-110;
+    z-index: 1000;
   }
 
-  /* Loading States */
-  .loading-block {
-    @apply flex flex-col items-center justify-center;
+  .more-blocks-button.left {
+    margin-right: 1rem;
   }
 
-  .loading-text {
-    @apply text-[#00ffa3] text-sm mt-2;
+  .more-blocks-button.right {
+    margin-left: 1rem;
   }
-}
 
-/* Animations */
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.5;
+  .shift-blocks-button,
+  .create-meme-button {
+    @apply px-6 py-3 rounded-xl text-[#00ffa3] font-semibold
+           bg-[#2A2A40] border border-[#00ffa3]/30
+           transition-all duration-300
+           disabled:opacity-50 disabled:cursor-not-allowed
+           disabled:hover:scale-100;
+    position: relative;
+    z-index: 1000;
   }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.3;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.5;
-  }
-}
 
-@keyframes slideFromLeft {
-  from {
+  .shift-blocks-button::before,
+  .create-meme-button::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(45deg, 
+      rgba(153, 69, 255, 0.6),
+      rgba(20, 241, 149, 0.6)
+    );
+    mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+    mask-composite: exclude;
     opacity: 0;
-    transform: translateX(-50px);
+    transition: opacity 0.3s ease;
   }
-  to {
+
+  .shift-blocks-button:hover::before,
+  .create-meme-button:hover::before {
     opacity: 1;
-    transform: translateX(0);
+    animation: borderGlow 2s linear infinite;
   }
-}
 
-@keyframes slideFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
+  .shift-blocks-button {
+    background: linear-gradient(45deg, #9945FF, #14F195);
+    background-size: 200% 200%;
+    animation: gradientFlow 3s ease infinite;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+
+  .shift-blocks-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
   }
-}
 
-/* Hide scrollbar but keep functionality */
-.blocks-container::-webkit-scrollbar {
-  display: none;
-}
-
-.blocks-container {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Animation states */
-.animated-element {
-  position: fixed;
-  z-index: 100;
-  pointer-events: none;
-  will-change: transform;
-}
-
-/* Layout helpers */
-.section-header {
-  @apply flex justify-between items-center mb-4;
-}
-
-/* Ensure proper stacking context */
-.section-container {
-  @apply relative;
-  z-index: 1;
-}
-
-/* Media queries for responsive layout */
-@screen sm {
-  .blocks-container {
-    @apply gap-6;
+  .create-meme-button {
+    background: linear-gradient(45deg, #14F195, #9945FF);
+    background-size: 200% 200%;
+    animation: gradientFlow 3s ease infinite;
   }
-}
 
-@screen md {
-  .blocks-container {
-    @apply gap-8;
+  .create-meme-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
+  }
+
+  .section-label {
+    @apply text-2xl font-bold mb-4;
+    color: #fff;
+    text-shadow: 0 0 5px #00ffa3,
+                 0 0 10px #00ffa3,
+                 0 0 20px #00ffa3;
+    animation: neonPulse 1.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes borderRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes blockPulse {
+    0% {
+      box-shadow: 0 0 20px rgba(0, 255, 163, 0.4),
+                 0 0 40px rgba(0, 255, 163, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 25px rgba(0, 255, 163, 0.5),
+                 0 0 50px rgba(0, 255, 163, 0.3);
+    }
+    100% {
+      box-shadow: 0 0 20px rgba(0, 255, 163, 0.4),
+                 0 0 40px rgba(0, 255, 163, 0.2);
+    }
+  }
+
+  @keyframes glowPulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
+
+  @keyframes borderGlow {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+    100% { opacity: 0.3; }
+  }
+
+  @keyframes gradientFlow {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes neonPulse {
+    from {
+      text-shadow: 0 0 5px #00ffa3,
+                   0 0 10px #00ffa3,
+                   0 0 20px #00ffa3;
+    }
+    to {
+      text-shadow: 0 0 10px #00ffa3,
+                   0 0 20px #00ffa3,
+                   0 0 30px #00ffa3;
+    }
+  }
+
+  @keyframes move-to-past {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) - 100px)) scale(calc(1 + (var(--end-scale) - 1) * 0.5));
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--target-x), var(--target-y)) scale(var(--end-scale));
+      opacity: 1;
+    }
+  }
+
+  @keyframes move-to-current {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) - 100px)) scale(calc(1 + (var(--end-scale) - 1) * 0.5));
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--target-x), var(--target-y)) scale(var(--end-scale));
+      opacity: 1;
+    }
+  }
+
+  .animated-element {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1001;
+    will-change: transform;
+    animation-duration: 800ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: forwards;
+    transform-origin: center center;
+    margin: 0;
+  }
+
+  #animationContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+  }
+
+  .move-to-past {
+    animation-name: move-to-past;
+  }
+
+  .move-to-current {
+    animation-name: move-to-current;
+  }
+
+  @media (max-width: 1200px) {
+    .blocks-container {
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .current-meme-container {
+      order: -1;
+    }
+
+    .current-meme {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      aspect-ratio: 1;
+    }
+
+    .past-blocks,
+    .upcoming-blocks {
+      width: 100%;
+    }
   }
 } 
