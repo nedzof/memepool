@@ -22,6 +22,11 @@ interface BlocksLayoutProps {
   onShiftComplete?: () => void;
 }
 
+// Global state for block numbers (mimicking old implementation)
+let currentBlockNumber = 831000; // Starting block number
+let upcomingStartNumber = currentBlockNumber + 5;
+let pastStartNumber = currentBlockNumber - 1;
+
 const getInitialBlockCount = () => {
   const viewportWidth = window.innerWidth;
   const blockWidth = 120; // Block width
@@ -49,11 +54,6 @@ const getOptimalBlockCount = () => {
   // Always show exactly 3 blocks, matching the old implementation
   return 3;
 };
-
-// Global state for block numbers (mimicking old implementation)
-let currentBlockNumber = 803525;
-let upcomingStartNumber = currentBlockNumber + 5;
-let pastStartNumber = currentBlockNumber - 1;
 
 const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   upcomingBlocks: initialUpcomingBlocks = [],
@@ -111,47 +111,59 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   // Keep original block numbers from initialization
   const [blockNumbers, setBlockNumbers] = useState<Record<string, number>>({});
 
-  // Initialize block numbers once at component mount
+  // Initialize block numbers on first render
   useEffect(() => {
     if (!initialCurrentBlock) return;
     
-    // Update global block numbers
-    currentBlockNumber = initialCurrentBlock.blockNumber;
-    upcomingStartNumber = currentBlockNumber + 5;
-    pastStartNumber = currentBlockNumber - 1;
-    
-    // Assign fixed block numbers to each block
     const numbers: Record<string, number> = {};
     
-    // Assign numbers to upcoming blocks (higher numbers on right)
+    // Assign numbers to upcoming blocks
     initialUpcomingBlocks.forEach((block, index) => {
-      numbers[block.id] = upcomingStartNumber - index;
+      numbers[block.id] = initialCurrentBlock.blockNumber + (index + 1);
     });
 
-    // Assign numbers to past blocks (higher numbers on left)
+    // Assign numbers to past blocks
     initialPastBlocks.forEach((block, index) => {
-      numbers[block.id] = pastStartNumber - index;
+      numbers[block.id] = initialCurrentBlock.blockNumber - (index + 1);
     });
 
     setBlockNumbers(numbers);
-  }, []); // Empty dependency array to run only once
+  }, [initialUpcomingBlocks, initialPastBlocks, initialCurrentBlock]);
 
-  // Always show exactly 3 blocks with their fixed numbers
+  // Update block numbers when shifting
+  const handleShiftBlocks = () => {
+    if (isAnimating) return;
+    
+    // Update block numbers
+    currentBlockNumber = upcomingStartNumber - 2; // Next block becomes current
+    upcomingStartNumber = currentBlockNumber + 5;
+    pastStartNumber = currentBlockNumber - 1;
+    
+    shiftBlocks();
+  };
+
+  // Always show exactly 3 blocks with consistent numbering
   const displayedUpcomingBlocks = upcomingBlocks
     .slice(0, 3)
-    .map(block => ({
+    .map((block, index) => ({
       ...block,
-      blockNumber: blockNumbers[block.id] || block.blockNumber
+      blockNumber: upcomingStartNumber - index
     }))
-    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on right
+    .sort((a, b) => a.blockNumber - b.blockNumber); // Sort by block number
 
   const displayedPastBlocks = pastBlocks
     .slice(0, 3)
-    .map(block => ({
+    .map((block, index) => ({
       ...block,
-      blockNumber: blockNumbers[block.id] || block.blockNumber
+      blockNumber: pastStartNumber - index
     }))
-    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on left
+    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on the left
+
+  // Update current block number
+  const currentBlockWithNumber = currentBlock ? {
+    ...currentBlock,
+    blockNumber: currentBlockNumber
+  } : undefined;
 
   useEffect(() => {
     if (currentBlock) {
@@ -227,7 +239,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
       {/* Shift Blocks Button */}
       <div className="text-center mb-8">
         <button
-          onClick={shiftBlocks}
+          onClick={handleShiftBlocks}
           disabled={isAnimating || upcomingBlocks.length === 0}
           className="gradient-button px-6 py-2 rounded-lg font-bold bg-gradient-to-r from-[#ff00ff] to-[#00ffff] text-white hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -256,12 +268,12 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
               className="current-meme rounded-xl overflow-hidden relative w-[400px] h-[400px] bg-black/20 border border-[#00ffa3]/30 shadow-[0_0_80px_rgba(0,255,163,0.4)]"
             >
               <img
-                src={currentBlock.imageUrl}
-                alt={`Current Block ${currentBlock.blockNumber}`}
+                src={currentBlockWithNumber?.imageUrl}
+                alt={`Current Block ${currentBlockWithNumber?.blockNumber}`}
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-3 right-3 text-lg font-mono text-[#00ffa3]">
-                #{currentBlock.blockNumber}
+                #{currentBlockWithNumber?.blockNumber}
               </div>
               <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                 <button
