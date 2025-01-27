@@ -46,7 +46,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3001,
+    port: 3000,
     strictPort: true,
     open: true,
     proxy: {
@@ -54,8 +54,7 @@ export default defineConfig({
         target: 'http://localhost:4000',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path
-      }
+      },
     }
   },
   build: {

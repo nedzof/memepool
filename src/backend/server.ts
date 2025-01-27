@@ -5,11 +5,11 @@ import { createMetadata, getMetadata } from './services/aerospikeService.js';
 import blockMemeRoutes from './routes/blockMeme.routes';
 
 const app = express();
-const port = 4000; // Always use port 4000 for backend
+const port = 4000; // Backend always runs on port 4000
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'], // Allow multiple frontend ports
+  origin: ['http://localhost:3000'], // Frontend runs on 3000
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -85,5 +85,5 @@ app.get('/api/memes/search', async (req, res) => {
 
 // Start server
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Backend server running at http://localhost:${port}`);
 }); 
