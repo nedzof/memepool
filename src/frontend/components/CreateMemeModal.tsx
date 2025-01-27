@@ -1,53 +1,68 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { MemeVideoMetadata } from '../../shared/types/metadata';
 import MemeVideoForm from './MemeVideoForm';
+
+interface Block {
+  id: string;
+  imageUrl: string;
+  blockNumber: number;
+  txId?: string;
+  creator?: string;
+  timestamp?: Date;
+}
 
 interface CreateMemeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onMemeCreated: (metadata: MemeVideoMetadata) => void;
+  currentBlock: Block | undefined;
 }
 
-const CreateMemeModal: React.FC<CreateMemeModalProps> = ({ isOpen, onClose, onMemeCreated }) => {
-  const handleSubmit = (metadata: MemeVideoMetadata) => {
-    onMemeCreated(metadata);
-    onClose();
-  };
-
-  if (!isOpen) {
-    return null;
-  }
+const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
+  isOpen,
+  onClose,
+  onMemeCreated,
+  currentBlock,
+}) => {
+  if (!isOpen || !currentBlock) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="absolute inset-0 bg-[#1A1B23]/80 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="relative bg-[#222235] p-8 rounded-2xl shadow-xl z-10 w-full max-w-2xl mx-4">
-        <div className="absolute top-4 right-4">
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/90">
+      <div className="min-h-screen">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="fixed top-4 right-4 z-50 text-white/50 hover:text-white transition-colors"
+        >
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="max-w-lg mx-auto pt-8 pb-16 px-4">
+          {/* Block Image */}
+          <div className="relative mb-6">
+            <div className="aspect-square rounded-3xl overflow-hidden bg-[#2A2A40] shadow-[0_8px_32px_rgba(0,255,163,0.2)]">
+              <img
+                src={currentBlock.imageUrl}
+                alt="Block"
+                className="w-full h-full object-cover"
               />
-            </svg>
-          </button>
-        </div>
-        <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-[#9945FF] to-[#14F195] bg-clip-text text-transparent">
-          Create Meme
-        </h2>
-        <div className="bg-[#1A1B23] rounded-xl p-6">
-          <MemeVideoForm onSubmit={handleSubmit} onCancel={onClose} />
+            </div>
+            <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md rounded-full px-4 py-2 text-[#00ffa3] font-mono text-sm">
+              #{currentBlock.blockNumber}
+            </div>
+          </div>
+
+          {/* Form */}
+          <MemeVideoForm
+            onSubmit={(metadata) => {
+              onMemeCreated(metadata);
+              onClose();
+            }}
+            onCancel={onClose}
+            currentBlock={currentBlock}
+          />
         </div>
       </div>
     </div>

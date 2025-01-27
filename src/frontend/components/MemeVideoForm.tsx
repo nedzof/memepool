@@ -1,115 +1,145 @@
-import React, { useState } from 'react';
-import { blockchainService } from '../services/blockchain.service';
-import { storageService } from '../services/storage.service';
-import { MemeVideoMetadata } from '../../shared/types/meme';
+import React, { useState, useEffect } from 'react';
+import { MemeVideoMetadata } from '../../shared/types/metadata';
+
+interface Block {
+  id: string;
+  imageUrl: string;
+  blockNumber: number;
+  txId?: string;
+  creator?: string;
+  timestamp?: Date;
+}
 
 interface MemeVideoFormProps {
   onSubmit: (metadata: MemeVideoMetadata) => void;
+  onCancel: () => void;
+  currentBlock: Block;
 }
 
-const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+const MemeVideoForm: React.FC<MemeVideoFormProps> = ({ onSubmit, onCancel, currentBlock }) => {
+  const [prompt, setPrompt] = useState('');
+  const [viralityScore, setViralityScore] = useState<number | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const analyzePrompt = async () => {
+      if (!prompt || prompt.length < 3) {
+        setViralityScore(null);
+        return;
+      }
+
+      setIsAnalyzing(true);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const score = Math.random() * 100;
+        setViralityScore(score);
+      } catch (err) {
+        setError('Failed to analyze prompt');
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+
+    const debounce = setTimeout(analyzePrompt, 500);
+    return () => clearTimeout(debounce);
+  }, [prompt]);
+
+  const getViralityEmoji = (score: number) => {
+    if (score >= 80) return '🔥';
+    if (score >= 60) return '✨';
+    if (score >= 40) return '💫';
+    return '✌️';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!videoFile) {
-      setError('Please select a video file');
+    if (!prompt) {
+      setError('drop some text first! 👆');
       return;
     }
 
-    setIsUploading(true);
-    setError(null);
-
     try {
-      // First, upload the video file and get its URL
-      const formData = new FormData();
-      formData.append('video', videoFile);
-      const videoUrl = await storageService.uploadVideo(formData);
-
-      // Then, inscribe the video on the blockchain
-      const { inscriptionId, blockHeight } = await blockchainService.inscribeMeme(videoUrl);
-
-      // Finally, save the metadata
+      const now = new Date();
       const metadata: Omit<MemeVideoMetadata, 'id'> = {
-        title,
-        description,
-        videoUrl,
-        inscriptionId,
-        blockHeight,
-        createdAt: new Date().toISOString(),
+        title: prompt,
+        description: prompt,
+        creator: currentBlock.creator || 'anonymous',
+        prompt,
+        style: 'default',
+        duration: 0,
+        format: 'video/mp4',
+        fileUrl: '',
+        thumbnailUrl: currentBlock.imageUrl,
+        txId: currentBlock.txId || '',
+        locks: 0,
+        status: 'pending',
+        tags: [],
+        views: 0,
+        likes: 0,
+        dislikes: 0,
+        shares: 0,
+        createdAt: now,
+        updatedAt: now,
       };
 
-      await storageService.saveMemeVideo(metadata);
       onSubmit(metadata as MemeVideoMetadata);
-
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setVideoFile(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload video');
-    } finally {
-      setIsUploading(false);
+      setError('oops! something went wrong 😅');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-          Title
-        </label>
-        <input
-          type="text"
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          required
-        />
-      </div>
-
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Description
-        </label>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="relative">
         <textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          rows={3}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          className="w-full h-32 bg-white/10 backdrop-blur-xl rounded-2xl border-2 border-[#00ffa3]/20 text-white placeholder-white/50 focus:outline-none focus:border-[#00ffa3] px-4 py-3 text-lg transition-all resize-none"
+          placeholder="drop your meme idea here..."
+          style={{ scrollbarWidth: 'none' }}
         />
+        
+        {viralityScore !== null && !isAnalyzing && (
+          <div className="absolute -right-2 -top-2 bg-[#00ffa3] text-black text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center transform transition-all duration-300 hover:scale-110">
+            {getViralityEmoji(viralityScore)}
+          </div>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="video" className="block text-sm font-medium text-gray-700">
-          Video File
-        </label>
-        <input
-          type="file"
-          id="video"
-          accept="video/*"
-          onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-          className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-          required
-        />
-      </div>
+      {viralityScore !== null && !isAnalyzing && (
+        <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-4">
+          <div className="h-2 bg-black/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#00ffa3] to-[#9945FF] transition-all duration-500"
+              style={{ width: `${viralityScore}%` }}
+            />
+          </div>
+          <div className="mt-2 text-center font-medium text-white/80">
+            {viralityScore >= 80 ? "this could go viral! 🚀" :
+             viralityScore >= 60 ? "looking good! ✨" :
+             viralityScore >= 40 ? "not bad! 💫" :
+             "keep trying! ✌️"}
+          </div>
+        </div>
+      )}
+
+      {isAnalyzing && (
+        <div className="flex justify-center">
+          <div className="animate-bounce text-2xl">✨</div>
+        </div>
+      )}
 
       {error && (
-        <div className="text-red-600 text-sm">{error}</div>
+        <div className="text-[#ff6b6b] text-center">{error}</div>
       )}
 
       <button
         type="submit"
-        disabled={isUploading}
-        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+        disabled={!prompt || isAnalyzing}
+        className="w-full py-4 rounded-2xl font-medium text-lg bg-gradient-to-r from-[#00ffa3] to-[#9945FF] text-black hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
       >
-        {isUploading ? 'Uploading...' : 'Upload Video'}
+        {isAnalyzing ? "analyzing..." : "create meme ✨"}
       </button>
     </form>
   );
