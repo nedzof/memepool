@@ -50,8 +50,13 @@ export const useBlocksAnimation = ({
     return () => animationService.cleanup();
   }, []);
 
-  // Function to generate a random meme for a block
+  // Function to generate a random meme for a block (only called once per block)
   const generateRandomMeme = async (block: Block) => {
+    // If block already has a meme, preserve it
+    if (block.imageUrl && block.imageUrl !== '') {
+      return block;
+    }
+
     const memeUrl = await getRandomMemeUrl(300);
     if (memeUrl) {
       return {
@@ -62,22 +67,26 @@ export const useBlocksAnimation = ({
     return block;
   };
 
-  // Initialize blocks with random memes
+  // Initialize blocks with random memes only if they don't have one
   useEffect(() => {
     const initializeBlocks = async () => {
       if (isLoadingTemplates) return;
 
-      // Generate random memes for upcoming blocks
+      // Only generate memes for blocks that don't have one
       const updatedUpcomingBlocks = await Promise.all(
-        initialUpcomingBlocks.map(generateRandomMeme)
+        initialUpcomingBlocks.map(block => 
+          block.imageUrl ? block : generateRandomMeme(block)
+        )
       );
 
-      // Generate random meme for current block
-      const updatedCurrentBlock = await generateRandomMeme(initialCurrentBlock);
+      const updatedCurrentBlock = initialCurrentBlock.imageUrl 
+        ? initialCurrentBlock 
+        : await generateRandomMeme(initialCurrentBlock);
 
-      // Generate random memes for past blocks
       const updatedPastBlocks = await Promise.all(
-        initialPastBlocks.map(generateRandomMeme)
+        initialPastBlocks.map(block => 
+          block.imageUrl ? block : generateRandomMeme(block)
+        )
       );
 
       setUpcomingBlocks(updatedUpcomingBlocks);
@@ -86,21 +95,21 @@ export const useBlocksAnimation = ({
     };
 
     initializeBlocks();
-  }, [isLoadingTemplates, initialUpcomingBlocks, initialCurrentBlock, initialPastBlocks]);
+  }, [initialUpcomingBlocks, initialCurrentBlock, initialPastBlocks, isLoadingTemplates]);
 
   const shiftBlocks = async () => {
     if (isAnimating || upcomingBlocks.length === 0) return;
 
     setIsAnimating(true);
 
-    // Get the next block from upcoming blocks
+    // Get the next block from upcoming blocks while preserving its meme data
     const nextBlock = upcomingBlocks[0];
     const remainingUpcomingBlocks = upcomingBlocks.slice(1);
 
-    // Move current block to past blocks
+    // Move current block to past blocks while preserving its meme data
     const updatedPastBlocks = [currentBlock, ...pastBlocks];
 
-    // Update the state while preserving meme data
+    // Update the state
     setCurrentBlock(nextBlock);
     setPastBlocks(updatedPastBlocks);
     setUpcomingBlocks(remainingUpcomingBlocks);
@@ -119,21 +128,26 @@ export const useBlocksAnimation = ({
   const loadMoreUpcomingBlocks = async () => {
     const newBlocks = await Promise.all(
       Array.from({ length: 3 }, async (_, i) => {
-        const memeUrl = await getRandomMemeUrl(300);
-        return {
+        const block = {
           id: `upcoming-${Date.now()}-${i}`,
-          imageUrl: memeUrl || '',
+          imageUrl: '',
           blockNumber: upcomingBlocks[upcomingBlocks.length - 1]?.blockNumber + i + 1 || 0,
           templateId: undefined,
           topText: undefined,
           bottomText: undefined,
           isLoading: false
         } as Block;
+        return generateRandomMeme(block);
       })
     );
 
-    // Preserve the meme data when adding new blocks
-    setUpcomingBlocks([...upcomingBlocks, ...newBlocks]);
+    // Only add new blocks if we don't already have them
+    const existingBlockNumbers = upcomingBlocks.map(block => block.blockNumber);
+    const uniqueNewBlocks = newBlocks.filter(block => !existingBlockNumbers.includes(block.blockNumber));
+    
+    if (uniqueNewBlocks.length > 0) {
+      setUpcomingBlocks([...upcomingBlocks, ...uniqueNewBlocks]);
+    }
   };
 
   const loadMorePastBlocks = async () => {
@@ -142,21 +156,26 @@ export const useBlocksAnimation = ({
     setIsLoadingMore(true);
     const newBlocks = await Promise.all(
       Array.from({ length: 3 }, async (_, i) => {
-        const memeUrl = await getRandomMemeUrl(300);
-        return {
+        const block = {
           id: `past-${Date.now()}-${i}`,
-          imageUrl: memeUrl || '',
+          imageUrl: '',
           blockNumber: pastBlocks[pastBlocks.length - 1]?.blockNumber - i - 1 || 0,
           templateId: undefined,
           topText: undefined,
           bottomText: undefined,
           isLoading: false
         } as Block;
+        return generateRandomMeme(block);
       })
     );
 
-    // Preserve the meme data when adding new blocks
-    setPastBlocks([...pastBlocks, ...newBlocks]);
+    // Only add new blocks if we don't already have them
+    const existingBlockNumbers = pastBlocks.map(block => block.blockNumber);
+    const uniqueNewBlocks = newBlocks.filter(block => !existingBlockNumbers.includes(block.blockNumber));
+    
+    if (uniqueNewBlocks.length > 0) {
+      setPastBlocks([...pastBlocks, ...uniqueNewBlocks]);
+    }
     setIsLoadingMore(false);
   };
 
