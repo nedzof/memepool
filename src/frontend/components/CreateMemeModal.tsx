@@ -48,6 +48,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [viralityScore, setViralityScore] = useState<number | null>(null);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch current block info only when modal is opened (currentBlock exists)
   useEffect(() => {
@@ -81,11 +82,25 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const generateVideoPreview = async (memeUrl: string) => {
     setIsGeneratingVideo(true);
     try {
+      // First fetch the image and convert to base64
+      const imageResponse = await fetch(memeUrl);
+      const imageBlob = await imageResponse.blob();
+      const base64Image = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          // Remove the data URL prefix
+          resolve(base64String.split(',')[1]);
+        };
+        reader.readAsDataURL(imageBlob);
+      });
+
+      // Now generate the video
       const response = await fetch('/api/video/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image: memeUrl,
+          image: base64Image,
           framesPerSecond: 6,
           numFrames: 14,
           motionBucketId: 127,
@@ -93,7 +108,16 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
         })
       });
       
+      if (!response.ok) {
+        throw new Error('Failed to generate video');
+      }
+
       const data = await response.json();
+      
+      if (!data.video) {
+        throw new Error('No video URL in response');
+      }
+
       setVideoPreviewUrl(data.video);
       
       // Calculate virality score (mock implementation)
@@ -101,6 +125,9 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
       setViralityScore(mockScore);
     } catch (error) {
       console.error('Error generating video:', error);
+      // Show error in UI
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
+      setError(errorMessage);
     } finally {
       setIsGeneratingVideo(false);
     }
@@ -130,8 +157,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
       setIsGenerating(false);
     }
   };
-
-  const error = templateError || blockError;
 
   return (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
@@ -184,12 +209,13 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                 <h3 className="text-lg font-medium text-[#00ffa3] mb-4">Generated Video Preview</h3>
                 <div className="relative aspect-square rounded-lg overflow-hidden border border-[#3D3D60] bg-[#2A2A40]">
                   {isGeneratingVideo ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <FiLoader className="w-8 h-8 text-[#00ffa3] animate-spin" />
-                      <span className="ml-2 text-[#00ffa3]">Generating video...</span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <FiLoader className="w-8 h-8 text-[#00ffa3] animate-spin mb-2" />
+                      <span className="text-[#00ffa3] text-sm">Generating video...</span>
+                      <span className="text-[#00ffa3]/60 text-xs mt-1">This may take a few moments</span>
                     </div>
                   ) : videoPreviewUrl ? (
-                    <>
+                    <div className="relative w-full h-full">
                       <video
                         src={videoPreviewUrl}
                         className="w-full h-full object-cover"
@@ -197,6 +223,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                         loop
                         muted
                         playsInline
+                        controls
                       />
                       {viralityScore !== null && (
                         <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/60 backdrop-blur-sm">
@@ -208,10 +235,11 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                           </div>
                         </div>
                       )}
-                    </>
+                    </div>
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                      Video preview will appear here
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                      <span>Video preview will appear here</span>
+                      <span className="text-sm mt-2 text-gray-500">Enter your prompt to generate a video</span>
                     </div>
                   )}
                 </div>
