@@ -24,8 +24,8 @@ interface BlocksLayoutProps {
 
 // Global state for block numbers (mimicking old implementation)
 let currentBlockNumber = 831000; // Starting block number
-let upcomingStartNumber = currentBlockNumber + 5;
-let pastStartNumber = currentBlockNumber - 1;
+let upcomingStartNumber = currentBlockNumber + 5; // Start 5 blocks ahead
+let pastStartNumber = currentBlockNumber - 1; // Start 1 block behind
 
 const getInitialBlockCount = () => {
   const viewportWidth = window.innerWidth;
@@ -134,10 +134,10 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   const handleShiftBlocks = () => {
     if (isAnimating) return;
     
-    // Update block numbers
+    // Update block numbers exactly like the old implementation
     currentBlockNumber = upcomingStartNumber - 2; // Next block becomes current
-    upcomingStartNumber = currentBlockNumber + 5;
-    pastStartNumber = currentBlockNumber - 1;
+    upcomingStartNumber = currentBlockNumber + 5; // Always 5 blocks ahead
+    pastStartNumber = currentBlockNumber - 1; // Always 1 block behind
     
     shiftBlocks();
   };
@@ -147,6 +147,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     .slice(0, 3)
     .map((block, index) => ({
       ...block,
+      // Start from upcomingStartNumber and decrement by 1
       blockNumber: upcomingStartNumber - index
     }))
     .sort((a, b) => a.blockNumber - b.blockNumber); // Sort by block number
@@ -155,6 +156,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     .slice(0, 3)
     .map((block, index) => ({
       ...block,
+      // Start from pastStartNumber and decrement by 1
       blockNumber: pastStartNumber - index
     }))
     .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on the left
