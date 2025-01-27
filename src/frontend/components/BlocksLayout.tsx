@@ -103,24 +103,44 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     }
   }, [isAnimating]);
   
-  // Always show exactly 3 blocks
+  // Keep original block numbers from initialization
+  const [blockNumbers, setBlockNumbers] = useState<Record<string, number>>({});
+
+  // Initialize block numbers on first render
+  useEffect(() => {
+    if (!initialCurrentBlock) return;
+    
+    const numbers: Record<string, number> = {};
+    
+    // Assign numbers to upcoming blocks
+    initialUpcomingBlocks.forEach((block, index) => {
+      numbers[block.id] = initialCurrentBlock.blockNumber + (index + 1);
+    });
+
+    // Assign numbers to past blocks
+    initialPastBlocks.forEach((block, index) => {
+      numbers[block.id] = initialCurrentBlock.blockNumber - (index + 1);
+    });
+
+    setBlockNumbers(numbers);
+  }, [initialUpcomingBlocks, initialPastBlocks, initialCurrentBlock]);
+
+  // Always show exactly 3 blocks with their original numbers
   const displayedUpcomingBlocks = upcomingBlocks
     .slice(0, 3)
-    .map((block, index) => ({
+    .map(block => ({
       ...block,
-      // Numbers increase from left to right
-      blockNumber: currentBlock.blockNumber + (index + 1)
+      blockNumber: blockNumbers[block.id] || block.blockNumber
     }))
-    // Reverse to show highest number on the right
-    .reverse();
+    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on the right
 
   const displayedPastBlocks = pastBlocks
     .slice(0, 3)
-    .map((block, index) => ({
+    .map(block => ({
       ...block,
-      // Numbers decrease from left to right
-      blockNumber: currentBlock.blockNumber - (index + 1)
-    }));
+      blockNumber: blockNumbers[block.id] || block.blockNumber
+    }))
+    .sort((a, b) => b.blockNumber - a.blockNumber); // Higher numbers on the left
 
   useEffect(() => {
     if (currentBlock) {
