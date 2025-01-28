@@ -45,7 +45,9 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [distortionLevel, setDistortionLevel] = useState(0);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const distortionIntervalRef = useRef<NodeJS.Timeout>();
 
   // Fetch current block info when modal opens
   useEffect(() => {
@@ -62,91 +64,104 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   }, [templates, isLoadingTemplates, currentBlock]);
 
   const handlePromptChange = async (templateId: string) => {
-    // Clear previous timeout
+    // Clear previous timeouts
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
+    if (distortionIntervalRef.current) {
+      clearInterval(distortionIntervalRef.current);
+    }
 
     setIsTyping(true);
+    setDistortionLevel(0);
+
+    // Create random distortion effects while typing
+    distortionIntervalRef.current = setInterval(() => {
+      setDistortionLevel(Math.random());
+    }, 150);
+
+    // Set new timeout to stop effects after typing
+    typingTimeoutRef.current = setTimeout(() => {
+      if (distortionIntervalRef.current) {
+        clearInterval(distortionIntervalRef.current);
+      }
+      setIsTyping(false);
+      setDistortionLevel(0);
+    }, 1000);
+  };
+
+  const generateVideo = async () => {
+    setIsGenerating(true);
     setGenerationProgress(0);
 
-    // Start progress animation
-    const startProgress = () => {
+    const progressInterval = setInterval(() => {
       setGenerationProgress(prev => {
         if (prev >= 100) return 100;
         return prev + 1;
       });
-    };
+    }, 30);
 
-    const progressInterval = setInterval(startProgress, 30);
+    try {
+      const imageResponse = await fetch(currentBlock.imageUrl);
+      const imageBlob = await imageResponse.blob();
+      const base64Image = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(imageBlob);
+      });
 
-    // Set new timeout for video generation
-    typingTimeoutRef.current = setTimeout(async () => {
-      setIsTyping(false);
-      clearInterval(progressInterval);
-      setGenerationProgress(0);
+      const videoUrl = await videoGenerationService.generateVideo({
+        image: base64Image.split(',')[1],
+        fps: 4,
+        numFrames: 12,
+        motionScale: 0.5
+      });
+
+      setVideoPreviewUrl(videoUrl);
       
-      if (!prompt.trim()) return;
+      // Calculate virality score with fun animation
+      let score = 0;
+      const scoreInterval = setInterval(() => {
+        score += Math.random() * 5;
+        if (score >= 100) {
+          score = Math.min(score, 100);
+          clearInterval(scoreInterval);
+        }
+        setViralityScore(Math.floor(score));
+      }, 50);
 
-      try {
-        // Generate video
-        const imageResponse = await fetch(currentBlock.imageUrl);
-        const imageBlob = await imageResponse.blob();
-        const base64Image = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve(reader.result as string);
-          };
-          reader.readAsDataURL(imageBlob);
-        });
-
-        const videoUrl = await videoGenerationService.generateVideo({
-          image: base64Image.split(',')[1],
-          fps: 4,
-          numFrames: 12,
-          motionScale: 0.5
-        });
-
-        setVideoPreviewUrl(videoUrl);
-        
-        // Calculate virality score with fun animation
-        let score = 0;
-        const scoreInterval = setInterval(() => {
-          score += Math.random() * 5;
-          if (score >= 100) {
-            score = Math.min(score, 100);
-            clearInterval(scoreInterval);
-          }
-          setViralityScore(Math.floor(score));
-        }, 50);
-
-      } catch (error) {
-        console.error('Error generating video:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
-        setError(errorMessage);
-      }
-    }, 1000);
+    } catch (error) {
+      console.error('Error generating video:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
+      setError(errorMessage);
+    } finally {
+      clearInterval(progressInterval);
+      setIsGenerating(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!templates.length || !videoPreviewUrl) return;
+    if (!templates.length || isGenerating) return;
 
-    setIsGenerating(true);
-    try {
-      onMemeCreated({
-        templateId: templates[0].id,
-        prompt,
-        imageUrl: currentBlock.imageUrl,
-        blockNumber: currentBlock.blockNumber || currentBlock.blockHeight,
-        currentMemeUrl: currentMeme?.memeUrl,
-        videoUrl: videoPreviewUrl,
-        viralityScore
-      });
-    } catch (error) {
-      console.error('Error creating meme:', error);
-    } finally {
-      setIsGenerating(false);
+    if (!videoPreviewUrl) {
+      await generateVideo();
+    } else {
+      try {
+        onMemeCreated({
+          templateId: templates[0].id,
+          prompt,
+          imageUrl: currentBlock.imageUrl,
+          blockNumber: currentBlock.blockNumber || currentBlock.blockHeight,
+          currentMemeUrl: currentMeme?.memeUrl,
+          videoUrl: videoPreviewUrl,
+          viralityScore
+        });
+      } catch (error) {
+        console.error('Error creating meme:', error);
+      }
     }
   };
 
@@ -190,12 +205,19 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                     src={currentMeme?.memeUrl || currentBlock.memeUrl || currentBlock.imageUrl}
                     alt="Meme"
                     className={`w-full h-full object-cover transition-all duration-300 ${
-                      isTyping ? 'blur-sm scale-105' : ''
+                      isTyping 
+                        ? `blur-${Math.floor(distortionLevel * 3)}xl scale-${100 + Math.floor(distortionLevel * 10)}`
+                        : ''
                     }`}
+                    style={{
+                      transform: isTyping 
+                        ? `rotate(${distortionLevel * 2}deg) scale(${1 + distortionLevel * 0.1})`
+                        : 'none'
+                    }}
                   />
                   
                   {/* Video Preview Overlay */}
-                  {videoPreviewUrl && !isTyping && (
+                  {videoPreviewUrl && !isTyping && !isGenerating && (
                     <video
                       src={videoPreviewUrl}
                       className="absolute inset-0 w-full h-full object-cover"
@@ -206,8 +228,8 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                     />
                   )}
 
-                  {/* Generation Overlay */}
-                  {isTyping && (
+                  {/* Generation Progress Overlay */}
+                  {isGenerating && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
                       <FiZap className="w-12 h-12 text-[#00ffa3] animate-pulse mb-4" />
                       <div className="w-48 h-2 bg-[#2A2A40] rounded-full overflow-hidden">
@@ -216,12 +238,12 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                           style={{ width: `${generationProgress}%` }}
                         />
                       </div>
-                      <span className="text-[#00ffa3] mt-2">Generating magic...</span>
+                      <span className="text-[#00ffa3] mt-2">Generating video...</span>
                     </div>
                   )}
 
                   {/* Virality Score */}
-                  {viralityScore !== null && !isTyping && (
+                  {viralityScore !== null && !isTyping && !isGenerating && (
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/60 backdrop-blur-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -255,9 +277,9 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isGenerating || !videoPreviewUrl}
+                disabled={isGenerating || (!videoPreviewUrl && !prompt.trim())}
                 className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
-                  isGenerating || !videoPreviewUrl
+                  isGenerating || (!videoPreviewUrl && !prompt.trim())
                     ? 'bg-[#2A2A40] text-gray-400 cursor-not-allowed'
                     : 'bg-[#00ffa3] text-black hover:bg-[#00ffa3]/90'
                 }`}
@@ -265,8 +287,10 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                 {isGenerating ? (
                   <span className="flex items-center justify-center">
                     <FiLoader className="w-5 h-5 animate-spin mr-2" />
-                    Creating...
+                    Generating...
                   </span>
+                ) : !videoPreviewUrl ? (
+                  'Generate Video'
                 ) : (
                   'Create Meme'
                 )}
