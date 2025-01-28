@@ -46,6 +46,9 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [distortionLevel, setDistortionLevel] = useState(0);
+  const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 });
+  const [colorShift, setColorShift] = useState(0);
+  const [waveEffect, setWaveEffect] = useState(0);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const distortionIntervalRef = useRef<NodeJS.Timeout>();
 
@@ -74,11 +77,27 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
 
     setIsTyping(true);
     setDistortionLevel(0);
+    setGlitchOffset({ x: 0, y: 0 });
+    setColorShift(0);
+    setWaveEffect(0);
 
     // Create random distortion effects while typing
     distortionIntervalRef.current = setInterval(() => {
+      // Random distortion level
       setDistortionLevel(Math.random());
-    }, 150);
+      
+      // Random glitch offset
+      setGlitchOffset({
+        x: (Math.random() - 0.5) * 10,
+        y: (Math.random() - 0.5) * 10
+      });
+      
+      // Random color shift
+      setColorShift(Math.random() * 360);
+      
+      // Random wave effect
+      setWaveEffect(Math.random() * Math.PI * 2);
+    }, 100);
 
     // Set new timeout to stop effects after typing
     typingTimeoutRef.current = setTimeout(() => {
@@ -87,6 +106,9 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
       }
       setIsTyping(false);
       setDistortionLevel(0);
+      setGlitchOffset({ x: 0, y: 0 });
+      setColorShift(0);
+      setWaveEffect(0);
     }, 1000);
   };
 
@@ -201,20 +223,66 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
               ) : (
                 <>
                   {/* Original Image */}
-                  <img
-                    src={currentMeme?.memeUrl || currentBlock.memeUrl || currentBlock.imageUrl}
-                    alt="Meme"
-                    className={`w-full h-full object-cover transition-all duration-300 ${
-                      isTyping 
-                        ? `blur-${Math.floor(distortionLevel * 3)}xl scale-${100 + Math.floor(distortionLevel * 10)}`
-                        : ''
-                    }`}
-                    style={{
-                      transform: isTyping 
-                        ? `rotate(${distortionLevel * 2}deg) scale(${1 + distortionLevel * 0.1})`
-                        : 'none'
-                    }}
-                  />
+                  <div className="relative w-full h-full">
+                    <img
+                      src={currentMeme?.memeUrl || currentBlock.memeUrl || currentBlock.imageUrl}
+                      alt="Meme"
+                      className={`w-full h-full object-cover transition-all duration-300 ${
+                        isTyping 
+                          ? `blur-${Math.floor(distortionLevel * 3)}xl`
+                          : ''
+                      }`}
+                      style={{
+                        transform: isTyping 
+                          ? `
+                            translate(${glitchOffset.x}px, ${glitchOffset.y}px)
+                            rotate(${distortionLevel * 2}deg)
+                            scale(${1 + distortionLevel * 0.1})
+                            skew(${distortionLevel * 5}deg)
+                          `
+                          : 'none',
+                        filter: isTyping
+                          ? `
+                            hue-rotate(${colorShift}deg)
+                            contrast(${1 + distortionLevel})
+                            brightness(${1 + distortionLevel * 0.5})
+                          `
+                          : 'none',
+                        transition: 'all 0.2s ease-out'
+                      }}
+                    />
+                    {isTyping && (
+                      <>
+                        {/* Glitch Overlay 1 */}
+                        <div
+                          className="absolute inset-0 mix-blend-screen"
+                          style={{
+                            transform: `translate(${-glitchOffset.x * 2}px, ${-glitchOffset.y * 1.5}px)`,
+                            background: `rgba(255, 0, 0, ${distortionLevel * 0.2})`,
+                            clipPath: `polygon(${Math.random() * 100}% 0, 100% ${Math.random() * 100}%, ${Math.random() * 100}% 100%, 0 ${Math.random() * 100}%)`
+                          }}
+                        />
+                        {/* Glitch Overlay 2 */}
+                        <div
+                          className="absolute inset-0 mix-blend-screen"
+                          style={{
+                            transform: `translate(${glitchOffset.x * 1.5}px, ${glitchOffset.y * 2}px)`,
+                            background: `rgba(0, 255, 255, ${distortionLevel * 0.2})`,
+                            clipPath: `polygon(${Math.random() * 100}% 0, 100% ${Math.random() * 100}%, ${Math.random() * 100}% 100%, 0 ${Math.random() * 100}%)`
+                          }}
+                        />
+                        {/* Wave Effect */}
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            background: `linear-gradient(${waveEffect * 180}deg, transparent, rgba(255, 255, 255, ${distortionLevel * 0.1}), transparent)`,
+                            transform: `translateY(${Math.sin(waveEffect) * 100}%)`,
+                            transition: 'transform 0.5s ease-out'
+                          }}
+                        />
+                      </>
+                    )}
+                  </div>
                   
                   {/* Video Preview Overlay */}
                   {videoPreviewUrl && !isTyping && !isGenerating && (
