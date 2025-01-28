@@ -86,4 +86,17 @@ app.get('/api/memes/search', async (req, res) => {
 // Start server
 app.listen(port, () => {
   console.log(`Backend server running at http://localhost:${port}`);
+}).on('error', (error: any) => {
+  if (error.code === 'EACCES') {
+    console.error(`Error: Permission denied to bind to port ${port}`);
+    console.error('Try running: sudo kill -9 $(sudo lsof -t -i:4000) to free the port');
+    process.exit(1);
+  } else if (error.code === 'EADDRINUSE') {
+    console.error(`Error: Port ${port} is already in use`);
+    console.error('Try running: sudo kill -9 $(sudo lsof -t -i:4000) to free the port');
+    process.exit(1);
+  } else {
+    console.error('Server error:', error);
+    process.exit(1);
+  }
 }); 

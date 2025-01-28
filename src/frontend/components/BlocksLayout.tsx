@@ -5,15 +5,12 @@ import CreateMemeModal from './CreateMemeModal';
 import { useBlockMemes } from '../hooks/useBlockMemes';
 
 interface Block {
+  id: string;
+  imageUrl: string;
+  blockNumber: number;
+  memeUrl?: string;
   blockHeight: number;
-  memeUrl: string;
-  templateId?: string;
-  generatedAt?: Date;
   isLoading?: boolean;
-  // Legacy fields for compatibility
-  id?: string;
-  imageUrl?: string;
-  blockNumber?: number;
 }
 
 interface BlocksLayoutProps {
@@ -188,7 +185,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
           {currentMeme && (
             <div className="current-meme relative">
               {renderBlockImage(convertToBlock(currentMeme), true)}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+              <div className="compete-button">
                 <button
                   onClick={() => setShowCreateMemeModal(true)}
                   className="gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20"

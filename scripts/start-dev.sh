@@ -11,7 +11,10 @@ kill_port() {
     local port=$1
     if check_port $port; then
         echo "Killing process on port $port..."
-        sudo kill -9 $(sudo lsof -t -i:$port) 2>/dev/null || true
+        lsof -t -i:$port | xargs kill -9 2>/dev/null || {
+            echo "Could not kill process with regular permissions, trying with sudo..."
+            sudo kill -9 $(sudo lsof -t -i:$port) 2>/dev/null || true
+        }
     fi
 }
 

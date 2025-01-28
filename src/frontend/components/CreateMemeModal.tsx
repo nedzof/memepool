@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useMemeTemplates } from '../hooks/useMemeTemplates';
 import { useBlockMemes } from '../hooks/useBlockMemes';
 import { FiX, FiLoader, FiTrendingUp } from 'react-icons/fi';
+import { videoGenerationService } from '../services/videoGeneration.service';
 
 interface Block {
   id: string;
@@ -95,37 +96,21 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
         reader.readAsDataURL(imageBlob);
       });
 
-      // Now generate the video
-      const response = await fetch('/api/video/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64Image,
-          framesPerSecond: 6,
-          numFrames: 14,
-          motionBucketId: 127,
-          condAug: 0.5
-        })
+      // Generate video using our service
+      const videoUrl = await videoGenerationService.generateVideo({
+        image: base64Image,
+        fps: 4,  // 12 frames / 3 seconds = 4 fps
+        numFrames: 12,
+        motionScale: 0.5
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate video');
-      }
 
-      const data = await response.json();
-      
-      if (!data.video) {
-        throw new Error('No video URL in response');
-      }
-
-      setVideoPreviewUrl(data.video);
+      setVideoPreviewUrl(videoUrl);
       
       // Calculate virality score (mock implementation)
       const mockScore = Math.floor(Math.random() * 40) + 60; // 60-100 range
       setViralityScore(mockScore);
     } catch (error) {
       console.error('Error generating video:', error);
-      // Show error in UI
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
       setError(errorMessage);
     } finally {
@@ -212,7 +197,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <FiLoader className="w-8 h-8 text-[#00ffa3] animate-spin mb-2" />
                       <span className="text-[#00ffa3] text-sm">Generating video...</span>
-                      <span className="text-[#00ffa3]/60 text-xs mt-1">This may take a few moments</span>
+                      <span className="text-[#00ffa3]/60 text-xs mt-1">Creating 3-second animation</span>
                     </div>
                   ) : videoPreviewUrl ? (
                     <div className="relative w-full h-full">
@@ -223,14 +208,20 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                         loop
                         muted
                         playsInline
-                        controls
+                        controls={false}  // Hide controls for cleaner look
+                        style={{ objectFit: 'contain' }}  // Ensure video fits without cropping
                       />
                       {viralityScore !== null && (
                         <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/60 backdrop-blur-sm">
-                          <div className="flex items-center">
-                            <FiTrendingUp className="w-5 h-5 text-[#00ffa3]" />
-                            <span className="ml-2 text-[#00ffa3] font-medium">
-                              Virality Score: {viralityScore}%
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <FiTrendingUp className="w-5 h-5 text-[#00ffa3]" />
+                              <span className="ml-2 text-[#00ffa3] font-medium">
+                                Virality Score: {viralityScore}%
+                              </span>
+                            </div>
+                            <span className="text-[#00ffa3]/60 text-sm">
+                              3s • 12 frames
                             </span>
                           </div>
                         </div>
@@ -239,7 +230,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                       <span>Video preview will appear here</span>
-                      <span className="text-sm mt-2 text-gray-500">Enter your prompt to generate a video</span>
+                      <span className="text-sm mt-2 text-gray-500">3-second animation • 12 frames</span>
                     </div>
                   )}
                 </div>
