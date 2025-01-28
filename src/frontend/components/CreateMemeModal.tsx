@@ -50,6 +50,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const [viralityScore, setViralityScore] = useState<number | null>(null);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState<number>(0);
 
   // Fetch current block info only when modal is opened (currentBlock exists)
   useEffect(() => {
@@ -82,6 +83,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
 
   const generateVideoPreview = async (memeUrl: string) => {
     setIsGeneratingVideo(true);
+    setGenerationProgress(0);
     try {
       // First fetch the image and convert to base64
       const imageResponse = await fetch(memeUrl);
@@ -99,15 +101,18 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
       // Generate video using our service
       const videoUrl = await videoGenerationService.generateVideo({
         image: base64Image,
-        fps: 4,  // 12 frames / 3 seconds = 4 fps
+        fps: 4,
         numFrames: 12,
-        motionScale: 0.5
+        motionScale: 0.5,
+        onProgress: (progress) => {
+          setGenerationProgress(progress);
+        }
       });
 
       setVideoPreviewUrl(videoUrl);
       
       // Calculate virality score (mock implementation)
-      const mockScore = Math.floor(Math.random() * 40) + 60; // 60-100 range
+      const mockScore = Math.floor(Math.random() * 40) + 60;
       setViralityScore(mockScore);
     } catch (error) {
       console.error('Error generating video:', error);
@@ -198,6 +203,20 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                       <FiLoader className="w-8 h-8 text-[#00ffa3] animate-spin mb-2" />
                       <span className="text-[#00ffa3] text-sm">Generating video...</span>
                       <span className="text-[#00ffa3]/60 text-xs mt-1">Creating 3-second animation</span>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-3/4 mt-4">
+                        <div className="h-2 bg-[#2A2A40] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#9945FF] to-[#14F195] transition-all duration-300 ease-out"
+                            style={{ width: `${generationProgress}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center mt-2 text-xs text-[#00ffa3]/60">
+                          <span>Processing frames...</span>
+                          <span>{generationProgress}%</span>
+                        </div>
+                      </div>
                     </div>
                   ) : videoPreviewUrl ? (
                     <div className="relative w-full h-full">
@@ -208,8 +227,8 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                         loop
                         muted
                         playsInline
-                        controls={false}  // Hide controls for cleaner look
-                        style={{ objectFit: 'contain' }}  // Ensure video fits without cropping
+                        controls={false}
+                        style={{ objectFit: 'contain' }}
                       />
                       {viralityScore !== null && (
                         <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/60 backdrop-blur-sm">

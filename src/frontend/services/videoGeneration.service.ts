@@ -5,17 +5,19 @@ interface VideoGenerationOptions {
   fps?: number;
   numFrames?: number;
   motionScale?: number;
+  onProgress?: (progress: number) => void;  // Progress callback
 }
 
 class VideoGenerationService {
-  private readonly COMFY_API_URL = 'http://127.0.0.1:8188';
+  private readonly BACKEND_URL = 'http://localhost:4000';
 
   async generateVideo(options: VideoGenerationOptions): Promise<string> {
     const {
       image,
       fps = 4,  // 12 frames / 3 seconds = 4 fps
       numFrames = 12,  // Exactly 12 frames
-      motionScale = 0.5
+      motionScale = 0.5,
+      onProgress
     } = options;
 
     try {
@@ -44,22 +46,39 @@ class VideoGenerationService {
         }
       };
 
-      // Queue the prompt
-      const promptResponse = await axios.post(`${this.COMFY_API_URL}/prompt`, { prompt: workflow });
+      // Queue the prompt through our backend proxy
+      const promptResponse = await axios.post(`${this.BACKEND_URL}/api/comfy/prompt`, { prompt: workflow });
       const promptId = promptResponse.data.prompt_id;
 
-      // Poll for completion
+      // Poll for completion and progress
+      let lastProgress = 0;
       while (true) {
-        const historyResponse = await axios.get(`${this.COMFY_API_URL}/history/${promptId}`);
-        if (historyResponse.data[promptId].outputs) {
-          // Get the video output path
+        const [historyResponse, progressResponse] = await Promise.all([
+          axios.get(`${this.BACKEND_URL}/api/comfy/history/${promptId}`),
+          axios.get(`${this.BACKEND_URL}/api/comfy/prompt_progress`)
+        ]);
+
+        // Update progress
+        if (progressResponse.data && onProgress) {
+          const currentProgress = Math.round((progressResponse.data.value || 0) * 100);
+          if (currentProgress !== lastProgress) {
+            onProgress(currentProgress);
+            lastProgress = currentProgress;
+          }
+        }
+
+        // Check if generation is complete
+        if (historyResponse.data[promptId]?.outputs) {
           const outputData = historyResponse.data[promptId].outputs["4"];
           if (outputData && outputData.video) {
-            return `${this.COMFY_API_URL}/view?filename=${outputData.video[0]}`;
+            // Ensure we show 100% at the end
+            if (onProgress) onProgress(100);
+            return `${this.BACKEND_URL}/api/comfy/view?filename=${outputData.video[0]}`;
           }
           break;
         }
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        await new Promise(resolve => setTimeout(resolve, 500)); // Poll every 500ms
       }
 
       throw new Error('Video generation failed');
