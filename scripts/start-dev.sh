@@ -25,6 +25,34 @@ check_gpu() {
     return 1  # GPU is not available
 }
 
+# Function to setup SVD model
+setup_svd_model() {
+    echo "Setting up SVD model..."
+    
+    # Check if git-lfs is installed
+    if ! command -v git-lfs &> /dev/null; then
+        echo "Installing git-lfs..."
+        sudo apt-get update
+        sudo apt-get install -y git-lfs
+    fi
+    
+    # Initialize git-lfs
+    git lfs install
+    
+    # Check if SVD model exists
+    if [ ! -d "ComfyUI/models/svd/stable-video-diffusion-img2vid-xt" ]; then
+        echo "Downloading SVD model..."
+        cd ComfyUI
+        mkdir -p models/svd
+        cd models/svd
+        git clone https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt stable-video-diffusion-img2vid-xt
+        cd ../..
+        cd ..
+    else
+        echo "SVD model already exists"
+    fi
+}
+
 # Function to start ComfyUI in the background
 start_comfyui() {
     echo "Starting ComfyUI server..."
@@ -56,6 +84,9 @@ kill_port 8188  # ComfyUI port
 
 # Wait a moment to ensure ports are cleared
 sleep 1
+
+# Setup SVD model
+setup_svd_model
 
 # Start ComfyUI server
 start_comfyui
