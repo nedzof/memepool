@@ -3,7 +3,6 @@ import cors from 'cors';
 import memegenService from './services/memegen.service.js';
 import { createMetadata, getMetadata } from './services/aerospikeService.js';
 import blockMemeRoutes from './routes/blockMeme.routes';
-import axios from 'axios';
 
 const app = express();
 const port = 4000; // Backend always runs on port 4000
@@ -16,8 +15,6 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-
-const COMFY_API_URL = 'http://127.0.0.1:8188';
 
 // Block Meme Routes
 app.use('/api/block-memes', blockMemeRoutes);
@@ -83,50 +80,6 @@ app.get('/api/memes/search', async (req, res) => {
   } catch (error) {
     console.error('Error searching templates:', error);
     res.status(500).json({ error: 'Failed to search templates' });
-  }
-});
-
-// Proxy routes for ComfyUI
-app.post('/api/comfy/prompt', async (req, res) => {
-  try {
-    const response = await axios.post(`${COMFY_API_URL}/prompt`, req.body);
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error proxying prompt request:', error);
-    res.status(500).json({ error: 'Failed to proxy request' });
-  }
-});
-
-app.get('/api/comfy/history/:promptId', async (req, res) => {
-  try {
-    const response = await axios.get(`${COMFY_API_URL}/history/${req.params.promptId}`);
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error proxying history request:', error);
-    res.status(500).json({ error: 'Failed to proxy request' });
-  }
-});
-
-app.get('/api/comfy/prompt_progress', async (req, res) => {
-  try {
-    const response = await axios.get(`${COMFY_API_URL}/prompt_progress`);
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error proxying progress request:', error);
-    res.status(500).json({ error: 'Failed to proxy request' });
-  }
-});
-
-app.get('/api/comfy/view', async (req, res) => {
-  try {
-    const response = await axios.get(`${COMFY_API_URL}/view`, {
-      params: req.query,
-      responseType: 'stream'
-    });
-    response.data.pipe(res);
-  } catch (error) {
-    console.error('Error proxying view request:', error);
-    res.status(500).json({ error: 'Failed to proxy request' });
   }
 });
 
