@@ -15,12 +15,29 @@ kill_port() {
     fi
 }
 
+# Function to start ComfyUI in the background
+start_comfyui() {
+    echo "Starting ComfyUI server..."
+    cd ComfyUI
+    source venv/bin/activate
+    python main.py --listen &
+    cd ..
+    echo "ComfyUI server started on port 8188"
+}
+
 # Clear ports
 kill_port 3000
 kill_port 4000
+kill_port 8188  # ComfyUI port
 
 # Wait a moment to ensure ports are cleared
 sleep 1
+
+# Start ComfyUI server
+start_comfyui
+
+# Wait for ComfyUI to initialize
+sleep 5
 
 # Start the development servers
 echo "Starting development servers..."
