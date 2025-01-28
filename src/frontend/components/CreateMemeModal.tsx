@@ -47,7 +47,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const [generationProgress, setGenerationProgress] = useState(0);
   const [distortionLevel, setDistortionLevel] = useState(0);
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 });
-  const [colorShift, setColorShift] = useState(0);
   const [waveEffect, setWaveEffect] = useState(0);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const distortionIntervalRef = useRef<NodeJS.Timeout>();
@@ -78,7 +77,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
     setIsTyping(true);
     setDistortionLevel(0);
     setGlitchOffset({ x: 0, y: 0 });
-    setColorShift(0);
     setWaveEffect(0);
 
     // Create random distortion effects while typing
@@ -92,9 +90,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
         y: (Math.random() - 0.5) * 10
       });
       
-      // Random color shift
-      setColorShift(Math.random() * 360);
-      
       // Random wave effect
       setWaveEffect(Math.random() * Math.PI * 2);
     }, 100);
@@ -107,7 +102,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
       setIsTyping(false);
       setDistortionLevel(0);
       setGlitchOffset({ x: 0, y: 0 });
-      setColorShift(0);
       setWaveEffect(0);
     }, 1000);
   };
@@ -239,13 +233,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                             rotate(${distortionLevel * 2}deg)
                             scale(${1 + distortionLevel * 0.1})
                             skew(${distortionLevel * 5}deg)
-                          `
-                          : 'none',
-                        filter: isTyping
-                          ? `
-                            hue-rotate(${colorShift}deg)
-                            contrast(${1 + distortionLevel})
-                            brightness(${1 + distortionLevel * 0.5})
                           `
                           : 'none',
                         transition: 'all 0.2s ease-out'
