@@ -72,8 +72,8 @@
     overflow: hidden;
     flex-shrink: 0;
     background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(0, 255, 163, 0.3);
-    box-shadow: var(--neon-glow);
+    border: 1px solid rgba(153, 69, 255, 0.3);
+    box-shadow: 0 0 15px rgba(153, 69, 255, 0.2);
     transition: all 0.3s ease;
     border-radius: 12px;
     cursor: pointer;
@@ -88,9 +88,8 @@
     border-radius: inherit;
     padding: 2px;
     background: linear-gradient(45deg, 
-      rgba(0, 255, 163, 0.3),
-      rgba(0, 255, 163, 0.1),
-      rgba(0, 255, 163, 0.3)
+      rgba(153, 69, 255, 0.3),
+      rgba(255, 0, 255, 0.3)
     );
     mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
     mask-composite: exclude;
@@ -100,7 +99,7 @@
 
   .meme-block:hover {
     transform: scale(1.05);
-    border-color: rgba(0, 255, 163, 0.8);
+    border-color: rgba(153, 69, 255, 0.8);
   }
 
   .meme-block:hover::before {
@@ -127,13 +126,23 @@
     position: relative;
     transition: all 0.3s ease;
     box-shadow: 
-        0 0 30px rgba(0, 255, 163, 0.6),
-        0 0 60px rgba(0, 255, 163, 0.4),
-        0 0 90px rgba(0, 255, 163, 0.2);
-    border: 3px solid rgba(0, 255, 163, 0.8);
-    background: linear-gradient(45deg, rgba(0, 255, 163, 0.1), rgba(0, 255, 163, 0.05));
+        0 0 30px rgba(153, 69, 255, 0.6),
+        0 0 60px rgba(255, 0, 255, 0.4),
+        0 0 90px rgba(153, 69, 255, 0.2);
+    border: 3px solid rgba(153, 69, 255, 0.8);
+    background: linear-gradient(45deg, rgba(153, 69, 255, 0.1), rgba(255, 0, 255, 0.05));
     border-radius: 16px;
     z-index: 20;
+    overflow: hidden;
+  }
+
+  .current-meme > div {
+    border-radius: inherit;
+    overflow: hidden;
+  }
+
+  .current-meme img {
+    border-radius: inherit;
   }
 
   .current-meme::before,
@@ -144,9 +153,8 @@
     border-radius: inherit;
     padding: 3px;
     background: linear-gradient(45deg, 
-      rgba(0, 255, 163, 0.6),
-      rgba(0, 255, 163, 0.2),
-      rgba(0, 255, 163, 0.6)
+      rgba(153, 69, 255, 0.6),
+      rgba(255, 0, 255, 0.6)
     );
     mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
     mask-composite: exclude;
@@ -357,16 +365,16 @@
 
   @keyframes blockPulse {
     0% {
-      box-shadow: 0 0 20px rgba(0, 255, 163, 0.4),
-                 0 0 40px rgba(0, 255, 163, 0.2);
+      box-shadow: 0 0 20px rgba(153, 69, 255, 0.4),
+                 0 0 40px rgba(255, 0, 255, 0.2);
     }
     50% {
-      box-shadow: 0 0 25px rgba(0, 255, 163, 0.5),
-                 0 0 50px rgba(0, 255, 163, 0.3);
+      box-shadow: 0 0 25px rgba(153, 69, 255, 0.5),
+                 0 0 50px rgba(255, 0, 255, 0.3);
     }
     100% {
-      box-shadow: 0 0 20px rgba(0, 255, 163, 0.4),
-                 0 0 40px rgba(0, 255, 163, 0.2);
+      box-shadow: 0 0 20px rgba(153, 69, 255, 0.4),
+                 0 0 40px rgba(255, 0, 255, 0.2);
     }
   }
 

@@ -219,9 +219,6 @@ const App: React.FC = () => {
         />
         
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <h2 className="submissions-title">
-            Submissions for Block #{currentHeight}
-          </h2>
           <MemeSubmissionGrid />
         </div>
       </main>

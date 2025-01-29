@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { FiSearch, FiX, FiCopy, FiCheck, FiClock, FiTrendingUp, FiFilter } from 'react-icons/fi';
 import CreateMemeModal from './CreateMemeModal';
+import SearchModal from './modals/SearchModal';
 import { useBlockMemes } from '../hooks/useBlockMemes';
 
 interface Block {
@@ -25,6 +26,8 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
   onShiftComplete,
 }) => {
   const [showCreateMemeModal, setShowCreateMemeModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [selectedBlockNumber, setSelectedBlockNumber] = useState<number | null>(null);
   const [copiedBlockId, setCopiedBlockId] = useState<number | null>(null);
   const [loadingBlocks, setLoadingBlocks] = useState<Record<number, boolean>>({});
 
@@ -79,7 +82,8 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
         alt={`Block ${block.blockHeight}`}
         className={twMerge(
           "w-full h-full object-cover transition-opacity duration-300",
-          loadingBlocks[block.blockHeight] ? "opacity-0" : "opacity-100"
+          loadingBlocks[block.blockHeight] ? "opacity-0" : "opacity-100",
+          isCurrentMeme ? "rounded-2xl" : "rounded-xl"
         )}
         onLoad={() => handleImageLoad(block.blockHeight)}
         onError={() => handleImageError(block.blockHeight)}
@@ -114,6 +118,11 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
     }
   };
 
+  const handlePastBlockClick = (block: Block) => {
+    setSelectedBlockNumber(block.blockHeight);
+    setShowSearchModal(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -146,7 +155,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
       <div className="flex justify-between items-center w-full gap-8">
         {/* Upcoming Blocks */}
         <div className="flex-1">
-          <h2 className="text-[#00ffa3] text-right mb-4">Upcoming Blocks</h2>
+          <h2 className="text-[#9945FF] text-right mb-4">Upcoming Blocks</h2>
           <div className="flex justify-end gap-4">
             {upcomingMemes.map(block => (
               <div
@@ -158,7 +167,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-mono text-[#00ffa3]">#{block.blockHeight}</span>
+                      <span className="text-sm font-mono text-[#9945FF]">#{block.blockHeight}</span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -167,7 +176,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
                         className="p-2 hover:bg-white/10 rounded-full transition-colors"
                       >
                         {copiedBlockId === block.blockHeight ? (
-                          <FiCheck className="w-4 h-4 text-[#00ffa3]" />
+                          <FiCheck className="w-4 h-4 text-[#9945FF]" />
                         ) : (
                           <FiCopy className="w-4 h-4 text-gray-400" />
                         )}
@@ -188,13 +197,10 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
               <div className="compete-button">
                 <button
                   onClick={() => setShowCreateMemeModal(true)}
-                  className="gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#ff00ff] to-[#00ffff] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#00ffa3]/20"
+                  className="gradient-button px-8 py-3 rounded-lg font-bold text-lg bg-gradient-to-r from-[#9945FF] to-[#FF00FF] hover:scale-105 transform transition-all duration-300 shadow-lg shadow-[#9945FF]/20"
                 >
                   COMPETE
                 </button>
-              </div>
-              <div className="absolute top-4 left-4 bg-black/90 backdrop-blur-md rounded-md px-3 py-1.5 border-l-2 border-[#00ffa3]">
-                <span className="text-sm font-mono text-[#00ffa3]">#{currentHeight}</span>
               </div>
             </div>
           )}
@@ -202,19 +208,19 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
 
         {/* Past Blocks */}
         <div className="flex-1">
-          <h2 className="text-[#00ffa3] mb-4">Past Blocks</h2>
+          <h2 className="text-[#9945FF] mb-4">Past Blocks</h2>
           <div className="flex gap-4">
             {pastMemes.map(block => (
               <div
                 key={block.blockHeight}
                 className="meme-block group cursor-pointer"
-                onClick={() => onBlockClick(convertToBlock(block))}
+                onClick={() => handlePastBlockClick(convertToBlock(block))}
               >
                 {renderBlockImage(convertToBlock(block))}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-mono text-[#00ffa3]">#{block.blockHeight}</span>
+                      <span className="text-sm font-mono text-[#9945FF]">#{block.blockHeight}</span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -223,7 +229,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
                         className="p-2 hover:bg-white/10 rounded-full transition-colors"
                       >
                         {copiedBlockId === block.blockHeight ? (
-                          <FiCheck className="w-4 h-4 text-[#00ffa3]" />
+                          <FiCheck className="w-4 h-4 text-[#9945FF]" />
                         ) : (
                           <FiCopy className="w-4 h-4 text-gray-400" />
                         )}
@@ -237,7 +243,7 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
         </div>
       </div>
 
-      {/* Create Meme Modal */}
+      {/* Modals */}
       {showCreateMemeModal && (
         <CreateMemeModal
           onClose={() => setShowCreateMemeModal(false)}
@@ -249,6 +255,16 @@ const BlocksLayout: React.FC<BlocksLayoutProps> = ({
             refreshBlockInfo();
           }}
           currentBlock={currentMeme ? convertToBlock(currentMeme) : null}
+        />
+      )}
+
+      {showSearchModal && (
+        <SearchModal
+          onClose={() => {
+            setShowSearchModal(false);
+            setSelectedBlockNumber(null);
+          }}
+          initialBlockNumber={selectedBlockNumber || undefined}
         />
       )}
     </div>
