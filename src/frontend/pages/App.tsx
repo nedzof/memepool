@@ -1,24 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MemeSubmissionGrid from '../components/MemeSubmissionGrid';
 import SearchBar from '../components/SearchBar';
 import BlocksLayout from '../components/BlocksLayout';
 import { MemeVideoMetadata } from '../../shared/types/meme';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletName } from '@solana/wallet-adapter-base';
 import { useBlockMemes } from '../hooks/useBlockMemes';
+import { generateBtcAddress } from '../utils/wallet';
 
 // Add Phantom provider type to the window object
 declare global {
   interface Window {
     phantom?: {
-      solana?: any;
+      solana?: {
+        isPhantom?: boolean;
+        connect: () => Promise<{ publicKey: { toString: () => string } }>;
+        disconnect: () => Promise<void>;
+        request: (args: { method: string }) => Promise<{ publicKey: { toString: () => string } }>;
+      };
     };
   }
 }
 
 const App: React.FC = () => {
-  const { select, connected, publicKey, disconnect } = useWallet();
   const { currentHeight } = useBlockMemes();
+  const [isPhantomInstalled, setIsPhantomInstalled] = useState<boolean>(false);
+  const [connected, setConnected] = useState<boolean>(false);
+  const [publicKey, setPublicKey] = useState<string>('');
+  const [btcAddress, setBtcAddress] = useState<string>('');
+
+  useEffect(() => {
+    const provider = window?.phantom?.solana;
+    setIsPhantomInstalled(provider?.isPhantom || false);
+  }, []);
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      try {
+        const address = generateBtcAddress(publicKey);
+        console.log('Generated BSV address:', address);
+        setBtcAddress(address);
+      } catch (error) {
+        console.error('Error generating BSV address:', error);
+        setBtcAddress('');
+      }
+    } else {
+      setBtcAddress('');
+    }
+  }, [connected, publicKey]);
+
   // Mock data for blocks layout
   const [pastBlocks] = useState<MemeVideoMetadata[]>([
     {
@@ -89,15 +117,38 @@ const App: React.FC = () => {
     console.log('Shift complete');
   };
 
-  const connectPhantom = async () => {
-    if (typeof window.phantom !== 'undefined') {
-      try {
-        await select('phantom' as WalletName);
-      } catch (error) {
-        console.error('Error connecting to Phantom wallet:', error);
-      }
-    } else {
+  const handlePhantomClick = async () => {
+    if (!isPhantomInstalled) {
       window.open('https://chrome.google.com/webstore/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa', '_blank');
+      return;
+    }
+
+    try {
+      const provider = window.phantom?.solana;
+      if (!provider) return;
+
+      // This will trigger the connection approval modal
+      const resp = await provider.connect();
+      const pubKey = resp.publicKey.toString();
+      setPublicKey(pubKey);
+      setConnected(true);
+      console.log('Connected with public key:', pubKey);
+    } catch (error) {
+      console.error('Error connecting to Phantom wallet:', error);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      const provider = window.phantom?.solana;
+      if (!provider) return;
+
+      await provider.disconnect();
+      setConnected(false);
+      setPublicKey('');
+      setBtcAddress('');
+    } catch (error) {
+      console.error('Error disconnecting from Phantom wallet:', error);
     }
   };
 
@@ -116,7 +167,7 @@ const App: React.FC = () => {
           <div className="flex-shrink-0">
             {connected ? (
               <button
-                onClick={disconnect}
+                onClick={handleDisconnect}
                 className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
               >
                 <img 
@@ -124,16 +175,18 @@ const App: React.FC = () => {
                   alt="Phantom" 
                   className="w-5 h-5"
                 />
-                <span className="text-white text-sm">
-                  {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
+                <span className="text-white text-sm font-mono">
+                  {btcAddress ? btcAddress.slice(0, 6) + '...' + btcAddress.slice(-6) : 'Loading...'}
                 </span>
               </button>
             ) : (
               <button
-                onClick={connectPhantom}
-                className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors"
+                onClick={handlePhantomClick}
+                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
               >
-                <span className="text-sm">Connect with</span>
+                <span className="text-white text-sm">
+                  {isPhantomInstalled ? 'Connect with' : 'Download'}
+                </span>
                 <img 
                   src="/images/phantom-icon.svg" 
                   alt="Phantom" 
