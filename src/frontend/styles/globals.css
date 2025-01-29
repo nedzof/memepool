@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  background: linear-gradient(135deg, #0c0620 0%, #120c34 50%, #1a1147 100%);
+  background: linear-gradient(135deg, #0A0118 0%, #16082B 50%, #1E0C3E 100%);
   color: #fff;
   min-height: 100vh;
 }
@@ -15,18 +15,18 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 255, 163, 0.1);
+  background: rgba(255, 64, 255, 0.1);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 163, 0.2);
+  background: rgba(255, 64, 255, 0.3);
   border-radius: 3px;
   transition: background-color 0.3s;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 255, 163, 0.3);
+  background: rgba(255, 64, 255, 0.5);
 }
 
 /* Animation Container */
@@ -52,7 +52,7 @@ body {
 
 /* Gradient Text */
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#00ffa3] to-[#00ffff];
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#FF40FF] to-[#00FFFF];
 }
 
 /* Neon Border */
@@ -64,7 +64,7 @@ body {
   content: '';
   position: absolute;
   inset: -1px;
-  background: linear-gradient(45deg, #00ffa3, #00ffff);
+  background: linear-gradient(45deg, #FF40FF, #00FFFF);
   border-radius: inherit;
   z-index: -1;
   animation: borderGlow 2s ease-in-out infinite alternate;
@@ -80,7 +80,7 @@ body {
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(45deg, #00ffa3, #00ffff);
+  background: linear-gradient(45deg, #FF40FF, #00FFFF);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   z-index: -1;
 }
@@ -91,7 +91,7 @@ body {
     transform: scale(1);
   }
   50% {
-    opacity: 0.2;
+    opacity: 0.3;
     transform: scale(1.05);
   }
 }
@@ -108,7 +108,7 @@ body {
   content: '';
   position: absolute;
   inset: -2px;
-  background: linear-gradient(45deg, #00ffa3, #00ffff);
+  background: linear-gradient(45deg, #FF40FF, #00FFFF);
   border-radius: inherit;
   z-index: -1;
   animation: borderRotate 4s linear infinite;
@@ -144,7 +144,7 @@ body {
 
 /* Loading Spinner */
 .loading-spinner {
-  @apply w-8 h-8 border-2 border-[#00ffa3]/30 border-t-[#00ffa3] rounded-full;
+  @apply w-8 h-8 border-2 border-[#FF40FF]/30 border-t-[#FF40FF] rounded-full;
   animation: spin 1s linear infinite;
 }
 
@@ -159,31 +159,31 @@ body {
 
 /* Neon Card */
 .neon-card {
-  @apply relative overflow-hidden rounded-xl bg-black/20 border border-[#00ffa3]/30;
-  box-shadow: 0 0 15px rgba(0, 255, 163, 0.2);
+  @apply relative overflow-hidden rounded-xl bg-black/20 border border-[#FF40FF]/30;
+  box-shadow: 0 0 15px rgba(255, 64, 255, 0.2);
   transition: all 0.3s ease;
 }
 
 .neon-card:hover {
-  border-color: rgba(0, 255, 163, 0.8);
+  border-color: rgba(255, 64, 255, 0.8);
   box-shadow: 
-    0 0 20px rgba(0, 255, 163, 0.4),
-    0 0 40px rgba(0, 255, 163, 0.2);
+    0 0 20px rgba(255, 64, 255, 0.4),
+    0 0 40px rgba(0, 255, 255, 0.3);
   transform: translateY(-2px);
 }
 
 /* Neon Badge */
 .neon-badge {
-  @apply relative px-3 py-1 rounded-full text-sm font-medium text-[#00ffa3];
-  background: rgba(0, 255, 163, 0.1);
-  box-shadow: 0 0 10px rgba(0, 255, 163, 0.2);
+  @apply relative px-3 py-1 rounded-full text-sm font-medium text-[#FF40FF];
+  background: rgba(255, 64, 255, 0.1);
+  box-shadow: 0 0 10px rgba(255, 64, 255, 0.2);
 }
 
 .neon-badge::before {
   content: '';
   position: absolute;
   inset: -1px;
-  background: linear-gradient(45deg, #00ffa3, #00ffff);
+  background: linear-gradient(45deg, #FF40FF, #00FFFF);
   border-radius: inherit;
   z-index: -1;
   animation: badgeGlow 2s ease-in-out infinite alternate;
@@ -213,9 +213,9 @@ body {
 .shimmer {
   background: linear-gradient(
     90deg,
-    rgba(0, 255, 163, 0.1) 25%,
-    rgba(0, 255, 163, 0.2) 37%,
-    rgba(0, 255, 163, 0.1) 63%
+    rgba(255, 64, 255, 0.1) 25%,
+    rgba(255, 64, 255, 0.2) 37%,
+    rgba(255, 64, 255, 0.1) 63%
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;

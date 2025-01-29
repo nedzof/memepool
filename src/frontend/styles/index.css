@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --primary-gradient: linear-gradient(to right, #9945FF, #14F195);
-  --bg-dark: #13131A;
-  --text-primary: #F3F3F3;
+  --primary-gradient: linear-gradient(to right, #FF40FF, #00FFFF);
+  --bg-dark: #0A0118;
+  --text-primary: #FFFFFF;
   --block-size: 120px;
   --block-gap: 20px;
   --container-padding: 20px;
-  --neon-glow: 0 0 15px rgba(0, 255, 163, 0.4),
-               0 0 30px rgba(0, 255, 163, 0.2);
+  --neon-glow: 0 0 15px rgba(255, 64, 255, 0.4),
+               0 0 30px rgba(0, 255, 255, 0.2);
 }
 
 @layer base {
@@ -19,7 +19,7 @@
   }
 
   body {
-    @apply bg-[#13131A] text-[#F3F3F3] min-h-screen;
+    @apply bg-[#0A0118] text-[#FFFFFF] min-h-screen;
     font-family: 'Inter', sans-serif;
   }
 
@@ -189,15 +189,15 @@
 
   .current-meme .compete-button button {
     @apply px-10 py-4 rounded-2xl font-bold text-2xl text-white uppercase tracking-wider;
-    background: linear-gradient(135deg, #9945FF, #14F195);
+    background: linear-gradient(135deg, #FF40FF, #00FFFF);
     background-size: 200% 200%;
     animation: gradientShift 4s ease infinite;
     transform-origin: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid rgba(255, 255, 255, 0.2);
     box-shadow: 
-        0 0 20px rgba(153, 69, 255, 0.4),
-        0 0 40px rgba(20, 241, 149, 0.2),
+        0 0 20px rgba(255, 64, 255, 0.4),
+        0 0 40px rgba(0, 255, 255, 0.2),
         inset 0 0 10px rgba(255, 255, 255, 0.2);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(5px);
@@ -209,8 +209,8 @@
   .current-meme .compete-button button:hover {
     transform: scale(1.05) translateY(-2px);
     box-shadow: 
-      0 0 30px rgba(153, 69, 255, 0.6),
-      0 0 60px rgba(20, 241, 149, 0.3),
+      0 0 30px rgba(255, 64, 255, 0.6),
+      0 0 60px rgba(0, 255, 255, 0.3),
       inset 0 0 15px rgba(255, 255, 255, 0.3);
     border-color: rgba(255, 255, 255, 0.4);
     letter-spacing: 0.1em;
@@ -246,13 +246,13 @@
         rgba(0, 0, 0, 0.95) 0%,
         rgba(0, 0, 0, 0.98) 100%
     );
-    border-top: 1px solid rgba(0, 255, 163, 0.3);
+    border-top: 1px solid rgba(255, 64, 255, 0.3);
     backdrop-filter: blur(8px);
   }
 
   .block-number {
-    @apply text-[#00ffa3] font-semibold text-sm text-center;
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5);
+    @apply text-[#FF40FF] font-semibold text-sm text-center;
+    text-shadow: 0 0 10px rgba(255, 64, 255, 0.5);
   }
 
   .meme-actions {
@@ -271,10 +271,10 @@
 
   .more-blocks-button {
     @apply w-10 h-10 flex items-center justify-center 
-           bg-[#2A2A40]/80 text-[#00ffa3] rounded-full
-           border border-[#00ffa3]/30 backdrop-blur-sm
-           transition-all duration-300 hover:bg-[#2A2A40]
-           hover:border-[#00ffa3]/60 hover:scale-110;
+           bg-[#16082B]/80 text-[#FF40FF] rounded-full
+           border border-[#FF40FF]/30 backdrop-blur-sm
+           transition-all duration-300 hover:bg-[#16082B]
+           hover:border-[#FF40FF]/60 hover:scale-110;
     z-index: 1000;
   }
 
@@ -288,8 +288,8 @@
 
   .shift-blocks-button,
   .create-meme-button {
-    @apply px-6 py-3 rounded-xl text-[#00ffa3] font-semibold
-           bg-[#2A2A40] border border-[#00ffa3]/30
+    @apply px-6 py-3 rounded-xl text-[#FF40FF] font-semibold
+           bg-[#16082B] border border-[#FF40FF]/30
            transition-all duration-300
            disabled:opacity-50 disabled:cursor-not-allowed
            disabled:hover:scale-100;
@@ -345,16 +345,16 @@
   .section-label {
     @apply text-2xl font-bold mb-4;
     color: #fff;
-    text-shadow: 0 0 5px #00ffa3,
-                 0 0 10px #00ffa3,
-                 0 0 20px #00ffa3;
+    text-shadow: 0 0 5px #FF40FF,
+                 0 0 10px #FF40FF,
+                 0 0 20px #00FFFF;
     animation: neonPulse 1.5s ease-in-out infinite alternate;
   }
 
   .submissions-title {
-    @apply text-[#00ffa3] text-center text-2xl font-bold mb-8;
-    text-shadow: 0 0 10px rgba(0, 255, 163, 0.5),
-                 0 0 20px rgba(0, 255, 163, 0.3);
+    @apply text-[#FF40FF] text-center text-2xl font-bold mb-8;
+    text-shadow: 0 0 10px rgba(255, 64, 255, 0.5),
+                 0 0 20px rgba(0, 255, 255, 0.3);
     animation: neonPulse 1.5s ease-in-out infinite alternate;
   }
 
@@ -365,16 +365,16 @@
 
   @keyframes blockPulse {
     0% {
-      box-shadow: 0 0 20px rgba(153, 69, 255, 0.4),
-                 0 0 40px rgba(255, 0, 255, 0.2);
+      box-shadow: 0 0 20px rgba(255, 64, 255, 0.4),
+                 0 0 40px rgba(0, 255, 255, 0.2);
     }
     50% {
-      box-shadow: 0 0 25px rgba(153, 69, 255, 0.5),
-                 0 0 50px rgba(255, 0, 255, 0.3);
+      box-shadow: 0 0 25px rgba(255, 64, 255, 0.5),
+                 0 0 50px rgba(0, 255, 255, 0.3);
     }
     100% {
-      box-shadow: 0 0 20px rgba(153, 69, 255, 0.4),
-                 0 0 40px rgba(255, 0, 255, 0.2);
+      box-shadow: 0 0 20px rgba(255, 64, 255, 0.4),
+                 0 0 40px rgba(0, 255, 255, 0.2);
     }
   }
 
