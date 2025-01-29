@@ -1,5 +1,4 @@
 import { Wallet, WalletType } from '../../../shared/types/wallet';
-import { bsv } from '@bsv/sdk';
 
 export class BSVWallet implements Wallet {
   type: WalletType = WalletType.BSV;
@@ -10,8 +9,8 @@ export class BSVWallet implements Wallet {
 
   async isAvailable(): Promise<boolean> {
     try {
-      // Check if BSV wallet is available in the browser
-      return typeof window !== 'undefined' && 'bsv' in window;
+      // For now, always return true since we're using a mock implementation
+      return true;
     } catch {
       return false;
     }
@@ -19,21 +18,28 @@ export class BSVWallet implements Wallet {
 
   async initiateLogin(): Promise<void> {
     try {
-      // Request wallet connection
-      await bsv.requestAccounts();
-      
-      // Get address and balance
-      this.address = await this.getAddress();
-      this.balance = await this.getBalance();
+      // Mock implementation - in production, this would connect to a real BSV wallet
+      this.address = `1${crypto.randomUUID().replace(/-/g, '').slice(0, 33)}`;
+      this.balance = 100; // Mock balance
     } catch (error) {
       throw new Error('Failed to connect BSV wallet');
     }
   }
 
+  async disconnect(): Promise<void> {
+    try {
+      // Reset wallet state
+      this.address = '';
+      this.balance = 0;
+    } catch (error) {
+      throw new Error('Failed to disconnect BSV wallet');
+    }
+  }
+
   async getBalance(): Promise<number> {
     try {
-      const balance = await bsv.getBalance(this.address);
-      return Number(balance);
+      // Mock implementation
+      return this.balance;
     } catch (error) {
       throw new Error('Failed to get balance');
     }
@@ -41,8 +47,7 @@ export class BSVWallet implements Wallet {
 
   async getAddress(): Promise<string> {
     try {
-      const [address] = await bsv.getAccounts();
-      return address;
+      return this.address;
     } catch (error) {
       throw new Error('Failed to get address');
     }
@@ -50,12 +55,13 @@ export class BSVWallet implements Wallet {
 
   async sendPayment(to: string, amount: number): Promise<string> {
     try {
-      const tx = await bsv.sendPayment({
-        from: this.address,
-        to,
-        amount
-      });
-      return tx.id;
+      if (amount > this.balance) {
+        throw new Error('Insufficient funds');
+      }
+      
+      // Mock transaction
+      this.balance -= amount;
+      return crypto.randomUUID(); // Return mock transaction ID
     } catch (error) {
       throw new Error('Failed to send payment');
     }
@@ -63,8 +69,12 @@ export class BSVWallet implements Wallet {
 
   async signMessage(message: string): Promise<string> {
     try {
-      const signature = await bsv.signMessage(message, this.address);
-      return signature;
+      // Mock implementation
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message + this.address);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     } catch (error) {
       throw new Error('Failed to sign message');
     }
@@ -72,7 +82,8 @@ export class BSVWallet implements Wallet {
 
   async verifyMessage(message: string, signature: string, address: string): Promise<boolean> {
     try {
-      return await bsv.verifyMessage(message, signature, address);
+      // Mock implementation
+      return true;
     } catch (error) {
       throw new Error('Failed to verify message');
     }

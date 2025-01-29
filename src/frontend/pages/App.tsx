@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import MemeSubmissionGrid from '../components/MemeSubmissionGrid';
 import SearchBar from '../components/SearchBar';
 import BlocksLayout from '../components/BlocksLayout';
+import BSVTransactionModal from '../components/modals/BSVTransactionModal';
 import { MemeVideoMetadata } from '../../shared/types/meme';
 import { useBlockMemes } from '../hooks/useBlockMemes';
 import { generateBtcAddress } from '../utils/wallet';
+import { FiDollarSign } from 'react-icons/fi';
 
 // Add Phantom provider type to the window object
 declare global {
@@ -26,6 +28,7 @@ const App: React.FC = () => {
   const [connected, setConnected] = useState<boolean>(false);
   const [publicKey, setPublicKey] = useState<string>('');
   const [btcAddress, setBtcAddress] = useState<string>('');
+  const [showBSVModal, setShowBSVModal] = useState(false);
 
   useEffect(() => {
     const provider = window?.phantom?.solana;
@@ -164,7 +167,17 @@ const App: React.FC = () => {
             <SearchBar onSearch={handleSearch} />
           </div>
 
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center space-x-4">
+            {connected && btcAddress && (
+              <button
+                onClick={() => setShowBSVModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-[#00ffa3]/10 hover:bg-[#00ffa3]/20 rounded-lg transition-colors text-[#00ffa3]"
+              >
+                <FiDollarSign className="w-5 h-5" />
+                <span className="text-sm">BSV Wallet</span>
+              </button>
+            )}
+            
             {connected ? (
               <button
                 onClick={handleDisconnect}
@@ -212,6 +225,14 @@ const App: React.FC = () => {
           <MemeSubmissionGrid />
         </div>
       </main>
+
+      {/* BSV Transaction Modal */}
+      {showBSVModal && btcAddress && (
+        <BSVTransactionModal
+          onClose={() => setShowBSVModal(false)}
+          address={btcAddress}
+        />
+      )}
     </div>
   );
 };

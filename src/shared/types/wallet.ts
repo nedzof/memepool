@@ -1,7 +1,7 @@
 export enum WalletType {
   BSV = 'BSV',
-  Imported = 'Imported',
-  Manual = 'Manual'
+  Manual = 'Manual',
+  Imported = 'Imported'
 }
 
 export interface Transaction {
@@ -9,21 +9,22 @@ export interface Transaction {
   from: string;
   to: string;
   amount: number;
-  timestamp: Date;
+  timestamp: number;
 }
 
 export interface Wallet {
-  id: string;
   type: WalletType;
   name: string;
   icon: string;
-  address?: string;
-  balance?: number;
-  isAvailable: () => boolean;
-  initiateLogin: () => Promise<boolean>;
-  getBalance: () => Promise<number>;
-  getAddress: () => Promise<string>;
-  sendPayment: (to: string, amount: number) => Promise<Transaction>;
-  signMessage: (message: string) => Promise<string>;
-  verifyMessage: (message: string, signature: string) => Promise<boolean>;
+  address: string;
+  balance: number;
+
+  isAvailable(): Promise<boolean>;
+  initiateLogin(): Promise<void>;
+  disconnect(): Promise<void>;
+  getBalance(): Promise<number>;
+  getAddress(): Promise<string>;
+  sendPayment(to: string, amount: number): Promise<string>;
+  signMessage(message: string): Promise<string>;
+  verifyMessage(message: string, signature: string, address: string): Promise<boolean>;
 } 
