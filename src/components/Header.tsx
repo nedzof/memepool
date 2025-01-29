@@ -1,92 +1,184 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletName } from '@solana/wallet-adapter-base';
+import { FiTrendingUp, FiLock, FiClock, FiZap, FiDollarSign } from 'react-icons/fi';
+import SearchBar from '../frontend/components/SearchBar';
 
 // Add Phantom provider type to the window object
 declare global {
   interface Window {
     phantom?: {
-      solana?: any;
+      solana?: {
+        isPhantom?: boolean;
+        connect: () => Promise<{ publicKey: { toString: () => string; } }>;
+        disconnect: () => Promise<void>;
+        request: (args: { method: string; }) => Promise<any>;
+      };
     };
   }
 }
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  totalLocked: number;
+  threshold: number;
+  timeLeft: number;
+  participantCount: number;
+  roundNumber: number;
+  onSearch?: (query: string) => void;
+  onShowBSVModal?: () => void;
+  btcAddress?: string;
+  isPhantomInstalled?: boolean;
+  connected?: boolean;
+  onConnectPhantom?: () => void;
+  onDisconnect?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({
+  totalLocked,
+  threshold,
+  timeLeft,
+  participantCount,
+  roundNumber,
+  onSearch,
+  onShowBSVModal,
+  btcAddress,
+  isPhantomInstalled,
+  connected,
+  onConnectPhantom,
+  onDisconnect
+}) => {
   console.log('[Header] Rendering Header component');
   
   const [searchQuery, setSearchQuery] = useState('');
-  const { select, connected, publicKey, disconnect } = useWallet();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Search query:', searchQuery);
-    // TODO: Implement search functionality
-  };
-
-  const connectPhantom = async () => {
-    if (typeof window.phantom !== 'undefined') {
-      try {
-        // Select and connect to Phantom wallet
-        await select('phantom' as WalletName);
-      } catch (error) {
-        console.error('Error connecting to Phantom wallet:', error);
-      }
-    } else {
-      // Redirect to Phantom wallet extension in Chrome Web Store
-      window.open('https://chrome.google.com/webstore/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa', '_blank');
+  const handleSearch = (query: string) => {
+    console.log('Search query:', query);
+    if (onSearch) {
+      onSearch(query);
     }
   };
 
+  const formatBSV = (amount: number): string => {
+    return `${amount.toFixed(2)} BSV`;
+  };
+
+  const formatTimeElapsed = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const progress = (totalLocked / threshold) * 100;
+
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-2 bg-gray-900 shadow-lg">
-      {/* Logo Section */}
-      <div className="flex items-center flex-shrink-0">
-        <h1 className="text-2xl font-bold text-white">Memepool</h1>
-      </div>
-
-      {/* Search Section */}
-      <div className="flex-grow max-w-2xl mx-8">
-        <form onSubmit={handleSearch} className="w-full">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for creators, wallets & inscriptions"
-              className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none focus:border-purple-500 transition-colors"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+    <header className="sticky top-0 z-50 bg-gradient-to-r from-[#2A2A40] to-[#1A1B23] shadow-xl">
+      {/* Main Header */}
+      <div className="max-w-7xl mx-auto">
+        <div className="px-4 py-3 flex items-center justify-between">
+          {/* Logo Section */}
+          <div className="flex items-center flex-shrink-0">
+            <img src="/assets/images/Memepool_Logo.svg" alt="Memepool Logo" className="h-8" />
           </div>
-        </form>
-      </div>
 
-      {/* Wallet Section */}
-      <div className="flex items-center space-x-4 flex-shrink-0">
-        {connected ? (
-          <button
-            onClick={disconnect}
-            className="flex items-center px-3 py-1.5 bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <span className="text-white text-sm">
-              {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
-            </span>
-          </button>
-        ) : (
-          <button
-            onClick={connectPhantom}
-            className="flex items-center px-3 py-1.5 bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <img src="/wallet-icons/phantom.png" alt="Phantom" className="w-5 h-5 mr-2" />
-            <span className="text-white text-sm">Connect Phantom</span>
-          </button>
-        )}
+          {/* Search Section */}
+          <div className="flex-grow max-w-xl mx-8">
+            <SearchBar onSearch={onSearch || handleSearch} />
+          </div>
+
+          {/* Wallet Section */}
+          <div className="flex items-center space-x-3 flex-shrink-0">
+            {connected ? (
+              <button
+                onClick={onShowBSVModal}
+                className="flex items-center space-x-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <img 
+                  src="/images/phantom-icon.svg" 
+                  alt="Phantom" 
+                  className="w-4 h-4"
+                />
+                <span className="text-white text-sm font-mono">
+                  {btcAddress ? btcAddress.slice(0, 4) + '...' + btcAddress.slice(-4) : 'Loading...'}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={onConnectPhantom}
+                className="flex items-center space-x-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <span className="text-white text-sm">
+                  {isPhantomInstalled ? 'Connect' : 'Download'}
+                </span>
+                <img 
+                  src="/images/phantom-icon.svg" 
+                  alt="Phantom" 
+                  className="w-4 h-4"
+                />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Round Stats Section */}
+        <div className="border-t border-[#3D3D60]">
+          <div className="px-4 py-2 flex items-center space-x-8">
+            {/* Round Info */}
+            <div className="flex items-center space-x-6">
+              <div>
+                <h2 className="text-base font-bold text-white">Round #{roundNumber}</h2>
+                <div className="text-xs text-[#9945FF]/90">Block #{roundNumber}</div>
+              </div>
+              <div className="flex items-center text-[#FF00FF]">
+                <FiClock className="w-4 h-4 mr-1.5" />
+                <span className="font-mono text-base">{formatTimeElapsed(timeLeft)}</span>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="flex-grow flex items-center space-x-4">
+              <div className="flex-grow">
+                <div className="relative h-1.5 bg-[#3D3D60] rounded-full overflow-hidden">
+                  <div
+                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#9945FF] to-[#FF00FF] transition-all duration-500"
+                    style={{ width: `${Math.min(progress, 100)}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <div className="flex items-center">
+                    <FiTrendingUp className="w-3 h-3 mr-1 text-[#9945FF]" />
+                    <span className="text-white/90">
+                      {progress >= 100 ? 'Round Complete!' : `${Math.floor(progress)}% to Goal`}
+                    </span>
+                  </div>
+                  {progress >= 70 && progress < 100 && (
+                    <div className="text-[#FF00FF] text-xs">Almost there! 🚀</div>
+                  )}
+                  {progress >= 100 && (
+                    <div className="text-[#9945FF] text-xs">Viral achieved! 🔥</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex items-center space-x-4 flex-shrink-0">
+                <div>
+                  <div className="flex items-center text-[#9945FF]">
+                    <FiLock className="w-3 h-3 mr-1" />
+                    <span className="text-sm font-medium">{formatBSV(totalLocked)}</span>
+                  </div>
+                  <div className="text-[10px] text-white/60">Target: {formatBSV(threshold)}</div>
+                </div>
+                <div>
+                  <div className="flex items-center text-[#FF00FF]">
+                    <FiZap className="w-3 h-3 mr-1" />
+                    <span className="text-sm font-medium">{participantCount}</span>
+                  </div>
+                  <div className="text-[10px] text-white/60">Memers</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );

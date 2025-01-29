@@ -24,7 +24,15 @@ interface Block {
   blockHeight?: number;
 }
 
-const MemeSubmissionGrid: React.FC = () => {
+interface MemeSubmissionGridProps {
+  onStatsUpdate: (stats: {
+    totalLocked: number;
+    participantCount: number;
+    roundNumber: number;
+  }) => void;
+}
+
+const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }) => {
   const [submissions, setSubmissions] = useState<MemeSubmission[]>([]);
   const [currentThreshold, setCurrentThreshold] = useState(0);
   const [isCreateMemeModalOpen, setIsCreateMemeModalOpen] = useState(false);
@@ -78,14 +86,22 @@ const MemeSubmissionGrid: React.FC = () => {
       try {
         // In production, this would be fetched from your API
         setParticipantCount(submissions.length);
-        setTotalLocked(submissions.reduce((sum, sub) => sum + (sub.totalLocked || 0), 0));
+        const total = submissions.reduce((sum, sub) => sum + (sub.totalLocked || 0), 0);
+        setTotalLocked(total);
+        
+        // Update parent component with new stats
+        onStatsUpdate({
+          totalLocked: total,
+          participantCount: submissions.length,
+          roundNumber
+        });
       } catch (error) {
         console.error('Failed to fetch round stats:', error);
       }
     };
 
     fetchRoundStats();
-  }, [submissions]);
+  }, [submissions, roundNumber, onStatsUpdate]);
 
   const handleCreateMemeClick = () => {
     setCurrentBlock({
@@ -145,22 +161,13 @@ const MemeSubmissionGrid: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#1A1B23] text-white p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Round Stats */}
-        <RoundStats
-          totalLocked={totalLocked}
-          threshold={currentThreshold}
-          timeLeft={600} // This should come from your API
-          participantCount={participantCount}
-          roundNumber={roundNumber}
-        />
-
         {/* Submissions Grid */}
         {isLoading && submissions.length === 0 ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#9945FF]"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {submissions.map((submission) => (
               <div
                 key={submission.id}
@@ -176,54 +183,22 @@ const MemeSubmissionGrid: React.FC = () => {
                     playsInline
                   />
                   
-                  {/* Overlay Content - Only visible on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-between">
-                    {/* Top Section */}
-                    <div className="flex justify-between items-start">
+                  {/* Overlay Content */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="absolute inset-x-0 bottom-0 p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center text-[#00ffa3]">
+                          <FiLock className="w-3 h-3 mr-1" />
+                          <span className="text-sm font-medium">{formatBSV(submission.totalLocked)}</span>
+                        </div>
+                        <div className="text-xs text-white/60">
+                          Position #{submission.position || 0}
+                        </div>
+                      </div>
                       <div className="text-sm font-medium text-white/90">
                         {submission.creator}
                       </div>
-                      <div className="flex space-x-2">
-                        {submission.isTop3 && (
-                          <div className="bg-[#00ffa3] text-black px-2 py-1 rounded-full text-xs font-medium flex items-center">
-                            <FiAward className="w-3 h-3 mr-1" />
-                            Top 3
-                          </div>
-                        )}
-                        {submission.isTop10Percent && !submission.isTop3 && (
-                          <div className="bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-medium flex items-center">
-                            <FiTrendingUp className="w-3 h-3 mr-1" />
-                            Top 10%
-                          </div>
-                        )}
-                      </div>
                     </div>
-
-                    {/* Bottom Section */}
-                    <div className="space-y-2">
-                      {/* Stats */}
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center text-[#00ffa3]">
-                          <FiLock className="w-3 h-3 mr-1" />
-                          {formatBSV(submission.totalLocked)}
-                        </div>
-                        <div className="flex items-center text-white/60">
-                          <FiClock className="w-3 h-3 mr-1" />
-                          {formatTimeLeft(submission.timeLeft)}
-                        </div>
-                      </div>
-
-                      {/* Position */}
-                      <div className="text-xs text-white/60">
-                        Position #{submission.position || 0}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Always visible stats badge */}
-                  <div className="absolute top-2 left-2 bg-black/80 px-2 py-1 rounded-full text-xs font-medium text-[#00ffa3] flex items-center">
-                    <FiLock className="w-3 h-3 mr-1" />
-                    {formatBSV(submission.totalLocked)}
                   </div>
                 </div>
               </div>

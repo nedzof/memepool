@@ -7,20 +7,7 @@ import { MemeVideoMetadata } from '../../shared/types/meme';
 import { useBlockMemes } from '../hooks/useBlockMemes';
 import { generateBtcAddress } from '../utils/wallet';
 import { FiDollarSign } from 'react-icons/fi';
-
-// Add Phantom provider type to the window object
-declare global {
-  interface Window {
-    phantom?: {
-      solana?: {
-        isPhantom?: boolean;
-        connect: () => Promise<{ publicKey: { toString: () => string } }>;
-        disconnect: () => Promise<void>;
-        request: (args: { method: string }) => Promise<{ publicKey: { toString: () => string } }>;
-      };
-    };
-  }
-}
+import { Header } from '../../components/Header';
 
 const App: React.FC = () => {
   const { currentHeight } = useBlockMemes();
@@ -29,6 +16,11 @@ const App: React.FC = () => {
   const [publicKey, setPublicKey] = useState<string>('');
   const [btcAddress, setBtcAddress] = useState<string>('');
   const [showBSVModal, setShowBSVModal] = useState(false);
+  const [totalLocked, setTotalLocked] = useState(0);
+  const [threshold] = useState(1000); // Default threshold
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [participantCount, setParticipantCount] = useState(0);
+  const [roundNumber, setRoundNumber] = useState(1);
 
   useEffect(() => {
     const provider = window?.phantom?.solana;
@@ -49,6 +41,20 @@ const App: React.FC = () => {
       setBtcAddress('');
     }
   }, [connected, publicKey]);
+
+  // Add timer effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeElapsed(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Reset timer when round changes
+  useEffect(() => {
+    setTimeElapsed(0);
+  }, [roundNumber]);
 
   // Mock data for blocks layout
   const [pastBlocks] = useState<MemeVideoMetadata[]>([
@@ -157,59 +163,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#1A1B23]">
-      <header className="bg-[#222235] shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between gap-4">
-          <div className="flex-shrink-0">
-            <img src="/assets/images/Memepool_Logo.svg" alt="Memepool Logo" className="h-10" />
-          </div>
-          
-          <div className="flex-grow flex justify-center">
-            <SearchBar onSearch={handleSearch} />
-          </div>
-
-          <div className="flex-shrink-0 flex items-center space-x-4">
-            {connected && btcAddress && (
-              <button
-                onClick={() => setShowBSVModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-[#00ffa3]/10 hover:bg-[#00ffa3]/20 rounded-lg transition-colors text-[#00ffa3]"
-              >
-                <FiDollarSign className="w-5 h-5" />
-                <span className="text-sm">BSV Wallet</span>
-              </button>
-            )}
-            
-            {connected ? (
-              <button
-                onClick={handleDisconnect}
-                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <img 
-                  src="/images/phantom-icon.svg" 
-                  alt="Phantom" 
-                  className="w-5 h-5"
-                />
-                <span className="text-white text-sm font-mono">
-                  {btcAddress ? btcAddress.slice(0, 6) + '...' + btcAddress.slice(-6) : 'Loading...'}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={handlePhantomClick}
-                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <span className="text-white text-sm">
-                  {isPhantomInstalled ? 'Connect with' : 'Download'}
-                </span>
-                <img 
-                  src="/images/phantom-icon.svg" 
-                  alt="Phantom" 
-                  className="w-6 h-6"
-                />
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+      <Header
+        totalLocked={totalLocked}
+        threshold={threshold}
+        timeLeft={timeElapsed}
+        participantCount={participantCount}
+        roundNumber={roundNumber}
+        onSearch={handleSearch}
+        onShowBSVModal={() => setShowBSVModal(true)}
+        btcAddress={btcAddress}
+        isPhantomInstalled={isPhantomInstalled}
+        connected={connected}
+        onConnectPhantom={handlePhantomClick}
+        onDisconnect={handleDisconnect}
+      />
 
       <main>
         <BlocksLayout
@@ -219,7 +186,13 @@ const App: React.FC = () => {
         />
         
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <MemeSubmissionGrid />
+          <MemeSubmissionGrid
+            onStatsUpdate={(stats) => {
+              setTotalLocked(stats.totalLocked);
+              setParticipantCount(stats.participantCount);
+              setRoundNumber(stats.roundNumber);
+            }}
+          />
         </div>
       </main>
 
@@ -227,6 +200,7 @@ const App: React.FC = () => {
       {showBSVModal && btcAddress && (
         <BSVTransactionModal
           onClose={() => setShowBSVModal(false)}
+          onDisconnect={handleDisconnect}
           address={btcAddress}
         />
       )}

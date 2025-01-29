@@ -46,7 +46,9 @@
 
   .past-blocks,
   .upcoming-blocks {
-    width: 400px;
+    width: 100%;
+    position: relative;
+    z-index: 10;
   }
 
   .past-blocks {
@@ -77,7 +79,7 @@
     transition: all 0.3s ease;
     border-radius: 12px;
     cursor: pointer;
-    z-index: 500;
+    z-index: 10;
   }
 
   .meme-block::before,
@@ -121,9 +123,12 @@
   }
 
   .current-meme {
-    width: 400px;
-    height: 400px;
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    aspect-ratio: 1;
     position: relative;
+    z-index: 10;
     transition: all 0.3s ease;
     box-shadow: 
         0 0 30px rgba(153, 69, 255, 0.6),
@@ -132,7 +137,6 @@
     border: 3px solid rgba(153, 69, 255, 0.8);
     background: linear-gradient(45deg, rgba(153, 69, 255, 0.1), rgba(255, 0, 255, 0.05));
     border-radius: 16px;
-    z-index: 20;
     overflow: hidden;
   }
 

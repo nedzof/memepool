@@ -15,10 +15,11 @@ interface Transaction {
 
 interface BSVTransactionModalProps {
   onClose: () => void;
+  onDisconnect: () => void;
   address: string;
 }
 
-const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, address }) => {
+const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDisconnect, address }) => {
   const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'history'>('send');
   const [sendAmount, setSendAmount] = useState('');
   const [recipientAddress, setRecipientAddress] = useState('');
@@ -139,12 +140,20 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, addr
           {/* Header */}
           <div className="p-4 border-b border-[#2A2A40] flex justify-between items-center">
             <h2 className="text-xl font-bold text-[#00ffa3]">BSV Wallet</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-[#2A2A40] rounded-full transition-colors"
-            >
-              <FiX className="w-5 h-5 text-gray-400" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={onDisconnect}
+                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors text-sm"
+              >
+                Disconnect
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-[#2A2A40] rounded-full transition-colors"
+              >
+                <FiX className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
           </div>
 
           {/* Balance Display */}
