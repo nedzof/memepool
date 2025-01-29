@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiSend, FiDownload, FiCopy, FiExternalLink, FiImage } from 'react-icons/fi';
+import { FiX, FiSend, FiDownload, FiCopy, FiExternalLink, FiImage, FiRefreshCw, FiCheck } from 'react-icons/fi';
 import { QRCodeSVG } from 'qrcode.react';
 import { walletManager } from '../../utils/wallet';
 import { MemeVideoMetadata } from '../../../shared/types/meme';
+import * as scrypt from 'scryptlib';
 import styles from './WalletModal.module.css';
+import { WalletType } from '../../../shared/types/wallet';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { PhantomWallet } from '../../utils/wallets/phantom-wallet';
+
+// BSV address validation regex
+const BSV_ADDRESS_REGEX = /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/;
+
+const validateBSVAddress = (address: string): boolean => {
+  if (!address) return false;
+  return BSV_ADDRESS_REGEX.test(address);
+};
 
 interface Transaction {
   id: string;
@@ -17,9 +30,10 @@ interface BSVTransactionModalProps {
   onClose: () => void;
   onDisconnect: () => void;
   address: string;
+  onAddressChange?: (newAddress: string) => void;
 }
 
-const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDisconnect, address }) => {
+const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDisconnect, address, onAddressChange }) => {
   const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'history'>('send');
   const [sendAmount, setSendAmount] = useState('');
   const [recipientAddress, setRecipientAddress] = useState('');
@@ -27,6 +41,12 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
   const [userMemes, setUserMemes] = useState<MemeVideoMetadata[]>([]);
   const [balance, setBalance] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isChangingAddress, setIsChangingAddress] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [isValidAddress, setIsValidAddress] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const { publicKey, connected, connect, disconnect } = useWallet();
+  const phantomWallet = PhantomWallet.getInstance();
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -80,9 +100,37 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    console.log('Address prop changed:', address);
+    if (!validateBSVAddress(address)) {
+      console.log('Address validation failed');
+      setError('Invalid BSV address format');
+      setIsValidAddress(false);
+      return;
+    }
+    console.log('Address validation passed, updating state');
+    setIsValidAddress(true);
+    setError(null);
+  }, [address]);
+
   const handleSend = async () => {
     try {
       setError(null);
+      setIsLoading(true);
+
+      // Check Phantom wallet connection first
+      if (!phantomWallet.isPhantomInstalled()) {
+        throw new Error('Please install Phantom wallet to continue');
+      }
+
+      if (!phantomWallet.isConnected()) {
+        try {
+          await phantomWallet.requestConnection();
+        } catch (err) {
+          throw new Error('Please connect your Phantom wallet to continue');
+        }
+      }
+
       const amount = parseFloat(sendAmount);
       if (isNaN(amount) || amount <= 0) {
         throw new Error('Invalid amount');
@@ -110,12 +158,16 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to send transaction');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
@@ -132,6 +184,143 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
     });
   };
 
+  const generateNewAddress = async () => {
+    try {
+      console.log('Starting new address generation...');
+      setIsChangingAddress(true);
+      setError(null);
+      
+      const wallet = walletManager.getWallet();
+      console.log('Current wallet state:', wallet);
+      
+      if (!wallet) {
+        console.error('No wallet instance found');
+        throw new Error('Wallet not initialized. Please try disconnecting and connecting again.');
+      }
+
+      if (!wallet.deriveNextAddress) {
+        console.error('Wallet does not support address derivation');
+        throw new Error('This wallet does not support generating new addresses');
+      }
+
+      console.log('Calling deriveNextAddress...');
+      const newAddress = await wallet.deriveNextAddress();
+      console.log('Received new address:', newAddress);
+      
+      if (!validateBSVAddress(newAddress)) {
+        console.error('Invalid address generated:', newAddress);
+        throw new Error('Generated address is invalid');
+      }
+      console.log('Address validation passed');
+
+      // Update the address through the parent component
+      console.log('Calling onAddressChange with new address:', newAddress);
+      if (onAddressChange) {
+        onAddressChange(newAddress);
+      }
+      
+      setIsValidAddress(true);
+      console.log('Address update complete');
+    } catch (error) {
+      console.error('Failed to generate new address:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate new address');
+      setIsValidAddress(false);
+    } finally {
+      setIsChangingAddress(false);
+    }
+  };
+
+  // Add initialization check effect
+  useEffect(() => {
+    const initializeWallet = async () => {
+      try {
+        console.log('Initializing wallet...');
+        const wallet = walletManager.getWallet();
+        
+        if (!wallet) {
+          console.error('No wallet instance found during initialization');
+          setError('Wallet not initialized. Please try disconnecting and connecting again.');
+          return;
+        }
+
+        // Connect the wallet if not already connected
+        if (!wallet.address) {
+          console.log('Wallet found but not connected, initiating login...');
+          await walletManager.connect(WalletType.BSV);
+          console.log('Wallet connected successfully');
+        }
+
+        const isAvailable = await wallet.isAvailable();
+        if (!isAvailable) {
+          console.error('Wallet is not available');
+          setError('Wallet is not available. Please try reconnecting.');
+          return;
+        }
+
+        // Verify we have a valid address
+        const currentAddress = await wallet.getAddress();
+        console.log('Current wallet address:', currentAddress);
+        
+        if (!validateBSVAddress(currentAddress)) {
+          console.error('Invalid wallet address:', currentAddress);
+          setError('Invalid wallet address. Please try reconnecting.');
+          return;
+        }
+
+        console.log('Wallet initialized successfully:', wallet);
+      } catch (error) {
+        console.error('Failed to initialize wallet:', error);
+        setError('Failed to initialize wallet. Please try reconnecting.');
+      }
+    };
+
+    initializeWallet();
+  }, []);
+
+  const truncateAddress = (addr: string) => {
+    if (addr.length <= 12) return addr;
+    return `${addr.slice(0, 8)}...${addr.slice(-4)}`;
+  };
+
+  // Add a key to force QR code re-render
+  const qrKey = `${address}-${isValidAddress}`;
+
+  // Add Phantom connection status to the header
+  const renderWalletStatus = () => {
+    if (!phantomWallet.isPhantomInstalled()) {
+      return (
+        <a
+          href="https://phantom.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 rounded-lg transition-colors text-sm"
+        >
+          Install Phantom
+        </a>
+      );
+    }
+
+    if (!phantomWallet.isConnected()) {
+      return (
+        <button
+          onClick={() => phantomWallet.requestConnection()}
+          className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 rounded-lg transition-colors text-sm"
+        >
+          Connect Phantom
+        </button>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => phantomWallet.disconnect()}
+        className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors text-sm"
+      >
+        Disconnect Phantom
+      </button>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm"></div>
@@ -141,11 +330,12 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
           <div className="p-4 border-b border-[#2A2A40] flex justify-between items-center">
             <h2 className="text-xl font-bold text-[#00ffa3]">BSV Wallet</h2>
             <div className="flex items-center space-x-2">
+              {renderWalletStatus()}
               <button
                 onClick={onDisconnect}
                 className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors text-sm"
               >
-                Disconnect
+                Disconnect BSV
               </button>
               <button
                 onClick={onClose}
@@ -227,32 +417,96 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
                 </div>
                 <button
                   onClick={handleSend}
-                  className="w-full py-3 px-6 bg-[#00ffa3] text-black rounded-lg font-medium hover:bg-[#00ffa3]/90 transition-colors"
+                  disabled={!recipientAddress || !sendAmount || isLoading}
+                  className={`w-full py-2 px-4 rounded-lg flex items-center justify-center space-x-2 ${
+                    isLoading
+                      ? 'bg-gray-500 cursor-not-allowed'
+                      : 'bg-[#00ffa3] hover:bg-[#00ffa3]/80'
+                  } text-black font-medium transition-colors`}
                 >
-                  Send BSV
+                  {isLoading ? (
+                    <>
+                      <div className="loading-spinner w-5 h-5 border-2 border-black/30 border-t-black"></div>
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiSend className="w-5 h-5" />
+                      <span>Send BSV</span>
+                    </>
+                  )}
                 </button>
               </div>
             )}
 
             {activeTab === 'receive' && (
-              <div className="text-center space-y-4">
-                <div className="bg-white p-4 rounded-lg inline-block">
-                  <QRCodeSVG value={address} size={200} />
-                </div>
+              <div className="text-center space-y-4 p-4">
+                {isValidAddress ? (
+                  <div className="bg-white p-4 rounded-lg inline-block">
+                    <QRCodeSVG key={qrKey} value={address} size={200} />
+                  </div>
+                ) : (
+                  <div className="bg-red-500/20 p-4 rounded-lg">
+                    <p className="text-red-400">Invalid address - QR code cannot be generated</p>
+                  </div>
+                )}
                 <div className="flex items-center justify-center space-x-2">
-                  <input
-                    type="text"
-                    value={address}
-                    readOnly
-                    className="flex-1 p-3 bg-[#2A2A40] border border-[#3D3D60] rounded-lg text-white focus:outline-none"
-                  />
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={truncateAddress(address)}
+                      readOnly
+                      className={`w-full p-3 bg-[#2A2A40] border ${
+                        isValidAddress ? 'border-[#3D3D60]' : 'border-red-500'
+                      } rounded-lg text-white focus:outline-none`}
+                    />
+                    <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity">
+                      <input
+                        type="text"
+                        value={address}
+                        readOnly
+                        className={`w-full h-full p-3 bg-[#2A2A40] border ${
+                          isValidAddress ? 'border-[#3D3D60]' : 'border-red-500'
+                        } rounded-lg text-white focus:outline-none`}
+                      />
+                    </div>
+                  </div>
                   <button
                     onClick={() => copyToClipboard(address)}
-                    className="p-3 bg-[#2A2A40] border border-[#3D3D60] rounded-lg text-[#00ffa3] hover:bg-[#3D3D60] transition-colors"
+                    disabled={!isValidAddress}
+                    className={`p-3 bg-[#2A2A40] border border-[#3D3D60] rounded-lg ${
+                      isValidAddress ? 'text-[#00ffa3] hover:bg-[#3D3D60]' : 'text-gray-500 cursor-not-allowed'
+                    } transition-colors relative group`}
                   >
-                    <FiCopy className="w-5 h-5" />
+                    {copySuccess ? (
+                      <FiCheck className="w-5 h-5" />
+                    ) : (
+                      <FiCopy className="w-5 h-5" />
+                    )}
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                      {copySuccess ? 'Copied!' : 'Copy address'}
+                    </span>
+                  </button>
+                  <button
+                    onClick={generateNewAddress}
+                    disabled={isChangingAddress}
+                    className={`p-3 bg-[#2A2A40] border border-[#3D3D60] rounded-lg ${
+                      !isChangingAddress ? 'text-[#00ffa3] hover:bg-[#3D3D60]' : 'text-gray-500'
+                    } transition-colors flex items-center space-x-2 relative group`}
+                  >
+                    <FiRefreshCw className={`w-5 h-5 ${isChangingAddress ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">New Address</span>
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      Generate new address
+                    </span>
                   </button>
                 </div>
+                {error && (
+                  <p className="text-red-500 text-sm mt-2">{error}</p>
+                )}
+                <p className="text-sm text-gray-400 mt-2">
+                  This is your current receiving address. Click "New Address" to generate a new one for enhanced privacy.
+                </p>
               </div>
             )}
 
