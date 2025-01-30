@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FiTrendingUp, FiLock, FiAward, FiClock } from 'react-icons/fi';
+import { FiTrendingUp, FiLock, FiAward, FiClock, FiPlus } from 'react-icons/fi';
 import { MemeVideoMetadata } from '../../shared/types/metadata';
 import CreateMemeModal from './CreateMemeModal';
 import { storageService } from '../services/storage.service';
 import RoundStats from './RoundStats';
+import { walletManager } from '../utils/wallet';
 
 interface SubmissionStats {
   totalLocked: number;
@@ -44,6 +45,9 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
   const [participantCount, setParticipantCount] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
   const [totalLocked, setTotalLocked] = useState(0);
+  const [lockingSubmissionId, setLockingSubmissionId] = useState<string | null>(null);
+  const [lockAmount, setLockAmount] = useState<string>('');
+  const [showLockInput, setShowLockInput] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -136,6 +140,15 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
     setActiveVideo(activeVideo === videoId ? null : videoId);
   };
 
+  const handleVideoMouseEnter = (videoElement: HTMLVideoElement) => {
+    videoElement.play().catch(console.error);
+  };
+
+  const handleVideoMouseLeave = (videoElement: HTMLVideoElement) => {
+    videoElement.pause();
+    videoElement.currentTime = 0;
+  };
+
   const formatBSV = (amount: number | undefined): string => {
     if (typeof amount !== 'number') return '0.00 BSV';
     return `${amount.toFixed(2)} BSV`;
@@ -158,6 +171,38 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
     return 'bg-red-400';
   };
 
+  const handleLockCoins = async (submissionId: string, amount: number) => {
+    try {
+      setLockingSubmissionId(submissionId);
+      const wallet = walletManager.getWallet();
+      if (!wallet) {
+        throw new Error('Wallet not connected');
+      }
+
+      // Call your contract or API to lock coins
+      await wallet.lockCoins(submissionId, amount);
+
+      // Update the submission's locked amount
+      setSubmissions(prev => prev.map(sub => {
+        if (sub.id === submissionId) {
+          return {
+            ...sub,
+            totalLocked: (sub.totalLocked || 0) + amount
+          };
+        }
+        return sub;
+      }));
+
+      // Reset states
+      setLockAmount('');
+      setShowLockInput(null);
+    } catch (error) {
+      console.error('Failed to lock coins:', error);
+    } finally {
+      setLockingSubmissionId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1A1B23] text-white p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -171,33 +216,130 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
             {submissions.map((submission) => (
               <div
                 key={submission.id}
-                className="relative group bg-[#2A2A40] rounded-xl overflow-hidden border border-[#3D3D60] hover:border-[#9945FF]/50 transition-all duration-300"
+                className={`relative group bg-[#2A2A40] rounded-xl overflow-hidden border border-[#3D3D60] hover:border-[#9945FF]/50 transition-all duration-300 ${
+                  activeVideo === submission.id ? 'z-10 scale-105 shadow-2xl shadow-purple-500/20' : 'z-0'
+                }`}
               >
-                {/* Square Thumbnail */}
-                <div className="relative aspect-square bg-black">
+                {/* Video Container */}
+                <div 
+                  className="relative aspect-square bg-black cursor-pointer"
+                  onClick={() => handleVideoClick(submission.id)}
+                >
                   <video
                     src={submission.fileUrl}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover transition-transform duration-300 ${
+                      activeVideo === submission.id ? 'scale-105' : ''
+                    }`}
                     loop
                     muted
                     playsInline
+                    onMouseEnter={(e) => handleVideoMouseEnter(e.currentTarget)}
+                    onMouseLeave={(e) => handleVideoMouseLeave(e.currentTarget)}
                   />
                   
-                  {/* Overlay Content */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <div className="absolute inset-x-0 bottom-0 p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-[#00ffa3]">
-                          <FiLock className="w-3 h-3 mr-1" />
-                          <span className="text-sm font-medium">{formatBSV(submission.totalLocked)}</span>
-                        </div>
-                        <div className="text-xs text-white/60">
-                          Position #{submission.position || 0}
-                        </div>
+                  {/* Gradient Overlay */}
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent transition-opacity duration-300 ${
+                    activeVideo === submission.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}>
+                    {/* Stats Bar */}
+                    <div className="absolute inset-x-0 bottom-0 p-4 space-y-3">
+                      {/* Progress Bar */}
+                      <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${getProgressColor(submission.totalLocked, submission.threshold)} transition-all duration-300`}
+                          style={{
+                            width: `${Math.min(
+                              ((submission.totalLocked || 0) / (submission.threshold || 1)) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
                       </div>
-                      <div className="text-sm font-medium text-white/90">
-                        {submission.creator}
-                      </div>
+
+                      {/* Lock Coins Input */}
+                      {showLockInput === submission.id ? (
+                        <div className="flex items-center space-x-2 animate-fade-in">
+                          <input
+                            type="number"
+                            value={lockAmount}
+                            onChange={(e) => setLockAmount(e.target.value)}
+                            className="flex-1 px-2 py-1 bg-black/50 border border-[#00ffa3] rounded text-sm text-white focus:outline-none"
+                            placeholder="Amount in BSV"
+                            step="0.00000001"
+                            min="0"
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLockCoins(submission.id, parseFloat(lockAmount));
+                            }}
+                            disabled={lockingSubmissionId === submission.id || !lockAmount}
+                            className="px-3 py-1 bg-[#00ffa3] text-black rounded text-sm font-medium hover:bg-[#00ffa3]/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {lockingSubmissionId === submission.id ? (
+                              <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                            ) : (
+                              'Lock'
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowLockInput(null);
+                            }}
+                            className="px-2 py-1 bg-black/30 text-white/60 rounded text-sm hover:bg-black/50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center text-[#00ffa3]">
+                              <FiLock className="w-3.5 h-3.5 mr-1" />
+                              <span className="text-sm font-medium">{formatBSV(submission.totalLocked)}</span>
+                            </div>
+                            <div className="flex items-center text-white/60">
+                              <FiClock className="w-3.5 h-3.5 mr-1" />
+                              <span className="text-sm">{formatTimeLeft(submission.timeLeft)}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowLockInput(submission.id);
+                              }}
+                              className="p-1.5 bg-[#00ffa3]/10 hover:bg-[#00ffa3]/20 text-[#00ffa3] rounded-full transition-colors"
+                              title="Lock BSV"
+                            >
+                              <FiPlus className="w-3.5 h-3.5" />
+                            </button>
+                            {submission.isTop3 && (
+                              <div className="flex items-center text-yellow-400">
+                                <FiAward className="w-3.5 h-3.5" />
+                              </div>
+                            )}
+                            {submission.isTop10Percent && (
+                              <div className="flex items-center text-purple-400">
+                                <FiTrendingUp className="w-3.5 h-3.5" />
+                              </div>
+                            )}
+                            <div className="text-xs font-medium text-white/60 bg-black/40 px-2 py-1 rounded-full">
+                              #{submission.position || 0}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Play Indicator */}
+                  <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+                    activeVideo === submission.id ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+                  }`}>
+                    <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                      <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1" />
                     </div>
                   </div>
                 </div>

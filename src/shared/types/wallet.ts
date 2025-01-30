@@ -28,4 +28,5 @@ export interface Wallet {
   signMessage(message: string): Promise<string>;
   verifyMessage(message: string, signature: string, address: string): Promise<boolean>;
   deriveNextAddress?(): Promise<string>;
+  lockCoins(submissionId: string, amount: number): Promise<void>;
 } 
