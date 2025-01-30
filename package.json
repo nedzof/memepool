@@ -40,6 +40,7 @@
     "react-icons": "^5.4.0",
     "scrypt-ts": "^1.4.4",
     "tailwind-merge": "^2.6.0",
+    "tiny-secp256k1": "^2.2.3",
     "tsx": "^4.7.1"
   },
   "devDependencies": {
