@@ -14,6 +14,7 @@ interface PhantomBitcoinProvider {
   request: (args: { method: string; params?: any }) => Promise<any>;
   on: (event: string, callback: (args: any) => void) => void;
   requestAccounts: () => Promise<BtcAccount[]>;
+  connect: () => Promise<{ publicKey: string }>;
 }
 
 export class PhantomWallet {
@@ -54,6 +55,16 @@ export class PhantomWallet {
             console.log('PhantomWallet: Updated accounts:', this.currentAccount);
           }
         });
+
+        provider.on('connect', () => {
+          console.log('PhantomWallet: Connected');
+        });
+
+        provider.on('disconnect', () => {
+          console.log('PhantomWallet: Disconnected');
+          this.disconnect();
+        });
+
         console.log('PhantomWallet: Event listener setup complete');
       } else {
         console.log('PhantomWallet: Provider not available for event listener, retrying...');
@@ -87,6 +98,11 @@ export class PhantomWallet {
     }
 
     try {
+      // First connect to establish the session
+      console.log('PhantomWallet: Connecting to Phantom...');
+      await provider.connect();
+
+      // Then request accounts which will trigger the modal
       console.log('PhantomWallet: Requesting accounts...');
       const accounts = await provider.requestAccounts();
       console.log('PhantomWallet: Received accounts:', accounts);
@@ -114,6 +130,10 @@ export class PhantomWallet {
     if (!provider) return null;
 
     try {
+      // Try to connect silently first
+      await provider.connect();
+      
+      // Then request accounts
       const accounts = await provider.requestAccounts();
       if (accounts && accounts.length > 0) {
         this.accounts = accounts;

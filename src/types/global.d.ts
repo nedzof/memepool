@@ -12,6 +12,7 @@ interface PhantomBitcoinProvider {
   request: (args: { method: string; params?: any }) => Promise<any>;
   on: (event: string, callback: (args: any) => void) => void;
   requestAccounts: () => Promise<BtcAccount[]>;
+  connect: () => Promise<{ publicKey: string }>;
 }
 
 interface PhantomProvider {
