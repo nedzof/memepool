@@ -30,7 +30,11 @@ module.exports = {
         'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
         'number-pulse': 'number-pulse 2s ease-in-out infinite',
         'progress-pulse': 'progress-pulse 1.5s ease-in-out infinite',
-        'heartbeat': 'heartbeat 1.5s ease-in-out infinite'
+        'heartbeat': 'heartbeat 1.5s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
+        'slideInRight': 'slideInRight 0.3s ease-out forwards',
+        'confetti-explosion': 'confetti-explosion 1s ease-out forwards',
+        'confetti-particle': 'confetti-particle 1s ease-out forwards'
       },
       keyframes: {
         slideUpcomingRight: {
@@ -125,6 +129,22 @@ module.exports = {
           '25%': { transform: 'scale(1.1)' },
           '50%': { transform: 'scale(1)' },
           '75%': { transform: 'scale(1.1)' }
+        },
+        'shimmer': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' }
+        },
+        'slideInRight': {
+          '0%': { transform: 'translateX(100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' }
+        },
+        'confetti-explosion': {
+          '0%': { transform: 'scale(0)', opacity: '1' },
+          '100%': { transform: 'scale(1.5)', opacity: '0' }
+        },
+        'confetti-particle': {
+          '0%': { transform: 'translate(0, 0) scale(1)', opacity: '1' },
+          '100%': { transform: 'translate(var(--x, 100px), var(--y, 100px)) scale(0)', opacity: '0' }
         }
       },
       backgroundImage: {
