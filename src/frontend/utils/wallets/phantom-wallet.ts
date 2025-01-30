@@ -1,5 +1,4 @@
-import { PublicKey, Transaction, VersionedTransaction, SendOptions } from '@solana/web3.js';
-
+// Types for Phantom Bitcoin Provider
 type DisplayEncoding = 'utf8' | 'hex';
 type PhantomEvent = 'connect' | 'disconnect' | 'accountChanged';
 
