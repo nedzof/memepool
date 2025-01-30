@@ -46,34 +46,44 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
   const [isPhantomConnected, setIsPhantomConnected] = useState(false);
   const phantomWallet = PhantomWallet.getInstance();
 
-  // Check Phantom connection status on mount
-  useEffect(() => {
-    const checkPhantomConnection = async () => {
-      try {
-        const isConnected = await phantomWallet.isConnected();
-        setIsPhantomConnected(isConnected);
-      } catch (error) {
-        console.error('Failed to check Phantom connection:', error);
+  const initializePhantom = async () => {
+    try {
+      console.log('Checking Phantom installation...');
+      if (!phantomWallet.isPhantomInstalled()) {
+        console.log('Phantom not installed');
+        setError('Please install Phantom wallet to continue');
+        return;
       }
-    };
 
-    checkPhantomConnection();
-  }, []);
+      // First, request Phantom BTC connection - this will show the modal
+      console.log('Requesting Phantom BTC connection...');
+      const btcAccount = await phantomWallet.requestConnection();
+      setIsPhantomConnected(true);
+      console.log('Connected to Phantom with BTC account:', btcAccount);
+
+      // Get the public key from the BTC account
+      const publicKey = btcAccount.publicKey;
+      if (!publicKey) {
+        throw new Error('No public key available from Phantom');
+      }
+
+      // Only after successful Phantom connection, initialize BSV wallet with the public key
+      console.log('Using Phantom public key to initialize BSV wallet...');
+      const wallet = await walletManager.connect(WalletType.BSV, publicKey);
+      if (wallet) {
+        const balance = await wallet.getBalance();
+        setBalance(balance);
+        console.log('BSV wallet initialized with Phantom public key');
+      }
+    } catch (error) {
+      console.error('Failed to initialize Phantom:', error);
+      setError('Please connect your Phantom wallet to continue');
+      setIsPhantomConnected(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const wallet = walletManager.getWallet();
-        if (wallet) {
-          const balance = await wallet.getBalance();
-          setBalance(balance);
-        }
-      } catch (error) {
-        console.error('Failed to fetch balance:', error);
-      }
-    };
-
-    fetchBalance();
+    initializePhantom();
   }, []);
 
   useEffect(() => {
@@ -137,6 +147,7 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
 
       if (!isPhantomConnected) {
         try {
+          console.log('Requesting Phantom connection...');
           const account = await phantomWallet.connect();
           setIsPhantomConnected(true);
           console.log('Connected to Phantom with account:', account);
@@ -185,11 +196,30 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
         return;
       }
 
-      const account = await phantomWallet.connect();
+      // Request Phantom BTC connection first - this will show the modal
+      console.log('Requesting Phantom BTC connection...');
+      const btcAccount = await phantomWallet.requestConnection();
       setIsPhantomConnected(true);
-      console.log('Connected to Phantom with account:', account);
+      console.log('Connected to Phantom with BTC account:', btcAccount);
+
+      // Get the public key from the BTC account
+      const publicKey = btcAccount.publicKey;
+      if (!publicKey) {
+        throw new Error('No public key available from Phantom');
+      }
+
+      // Only after successful Phantom connection, initialize BSV wallet with the public key
+      console.log('Using Phantom public key to initialize BSV wallet...');
+      const wallet = await walletManager.connect(WalletType.BSV, publicKey);
+      if (wallet) {
+        const balance = await wallet.getBalance();
+        setBalance(balance);
+        console.log('BSV wallet initialized with Phantom public key');
+      }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to connect to Phantom');
+      console.error('Failed to connect to Phantom:', error);
+      setError('Failed to connect to Phantom wallet');
+      setIsPhantomConnected(false);
     }
   };
 
@@ -197,6 +227,9 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
     try {
       await phantomWallet.disconnect();
       setIsPhantomConnected(false);
+      // Also disconnect BSV wallet since it depends on Phantom
+      await walletManager.disconnect();
+      setBalance(0);
     } catch (error) {
       console.error('Error disconnecting from Phantom:', error);
     }
@@ -268,53 +301,6 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
       setIsChangingAddress(false);
     }
   };
-
-  // Add initialization check effect
-  useEffect(() => {
-    const initializeWallet = async () => {
-      try {
-        console.log('Initializing wallet...');
-        const wallet = walletManager.getWallet();
-        
-        if (!wallet) {
-          console.error('No wallet instance found during initialization');
-          setError('Wallet not initialized. Please try disconnecting and connecting again.');
-          return;
-        }
-
-        // Connect the wallet if not already connected
-        if (!wallet.address) {
-          console.log('Wallet found but not connected, initiating login...');
-          await walletManager.connect(WalletType.BSV);
-          console.log('Wallet connected successfully');
-        }
-
-        const isAvailable = await wallet.isAvailable();
-        if (!isAvailable) {
-          console.error('Wallet is not available');
-          setError('Wallet is not available. Please try reconnecting.');
-          return;
-        }
-
-        // Verify we have a valid address
-        const currentAddress = await wallet.getAddress();
-        console.log('Current wallet address:', currentAddress);
-        
-        if (!validateBSVAddress(currentAddress)) {
-          console.error('Invalid wallet address:', currentAddress);
-          setError('Invalid wallet address. Please try reconnecting.');
-          return;
-        }
-
-        console.log('Wallet initialized successfully:', wallet);
-      } catch (error) {
-        console.error('Failed to initialize wallet:', error);
-        setError('Failed to initialize wallet. Please try reconnecting.');
-      }
-    };
-
-    initializeWallet();
-  }, []);
 
   const truncateAddress = (addr: string) => {
     if (addr.length <= 12) return addr;

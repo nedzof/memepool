@@ -1,9 +1,7 @@
 import { Wallet, WalletType } from '../../shared/types/wallet';
-import * as bitcoin from 'bitcoinjs-lib';
 import { sha256 } from '@noble/hashes/sha256';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { base58 } from '@scure/base';
-import { PublicKey } from '@solana/web3.js';
 
 class WalletManager {
   private static instance: WalletManager;
@@ -18,24 +16,28 @@ class WalletManager {
     return WalletManager.instance;
   }
 
-  async connect(type: WalletType): Promise<Wallet> {
+  async connect(type: WalletType, publicKey?: string): Promise<Wallet> {
     try {
       // Disconnect existing wallet if any
       await this.disconnect();
 
       // Create and connect new wallet based on type
       const wallet = await this.createWallet(type);
-      await wallet.initiateLogin();
+      await wallet.initiateLogin(publicKey);
 
       // Store wallet instance
       this.currentWallet = wallet;
       return wallet;
     } catch (error) {
-      throw new Error('Failed to connect wallet');
+      console.error('WalletManager: Failed to connect wallet:', error);
+      throw error;
     }
   }
 
   async disconnect(): Promise<void> {
+    if (this.currentWallet) {
+      await this.currentWallet.disconnect();
+    }
     this.currentWallet = null;
   }
 
@@ -62,9 +64,12 @@ class WalletManager {
 
 export const walletManager = WalletManager.getInstance();
 
-export const generateBtcAddress = (publicKeyStr: string): string => {
-  // Convert base58 public key string to bytes
-  const pubKeyBytes = base58.decode(publicKeyStr);
+export const generateBtcAddress = (publicKeyHex: string): string => {
+  // Convert hex public key string to bytes
+  const pubKeyBytes = new Uint8Array(
+    publicKeyHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []
+  );
+  
   const hash = sha256(pubKeyBytes);
   
   // Create a BTC public key hash (RIPEMD160(SHA256(pubKey)))

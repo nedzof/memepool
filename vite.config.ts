@@ -10,7 +10,8 @@ export default defineConfig({
       NODE_ENV: JSON.stringify(process.env.NODE_ENV),
       VITE_BSV_NETWORK: JSON.stringify(process.env.VITE_BSV_NETWORK || 'testnet'),
     },
-    global: {},
+    global: 'globalThis',
+    'global.Buffer': ['buffer', 'Buffer'],
   },
   css: {
     postcss: './postcss.config.js',

@@ -34,44 +34,63 @@ export class PhantomWallet {
         return provider;
       }
     }
-
-    window.open('https://phantom.app/', '_blank');
     return null;
   }
 
   isPhantomInstalled(): boolean {
-    return !!(window as any)?.phantom?.bitcoin?.isPhantom;
+    const provider = this.getProvider();
+    return !!provider;
   }
 
-  async connect(): Promise<string> {
+  async requestBitcoinAccounts(): Promise<BtcAccount[]> {
     try {
       const provider = this.getProvider();
       if (!provider) {
         throw new Error('Phantom provider not found');
       }
 
-      try {
-        // Request accounts and wait for user approval
-        this.accounts = await provider.requestAccounts();
-        
-        // Find a p2pkh account or use the first account
-        this.currentAccount = this.accounts.find(acc => acc.addressType === 'p2pkh') || this.accounts[0];
-        
-        if (!this.currentAccount) {
-          throw new Error('No suitable account found');
-        }
-
-        this.connected = true;
-        return this.currentAccount.address;
-      } catch (err) {
-        const phantomError = err as PhantomError;
-        if (phantomError.code === 4001) {
-          throw new Error('User rejected the connection request');
-        }
-        throw new Error('Failed to connect to Phantom wallet');
+      // This will trigger the Phantom modal for user approval
+      console.log('Requesting accounts from Phantom...');
+      const accounts = await provider.requestAccounts();
+      console.log('Received accounts:', accounts);
+      this.accounts = accounts;
+      return accounts;
+    } catch (err) {
+      const phantomError = err as PhantomError;
+      if (phantomError.code === 4001) {
+        throw new Error('User rejected the connection request');
       }
+      throw new Error('Failed to connect to Phantom wallet');
+    }
+  }
+
+  async connect(): Promise<BtcAccount> {
+    try {
+      if (!this.isPhantomInstalled()) {
+        throw new Error('Phantom wallet is not installed');
+      }
+
+      // If we're already connected and have an account, return it
+      if (this.connected && this.currentAccount) {
+        return this.currentAccount;
+      }
+
+      // Request accounts first - this will show the Phantom modal
+      const accounts = await this.requestBitcoinAccounts();
+      
+      // Find a p2tr account or use the first account
+      this.currentAccount = accounts.find(acc => acc.addressType === 'p2tr') || accounts[0];
+      
+      if (!this.currentAccount) {
+        throw new Error('No suitable account found');
+      }
+
+      this.connected = true;
+      return this.currentAccount;
     } catch (error) {
       this.connected = false;
+      this.currentAccount = null;
+      this.accounts = [];
       throw error;
     }
   }
@@ -99,18 +118,33 @@ export class PhantomWallet {
     return this.currentAccount;
   }
 
-  async requestConnection(): Promise<boolean> {
+  getPublicKey(): string | null {
+    return this.currentAccount?.publicKey || null;
+  }
+
+  async requestConnection(): Promise<BtcAccount> {
     try {
       if (!this.isPhantomInstalled()) {
         throw new Error('Phantom wallet is not installed');
       }
 
+      // If we're already connected and have an account, return it
       if (this.connected && this.currentAccount) {
-        return true;
+        return this.currentAccount;
       }
 
-      await this.connect();
-      return true;
+      // Request accounts first - this will show the Phantom modal
+      const accounts = await this.requestBitcoinAccounts();
+      
+      // Find a p2tr account or use the first account
+      this.currentAccount = accounts.find(acc => acc.addressType === 'p2tr') || accounts[0];
+      
+      if (!this.currentAccount) {
+        throw new Error('No suitable account found');
+      }
+
+      this.connected = true;
+      return this.currentAccount;
     } catch (error) {
       console.error('Error requesting Phantom connection:', error);
       throw error;

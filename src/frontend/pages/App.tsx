@@ -1,3 +1,4 @@
+import '../utils/buffer-polyfill';
 import React, { useState, useEffect } from 'react';
 import MemeSubmissionGrid from '../components/MemeSubmissionGrid';
 import SearchBar from '../components/SearchBar';
@@ -23,7 +24,7 @@ const App: React.FC = () => {
   const [roundNumber, setRoundNumber] = useState(1);
 
   useEffect(() => {
-    const provider = window?.phantom?.solana;
+    const provider = window?.phantom?.bitcoin;
     setIsPhantomInstalled(provider?.isPhantom || false);
   }, []);
 
@@ -133,15 +134,17 @@ const App: React.FC = () => {
     }
 
     try {
-      const provider = window.phantom?.solana;
+      const provider = window.phantom?.bitcoin;
       if (!provider) return;
 
-      // This will trigger the connection approval modal
-      const resp = await provider.connect();
-      const pubKey = resp.publicKey.toString();
-      setPublicKey(pubKey);
-      setConnected(true);
-      console.log('Connected with public key:', pubKey);
+      // Request Bitcoin accounts
+      const accounts = await provider.requestAccounts();
+      if (accounts && accounts.length > 0) {
+        const account = accounts[0];
+        setPublicKey(account.publicKey);
+        setConnected(true);
+        console.log('Connected with public key:', account.publicKey);
+      }
     } catch (error) {
       console.error('Error connecting to Phantom wallet:', error);
     }
@@ -149,7 +152,7 @@ const App: React.FC = () => {
 
   const handleDisconnect = async () => {
     try {
-      const provider = window.phantom?.solana;
+      const provider = window.phantom?.bitcoin;
       if (!provider) return;
 
       await provider.disconnect();
@@ -159,6 +162,10 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error disconnecting from Phantom wallet:', error);
     }
+  };
+
+  const handleAddressChange = (newAddress: string) => {
+    setBtcAddress(newAddress);
   };
 
   return (
@@ -202,6 +209,7 @@ const App: React.FC = () => {
           onClose={() => setShowBSVModal(false)}
           onDisconnect={handleDisconnect}
           address={btcAddress}
+          onAddressChange={handleAddressChange}
         />
       )}
     </div>

@@ -9,15 +9,22 @@ export class ManualWallet implements Wallet {
 
   private privateKey: string = '';
 
-  isAvailable(): boolean {
+  async isAvailable(): Promise<boolean> {
     return true; // Always available for testing
   }
 
-  async initiateLogin(): Promise<void> {
+  async initiateLogin(publicKey?: string): Promise<void> {
     // Simulate wallet connection
     this.privateKey = crypto.randomUUID();
     this.address = `1${this.privateKey.slice(0, 33)}`;
     this.balance = 100; // Start with 100 BSV for testing
+  }
+
+  async disconnect(): Promise<void> {
+    // Reset wallet state
+    this.privateKey = '';
+    this.address = '';
+    this.balance = 0;
   }
 
   async getBalance(): Promise<number> {

@@ -20,11 +20,12 @@ export interface Wallet {
   balance: number;
 
   isAvailable(): Promise<boolean>;
-  initiateLogin(): Promise<void>;
+  initiateLogin(publicKey?: string): Promise<void>;
   disconnect(): Promise<void>;
   getBalance(): Promise<number>;
   getAddress(): Promise<string>;
   sendPayment(to: string, amount: number): Promise<string>;
   signMessage(message: string): Promise<string>;
   verifyMessage(message: string, signature: string, address: string): Promise<boolean>;
+  deriveNextAddress?(): Promise<string>;
 } 

@@ -11,17 +11,25 @@ export class ImportedWallet implements Wallet {
   private mnemonic: string = '';
   private privateKey: string = '';
 
-  isAvailable(): boolean {
+  async isAvailable(): Promise<boolean> {
     return true;
   }
 
-  async initiateLogin(): Promise<void> {
+  async initiateLogin(publicKey?: string): Promise<void> {
     // Generate new mnemonic if none exists
     if (!this.mnemonic) {
       this.mnemonic = bip39.generateMnemonic();
       this.privateKey = await this.derivePrivateKey(this.mnemonic);
       this.address = await this.deriveAddress(this.privateKey);
     }
+  }
+
+  async disconnect(): Promise<void> {
+    // Reset wallet state
+    this.mnemonic = '';
+    this.privateKey = '';
+    this.address = '';
+    this.balance = 0;
   }
 
   async importMnemonic(mnemonic: string): Promise<void> {
