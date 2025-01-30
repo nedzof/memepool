@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletName } from '@solana/wallet-adapter-base';
 import { FiTrendingUp, FiLock, FiClock, FiZap, FiDollarSign } from 'react-icons/fi';
@@ -33,7 +33,7 @@ interface HeaderProps {
   onDisconnect?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+const HeaderComponent: React.FC<HeaderProps> = ({
   totalLocked,
   threshold,
   timeLeft,
@@ -47,28 +47,88 @@ export const Header: React.FC<HeaderProps> = ({
   onConnectPhantom,
   onDisconnect
 }) => {
-  console.log('[Header] Rendering Header component');
-  
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     console.log('Search query:', query);
     if (onSearch) {
       onSearch(query);
     }
-  };
+  }, [onSearch]);
 
-  const formatBSV = (amount: number): string => {
+  const formatBSV = useCallback((amount: number): string => {
     return `${amount.toFixed(2)} BSV`;
-  };
+  }, []);
 
-  const formatTimeElapsed = (seconds: number): string => {
+  const formatTimeElapsed = useCallback((seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
-  const progress = (totalLocked / threshold) * 100;
+  const progress = useMemo(() => (totalLocked / threshold) * 100, [totalLocked, threshold]);
+
+  const truncatedAddress = useMemo(() => 
+    btcAddress ? btcAddress.slice(0, 4) + '...' + btcAddress.slice(-4) : 'Loading...',
+    [btcAddress]
+  );
+
+  const progressElement = useMemo(() => (
+    <div className="flex-grow">
+      <div className="relative h-1.5 bg-[#3D3D60] rounded-full overflow-hidden">
+        <div
+          className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#9945FF] to-[#FF00FF] transition-all duration-500"
+          style={{ width: `${Math.min(progress, 100)}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between text-xs mt-1">
+        <div className="flex items-center">
+          <FiTrendingUp className="w-3 h-3 mr-1 text-[#9945FF]" />
+          <span className="text-white/90">
+            {progress >= 100 ? 'Round Complete!' : `${Math.floor(progress)}% to Goal`}
+          </span>
+        </div>
+        {progress >= 70 && progress < 100 && (
+          <div className="text-[#FF00FF] text-xs">Almost there! 🚀</div>
+        )}
+        {progress >= 100 && (
+          <div className="text-[#9945FF] text-xs">Viral achieved! 🔥</div>
+        )}
+      </div>
+    </div>
+  ), [progress]);
+
+  const walletButton = useMemo(() => (
+    connected ? (
+      <button
+        onClick={onShowBSVModal}
+        className="flex items-center space-x-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+      >
+        <img 
+          src="/images/phantom-icon.svg" 
+          alt="Phantom" 
+          className="w-4 h-4"
+        />
+        <span className="text-white text-sm font-mono">
+          {truncatedAddress}
+        </span>
+      </button>
+    ) : (
+      <button
+        onClick={onConnectPhantom}
+        className="flex items-center space-x-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+      >
+        <span className="text-white text-sm">
+          {isPhantomInstalled ? 'Connect' : 'Download'}
+        </span>
+        <img 
+          src="/images/phantom-icon.svg" 
+          alt="Phantom" 
+          className="w-4 h-4"
+        />
+      </button>
+    )
+  ), [connected, onShowBSVModal, truncatedAddress, onConnectPhantom, isPhantomInstalled]);
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-[#2A2A40] to-[#1A1B23] shadow-xl">
@@ -82,40 +142,12 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Search Section */}
           <div className="flex-grow max-w-xl mx-8">
-            <SearchBar onSearch={onSearch || handleSearch} />
+            <SearchBar onSearch={handleSearch} />
           </div>
 
           {/* Wallet Section */}
           <div className="flex items-center space-x-3 flex-shrink-0">
-            {connected ? (
-              <button
-                onClick={onShowBSVModal}
-                className="flex items-center space-x-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <img 
-                  src="/images/phantom-icon.svg" 
-                  alt="Phantom" 
-                  className="w-4 h-4"
-                />
-                <span className="text-white text-sm font-mono">
-                  {btcAddress ? btcAddress.slice(0, 4) + '...' + btcAddress.slice(-4) : 'Loading...'}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={onConnectPhantom}
-                className="flex items-center space-x-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <span className="text-white text-sm">
-                  {isPhantomInstalled ? 'Connect' : 'Download'}
-                </span>
-                <img 
-                  src="/images/phantom-icon.svg" 
-                  alt="Phantom" 
-                  className="w-4 h-4"
-                />
-              </button>
-            )}
+            {walletButton}
           </div>
         </div>
 
@@ -136,28 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Progress Bar */}
             <div className="flex-grow flex items-center space-x-4">
-              <div className="flex-grow">
-                <div className="relative h-1.5 bg-[#3D3D60] rounded-full overflow-hidden">
-                  <div
-                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#9945FF] to-[#FF00FF] transition-all duration-500"
-                    style={{ width: `${Math.min(progress, 100)}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-xs mt-1">
-                  <div className="flex items-center">
-                    <FiTrendingUp className="w-3 h-3 mr-1 text-[#9945FF]" />
-                    <span className="text-white/90">
-                      {progress >= 100 ? 'Round Complete!' : `${Math.floor(progress)}% to Goal`}
-                    </span>
-                  </div>
-                  {progress >= 70 && progress < 100 && (
-                    <div className="text-[#FF00FF] text-xs">Almost there! 🚀</div>
-                  )}
-                  {progress >= 100 && (
-                    <div className="text-[#9945FF] text-xs">Viral achieved! 🔥</div>
-                  )}
-                </div>
-              </div>
+              {progressElement}
 
               {/* Stats */}
               <div className="flex items-center space-x-4 flex-shrink-0">
@@ -182,4 +193,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-}; 
+};
+
+// Memoize the entire component
+export const Header = memo(HeaderComponent); 

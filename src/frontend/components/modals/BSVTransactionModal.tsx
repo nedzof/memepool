@@ -6,8 +6,6 @@ import { MemeVideoMetadata } from '../../../shared/types/meme';
 import * as scrypt from 'scryptlib';
 import styles from './WalletModal.module.css';
 import { WalletType } from '../../../shared/types/wallet';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PhantomWallet } from '../../utils/wallets/phantom-wallet';
 
 // BSV address validation regex
@@ -45,8 +43,22 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
   const [copySuccess, setCopySuccess] = useState(false);
   const [isValidAddress, setIsValidAddress] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const { publicKey, connected, connect, disconnect } = useWallet();
+  const [isPhantomConnected, setIsPhantomConnected] = useState(false);
   const phantomWallet = PhantomWallet.getInstance();
+
+  // Check Phantom connection status on mount
+  useEffect(() => {
+    const checkPhantomConnection = async () => {
+      try {
+        const isConnected = await phantomWallet.isConnected();
+        setIsPhantomConnected(isConnected);
+      } catch (error) {
+        console.error('Failed to check Phantom connection:', error);
+      }
+    };
+
+    checkPhantomConnection();
+  }, []);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -123,9 +135,11 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
         throw new Error('Please install Phantom wallet to continue');
       }
 
-      if (!phantomWallet.isConnected()) {
+      if (!isPhantomConnected) {
         try {
-          await phantomWallet.requestConnection();
+          const account = await phantomWallet.connect();
+          setIsPhantomConnected(true);
+          console.log('Connected to Phantom with account:', account);
         } catch (err) {
           throw new Error('Please connect your Phantom wallet to continue');
         }
@@ -160,6 +174,31 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
       setError(error instanceof Error ? error.message : 'Failed to send transaction');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePhantomConnect = async () => {
+    try {
+      setError(null);
+      if (!phantomWallet.isPhantomInstalled()) {
+        window.open('https://phantom.app/', '_blank');
+        return;
+      }
+
+      const account = await phantomWallet.connect();
+      setIsPhantomConnected(true);
+      console.log('Connected to Phantom with account:', account);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to connect to Phantom');
+    }
+  };
+
+  const handlePhantomDisconnect = async () => {
+    try {
+      await phantomWallet.disconnect();
+      setIsPhantomConnected(false);
+    } catch (error) {
+      console.error('Error disconnecting from Phantom:', error);
     }
   };
 
@@ -285,8 +324,8 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
   // Add a key to force QR code re-render
   const qrKey = `${address}-${isValidAddress}`;
 
-  // Add Phantom connection status to the header
-  const renderWalletStatus = () => {
+  // Render Phantom connection status
+  const renderPhantomStatus = () => {
     if (!phantomWallet.isPhantomInstalled()) {
       return (
         <a
@@ -300,10 +339,10 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
       );
     }
 
-    if (!phantomWallet.isConnected()) {
+    if (!isPhantomConnected) {
       return (
         <button
-          onClick={() => phantomWallet.requestConnection()}
+          onClick={handlePhantomConnect}
           className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 rounded-lg transition-colors text-sm"
         >
           Connect Phantom
@@ -313,7 +352,7 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
 
     return (
       <button
-        onClick={() => phantomWallet.disconnect()}
+        onClick={handlePhantomDisconnect}
         className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors text-sm"
       >
         Disconnect Phantom
@@ -330,7 +369,7 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
           <div className="p-4 border-b border-[#2A2A40] flex justify-between items-center">
             <h2 className="text-xl font-bold text-[#00ffa3]">BSV Wallet</h2>
             <div className="flex items-center space-x-2">
-              {renderWalletStatus()}
+              {renderPhantomStatus()}
               <button
                 onClick={onDisconnect}
                 className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors text-sm"

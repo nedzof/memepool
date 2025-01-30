@@ -4,9 +4,18 @@ interface PhantomError extends Error {
   code?: number;
 }
 
+interface BtcAccount {
+  address: string;
+  addressType: "p2tr" | "p2wpkh" | "p2sh" | "p2pkh";
+  publicKey: string;
+  purpose: "payment" | "ordinals";
+}
+
 export class PhantomWallet {
   private static instance: PhantomWallet | null = null;
   private connected: boolean = false;
+  private accounts: BtcAccount[] = [];
+  private currentAccount: BtcAccount | null = null;
 
   private constructor() {}
 
@@ -17,26 +26,43 @@ export class PhantomWallet {
     return PhantomWallet.instance;
   }
 
+  private getProvider() {
+    if ('phantom' in window) {
+      const provider = (window as any).phantom?.bitcoin;
+      
+      if (provider && provider.isPhantom) {
+        return provider;
+      }
+    }
+
+    window.open('https://phantom.app/', '_blank');
+    return null;
+  }
+
   isPhantomInstalled(): boolean {
-    const provider = window.phantom?.solana;
-    return provider?.isPhantom || false;
+    return !!(window as any)?.phantom?.bitcoin?.isPhantom;
   }
 
   async connect(): Promise<string> {
     try {
-      if (!this.isPhantomInstalled()) {
-        throw new Error('Phantom wallet is not installed');
-      }
-
-      const provider = window.phantom?.solana;
+      const provider = this.getProvider();
       if (!provider) {
         throw new Error('Phantom provider not found');
       }
 
       try {
-        const response = await provider.connect();
+        // Request accounts and wait for user approval
+        this.accounts = await provider.requestAccounts();
+        
+        // Find a p2pkh account or use the first account
+        this.currentAccount = this.accounts.find(acc => acc.addressType === 'p2pkh') || this.accounts[0];
+        
+        if (!this.currentAccount) {
+          throw new Error('No suitable account found');
+        }
+
         this.connected = true;
-        return response.publicKey.toString();
+        return this.currentAccount.address;
       } catch (err) {
         const phantomError = err as PhantomError;
         if (phantomError.code === 4001) {
@@ -52,11 +78,13 @@ export class PhantomWallet {
 
   async disconnect(): Promise<void> {
     try {
-      const provider = window.phantom?.solana;
+      const provider = this.getProvider();
       if (provider) {
         await provider.disconnect();
       }
       this.connected = false;
+      this.accounts = [];
+      this.currentAccount = null;
     } catch (error) {
       console.error('Error disconnecting from Phantom:', error);
       throw new Error('Failed to disconnect from Phantom wallet');
@@ -64,7 +92,11 @@ export class PhantomWallet {
   }
 
   isConnected(): boolean {
-    return this.connected;
+    return this.connected && !!this.currentAccount;
+  }
+
+  getCurrentAccount(): BtcAccount | null {
+    return this.currentAccount;
   }
 
   async requestConnection(): Promise<boolean> {
@@ -73,7 +105,7 @@ export class PhantomWallet {
         throw new Error('Phantom wallet is not installed');
       }
 
-      if (this.connected) {
+      if (this.connected && this.currentAccount) {
         return true;
       }
 
