@@ -28,6 +28,9 @@ module.exports = {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in': 'fadeIn 0.2s ease-out',
         'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
+        'number-pulse': 'number-pulse 2s ease-in-out infinite',
+        'progress-pulse': 'progress-pulse 1.5s ease-in-out infinite',
+        'heartbeat': 'heartbeat 1.5s ease-in-out infinite'
       },
       keyframes: {
         slideUpcomingRight: {
@@ -109,6 +112,20 @@ module.exports = {
           '0%, 100%': { transform: 'scale(1)', opacity: '1' },
           '50%': { transform: 'scale(1.02)', opacity: '0.95' },
         },
+        'number-pulse': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.1)' }
+        },
+        'progress-pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' }
+        },
+        'heartbeat': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '25%': { transform: 'scale(1.1)' },
+          '50%': { transform: 'scale(1)' },
+          '75%': { transform: 'scale(1.1)' }
+        }
       },
       backgroundImage: {
         'gradient-primary': 'linear-gradient(to right, var(--tw-gradient-stops))',
