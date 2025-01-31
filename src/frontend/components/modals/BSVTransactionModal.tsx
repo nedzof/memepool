@@ -41,10 +41,20 @@ interface BSVTransactionModalProps {
   onAddressChange?: (newAddress: string) => void;
 }
 
-const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose }) => {
+const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDisconnect, address, onAddressChange }) => {
+  const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'history'>('send');
+  const [sendAmount, setSendAmount] = useState('');
+  const [recipientAddress, setRecipientAddress] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [userMemes, setUserMemes] = useState<MemeVideoMetadata[]>([]);
+  const [balance, setBalance] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isPhantomConnected, setIsPhantomConnected] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [isValidAddress, setIsValidAddress] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPhantomConnected, setIsPhantomConnected] = useState(false);
+  const [isPhantomInitialized, setIsPhantomInitialized] = useState(false);
+  const [accounts, setAccounts] = useState<BtcAccount[]>([]);
 
   // Initialize Phantom when component mounts
   useEffect(() => {
@@ -66,8 +76,7 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose }) =>
         if (window.phantom?.bitcoin) {
           console.log('Phantom Bitcoin object:', window.phantom.bitcoin);
           console.log('Methods available:', Object.keys(window.phantom.bitcoin));
-          // Don't auto-connect, wait for user interaction
-          setIsPhantomConnected(false);
+          setIsPhantomInitialized(true);
         } else {
           console.log('Phantom Bitcoin not detected');
           setError('Please install Phantom wallet to continue');
@@ -85,86 +94,205 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose }) =>
 
   const connectToPhantom = async () => {
     try {
-      setIsLoading(true);
       if (!window.phantom?.bitcoin) {
         throw new Error('Phantom Bitcoin not available');
       }
 
-      console.log('Requesting Phantom BTC connection...');
-      // Use request method with "connect" since that's what's available
-      const response = await window.phantom.bitcoin.request({ 
-        method: "connect",
-        params: { onlyIfTrusted: false }
-      });
-      console.log('Connected with response:', response);
-
-      // Get accounts after connection
-      console.log('Requesting accounts...');
-      const accounts = await window.phantom.bitcoin.request({
-        method: "getAccounts"
-      });
-      console.log('Got accounts:', accounts);
-
-      if (!accounts || accounts.length === 0) {
-        throw new Error('No BTC accounts available');
-      }
-
-      // Find the payment account first, fallback to first account
-      const paymentAccount = accounts.find((acc: BtcAccount) => acc.purpose === 'payment') || accounts[0];
-      const publicKey = paymentAccount.publicKey;
-      
-      if (!publicKey) {
-        throw new Error('No public key available from Phantom');
-      }
-
+      console.log('Requesting Phantom BTC accounts...');
+      const accounts = await window.phantom.bitcoin.requestAccounts();
+      console.log('Connected with accounts:', accounts);
+      setAccounts(accounts);
       setIsPhantomConnected(true);
+
+      // Only after successful connection, dynamically import the rest of the modal
+      const { default: BSVTransactionContent } = await import('./BSVTransactionContent');
+      return <BSVTransactionContent 
+        accounts={accounts} 
+        onClose={onClose} 
+        onDisconnect={handlePhantomDisconnect}
+        address={address}
+        onAddressChange={onAddressChange}
+      />;
     } catch (error) {
       console.error('Failed to connect to Phantom:', error);
       setError(error instanceof Error ? error.message : 'Failed to connect to Phantom');
       setIsPhantomConnected(false);
+    }
+  };
+
+  const handlePhantomDisconnect = async () => {
+    try {
+      if (window.phantom?.bitcoin) {
+        await window.phantom.bitcoin.disconnect();
+      }
+      setIsPhantomConnected(false);
+      setAccounts([]);
+      onDisconnect();
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchUserMemes = async () => {
+      try {
+        // TODO: Replace with actual API call
+        // For now, using mock data
+        const mockMemes: MemeVideoMetadata[] = [
+          {
+            id: 'meme1',
+            title: 'My First Meme',
+            description: 'A funny meme I created',
+            videoUrl: 'https://example.com/meme1.mp4',
+            inscriptionId: 'insc1',
+            blockHeight: 123456,
+            createdAt: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+          },
+          {
+            id: 'meme2',
+            title: 'Another Great Meme',
+            description: 'My second meme creation',
+            videoUrl: 'https://example.com/meme2.mp4',
+            inscriptionId: 'insc2',
+            blockHeight: 123457,
+            createdAt: new Date(Date.now() - 172800000).toISOString() // 2 days ago
+          }
+        ];
+        setUserMemes(mockMemes);
+      } catch (error) {
+        console.error('Failed to fetch user memes:', error);
+      }
+    };
+
+    if (activeTab === 'history') {
+      fetchUserMemes();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    console.log('Address prop changed:', address);
+    if (!validateBSVAddress(address)) {
+      console.log('Address validation failed');
+      setError('Invalid BSV address format');
+      setIsValidAddress(false);
+      return;
+    }
+    console.log('Address validation passed, updating state');
+    setIsValidAddress(true);
+    setError(null);
+  }, [address]);
+
+  const handleSend = async () => {
+    try {
+      setError(null);
+      setIsLoading(true);
+
+      // Check Phantom wallet connection first
+      const phantom = window.phantom?.bitcoin;
+      if (!phantom) {
+        throw new Error('Please install Phantom wallet to continue');
+      }
+
+      if (!isPhantomConnected) {
+        try {
+          console.log('Requesting Phantom accounts...');
+          const accounts = await phantom.requestAccounts();
+          setIsPhantomConnected(true);
+          console.log('Connected with accounts:', accounts);
+        } catch (err) {
+          throw new Error('Please connect your Phantom wallet to continue');
+        }
+      }
+
+      const amount = parseFloat(sendAmount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error('Invalid amount');
+      }
+      if (!recipientAddress) {
+        throw new Error('Invalid recipient address');
+      }
+
+      const wallet = walletManager.getWallet();
+      if (wallet) {
+        const txId = await wallet.sendPayment(recipientAddress, amount);
+        // Add transaction to history
+        const newTransaction: Transaction = {
+          id: String(txId),
+          type: 'send',
+          amount,
+          timestamp: Date.now(),
+          address: recipientAddress
+        };
+        setTransactions(prev => [newTransaction, ...prev]);
+        
+        // Reset form
+        setSendAmount('');
+        setRecipientAddress('');
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to send transaction');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Render connection UI
-  const renderConnectionUI = () => {
-    if (!window.phantom?.bitcoin) {
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
+  };
+
+  const formatDate = (timestamp: number | string) => {
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Add a key to force QR code re-render
+  const qrKey = `${address}-${isValidAddress}`;
+
+  // Render Phantom connection status
+  const renderPhantomStatus = () => {
+    if (!isPhantomInitialized) {
       return (
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
-          <p className="text-gray-400 mb-6">Please install Phantom wallet to continue</p>
-          <a
-            href="https://phantom.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm font-medium"
-          >
-            Install Phantom
-          </a>
-        </div>
+        <a
+          href="https://phantom.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 rounded-lg transition-colors text-sm"
+        >
+          Install Phantom
+        </a>
+      );
+    }
+
+    if (!isPhantomConnected) {
+      return (
+        <button
+          onClick={connectToPhantom}
+          className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 rounded-lg transition-colors text-sm"
+        >
+          Connect Phantom
+        </button>
       );
     }
 
     return (
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
-        <p className="text-gray-400 mb-6">Connect your Phantom wallet to continue</p>
-        <button
-          onClick={connectToPhantom}
-          disabled={isLoading}
-          className={`px-6 py-3 ${
-            isLoading 
-              ? 'bg-purple-500/50 cursor-not-allowed' 
-              : 'bg-purple-500 hover:bg-purple-600'
-          } text-white rounded-lg transition-colors text-sm font-medium`}
-        >
-          {isLoading ? 'Connecting...' : 'Connect Phantom'}
-        </button>
-        {error && (
-          <p className="mt-4 text-red-500 text-sm">{error}</p>
-        )}
-      </div>
+      <button
+        onClick={handlePhantomDisconnect}
+        className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors text-sm"
+      >
+        Disconnect Phantom
+      </button>
     );
   };
 
@@ -178,12 +306,26 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose }) =>
           <FiX size={24} />
         </button>
 
-        {/* Show only connection UI until connected */}
-        {!isPhantomConnected ? renderConnectionUI() : (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">Successfully Connected!</h2>
-            <p className="text-gray-400">Loading BSV wallet functionality...</p>
-          </div>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white mb-2">Connect Wallet</h2>
+          {error && (
+            <div className="p-4 bg-red-500/10 border-l-4 border-red-500 text-red-400 rounded mb-4">
+              {error}
+            </div>
+          )}
+          {renderPhantomStatus()}
+        </div>
+
+        {isPhantomConnected && accounts.length > 0 && (
+          <React.Suspense fallback={<div>Loading BSV wallet...</div>}>
+            <BSVTransactionContent 
+              accounts={accounts}
+              onClose={onClose}
+              onDisconnect={handlePhantomDisconnect}
+              address={address}
+              onAddressChange={onAddressChange}
+            />
+          </React.Suspense>
         )}
       </div>
     </div>
