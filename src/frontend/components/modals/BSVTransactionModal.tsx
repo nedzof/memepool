@@ -54,32 +54,64 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
   const [isLoading, setIsLoading] = useState(false);
   const [isPhantomConnected, setIsPhantomConnected] = useState(false);
 
+  // Initialize Phantom when component mounts
+  useEffect(() => {
+    let isMounted = true;
+    
+    const init = async () => {
+      try {
+        console.log('Initializing Phantom...');
+        initPhantom();
+        
+        // Wait a bit for Phantom to initialize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (!isMounted) return;
+        
+        console.log('Checking Phantom installation...');
+        console.log('Phantom object:', window.phantom);
+        
+        if (window.phantom?.bitcoin) {
+          console.log('Phantom Bitcoin object:', window.phantom.bitcoin);
+          console.log('Methods available:', Object.keys(window.phantom.bitcoin));
+          // Don't auto-connect, wait for user interaction
+          setIsPhantomConnected(false);
+        } else {
+          console.log('Phantom Bitcoin not detected');
+          setError('Please install Phantom wallet to continue');
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Failed to initialize Phantom:', error);
+        setError(error instanceof Error ? error.message : 'Failed to initialize Phantom');
+      }
+    };
+
+    init();
+    return () => { isMounted = false; };
+  }, []);
+
   const connectToPhantom = async () => {
     try {
       if (!window.phantom?.bitcoin) {
         throw new Error('Phantom Bitcoin not available');
       }
 
-      // First, try to disconnect to force a fresh connection
-      try {
-        await window.phantom.bitcoin.request({ method: "disconnect" });
-        setIsPhantomConnected(false);
-      } catch (err) {
-        console.log('No existing connection to disconnect');
-      }
-
-      console.log('Requesting Phantom BTC accounts...');
-      // Force the modal by using request method with connect
+      console.log('Requesting Phantom BTC connection...');
+      // Use request method with "connect" since that's what's available
       const response = await window.phantom.bitcoin.request({ 
         method: "connect",
         params: { onlyIfTrusted: false }
       });
-      console.log('Connect response:', response);
-
-      // After connection, request accounts
-      const accounts = await window.phantom.bitcoin.requestAccounts();
-      console.log('Connected with accounts:', accounts);
+      console.log('Connected with response:', response);
       setIsPhantomConnected(true);
+
+      // Get accounts after connection
+      console.log('Requesting accounts...');
+      const accounts = await window.phantom.bitcoin.request({
+        method: "getAccounts"
+      });
+      console.log('Got accounts:', accounts);
 
       if (!accounts || accounts.length === 0) {
         throw new Error('No BTC accounts available');
@@ -109,43 +141,20 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
     }
   };
 
-  // Initialize Phantom when component mounts
-  useEffect(() => {
-    let isMounted = true;
-    
-    const init = async () => {
-      try {
-        console.log('Initializing Phantom...');
-        initPhantom();
-        
-        // Wait a bit for Phantom to initialize
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (!isMounted) return;
-        
-        console.log('Checking Phantom installation...');
-        console.log('Phantom object:', window.phantom);
-        
-        if (window.phantom?.bitcoin) {
-          console.log('Phantom Bitcoin object:', window.phantom.bitcoin);
-          console.log('Methods available:', Object.keys(window.phantom.bitcoin));
-          
-          // Don't auto-connect on mount, wait for user interaction
-          setIsPhantomConnected(false);
-        } else {
-          console.log('Phantom Bitcoin not detected');
-          setError('Please install Phantom wallet to continue');
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        console.error('Failed to initialize Phantom:', error);
-        setError(error instanceof Error ? error.message : 'Failed to initialize Phantom');
+  const handlePhantomDisconnect = async () => {
+    try {
+      const phantom = window.phantom?.bitcoin;
+      if (phantom) {
+        await phantom.request({ method: "disconnect" });
       }
-    };
-
-    init();
-    return () => { isMounted = false; };
-  }, []);
+      setIsPhantomConnected(false);
+      // Also disconnect BSV wallet since it depends on Phantom
+      await walletManager.disconnect();
+      setBalance(0);
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchUserMemes = async () => {
@@ -247,26 +256,6 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
       setError(error instanceof Error ? error.message : 'Failed to send transaction');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handlePhantomDisconnect = async () => {
-    try {
-      const phantom = window.phantom?.bitcoin;
-      if (phantom) {
-        // Check if disconnect method exists
-        if (typeof phantom.disconnect === 'function') {
-          await phantom.disconnect();
-        } else if (typeof phantom.request === 'function') {
-          await phantom.request({ method: "disconnect" });
-        }
-      }
-      setIsPhantomConnected(false);
-      // Also disconnect BSV wallet since it depends on Phantom
-      await walletManager.disconnect();
-      setBalance(0);
-    } catch (error) {
-      console.error('Error disconnecting:', error);
     }
   };
 
