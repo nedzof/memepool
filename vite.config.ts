@@ -11,7 +11,6 @@ export default defineConfig({
       VITE_BSV_NETWORK: JSON.stringify(process.env.VITE_BSV_NETWORK || 'testnet'),
     },
     global: 'globalThis',
-    'global.Buffer': ['buffer', 'Buffer'],
   },
   css: {
     postcss: './postcss.config.js',
@@ -40,6 +39,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['scrypt-ord', '@bsv/sdk', 'aerospike'],
+    include: ['buffer', 'fast-text-encoding'],
     esbuildOptions: {
       define: {
         global: 'globalThis'
@@ -65,4 +65,4 @@ export default defineConfig({
       external: ['scrypt-ord', '@bsv/sdk', 'aerospike'],
     }
   },
-}) 
+})

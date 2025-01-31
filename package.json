@@ -36,6 +36,7 @@
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "fast-text-encoding": "^1.0.6",
     "gsap": "^3.12.7",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
@@ -43,8 +44,10 @@
     "react-icons": "^5.4.0",
     "scrypt-ts": "^1.4.4",
     "tailwind-merge": "^2.6.0",
+    "text-encoding-utf-8": "^1.0.2",
     "tiny-secp256k1": "^2.2.3",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "web-encoding": "^1.1.5"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",

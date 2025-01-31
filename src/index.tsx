@@ -1,7 +1,8 @@
+import './frontend/utils/wasm-init';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './frontend/pages/App';
 import './frontend/styles/index.css';
+import App from './frontend/pages/App';
 
 // Create root element
 const root = ReactDOM.createRoot(

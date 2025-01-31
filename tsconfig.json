@@ -10,7 +10,9 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "jsx": "react",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
