@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy } from 'react';
 import { FiX, FiSend, FiDownload, FiCopy, FiExternalLink, FiImage, FiRefreshCw, FiCheck } from 'react-icons/fi';
 import { QRCodeSVG } from 'qrcode.react';
 import { walletManager } from '../../utils/wallet';
@@ -40,6 +40,8 @@ interface BSVTransactionModalProps {
   address: string;
   onAddressChange?: (newAddress: string) => void;
 }
+
+const BSVTransactionContent = lazy(() => import('./BSVTransactionContent'));
 
 const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDisconnect, address, onAddressChange }) => {
   const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'history'>('send');
@@ -317,15 +319,13 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
         </div>
 
         {isPhantomConnected && accounts.length > 0 && (
-          <React.Suspense fallback={<div>Loading BSV wallet...</div>}>
-            <BSVTransactionContent 
-              accounts={accounts}
-              onClose={onClose}
-              onDisconnect={handlePhantomDisconnect}
-              address={address}
-              onAddressChange={onAddressChange}
-            />
-          </React.Suspense>
+          <BSVTransactionContent 
+            accounts={accounts}
+            onClose={onClose}
+            onDisconnect={handlePhantomDisconnect}
+            address={address}
+            onAddressChange={onAddressChange}
+          />
         )}
       </div>
     </div>
