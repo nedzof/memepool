@@ -1,33 +1,62 @@
+import type { PhantomBitcoinProvider, BtcAccount } from '../../types/phantom';
+
 // Types for Phantom Bitcoin Provider
 type DisplayEncoding = 'utf8' | 'hex';
 type PhantomEvent = 'connect' | 'disconnect' | 'accountChanged';
 
-export type BtcAccount = {
+interface PhantomSolanaProvider {
+  isPhantom?: boolean;
+  connect: () => Promise<{ publicKey: { toString: () => string } }>;
+  disconnect: () => Promise<void>;
+  request: (args: { method: string }) => Promise<any>;
+}
+
+declare global {
+  interface Window {
+    phantom?: {
+      bitcoin?: PhantomBitcoinProvider;
+      solana?: PhantomSolanaProvider;
+    };
+  }
+}
+
+interface BtcAccount {
   address: string;
   addressType: "p2tr" | "p2wpkh" | "p2sh" | "p2pkh";
   publicKey: string;
   purpose: "payment" | "ordinals";
-};
+}
+
+interface ConnectResponse {
+  accounts: BtcAccount[];
+}
 
 interface PhantomBitcoinProvider {
-  isPhantom?: boolean;
+  isPhantom: boolean;
+  connect: (options?: { onlyIfTrusted?: boolean }) => Promise<ConnectResponse>;
   request: (args: { method: string; params?: any }) => Promise<any>;
-  on: (event: string, callback: (args: any) => void) => void;
-  requestAccounts: () => Promise<BtcAccount[]>;
-  connect: () => Promise<{ publicKey: string }>;
+  signMessage: (message: Uint8Array, display?: string) => Promise<{ signature: string }>;
+  on: (event: string, handler: Function) => void;
+  removeAllListeners: () => void;
 }
+
+interface PhantomWindow extends Window {
+  phantom?: {
+    bitcoin?: PhantomBitcoinProvider;
+  }
+}
+
+declare global {
+  interface Window extends PhantomWindow {}
+}
+
+export { BtcAccount };
 
 export class PhantomWallet {
   private static instance: PhantomWallet;
-  private connected: boolean = false;
-  private accounts: BtcAccount[] = [];
-  private currentAccount: BtcAccount | null = null;
   private provider: PhantomBitcoinProvider | null = null;
 
-  private constructor() {
-    console.log('PhantomWallet: Initializing singleton instance');
-    this.setupEventListeners();
-  }
+  private constructor() {}
 
   public static getInstance(): PhantomWallet {
     if (!PhantomWallet.instance) {
@@ -36,161 +65,73 @@ export class PhantomWallet {
     return PhantomWallet.instance;
   }
 
-  private setupEventListeners(): void {
-    if (typeof window === 'undefined') return;
-
-    // Wait for provider to be available
-    const setupListener = () => {
-      const provider = window.phantom?.bitcoin;
-      if (provider) {
-        provider.on('accountsChanged', (accounts: BtcAccount[]) => {
-          console.log('PhantomWallet: Accounts changed:', accounts);
-          if (accounts.length === 0) {
-            console.log('PhantomWallet: No accounts available - resetting state');
-            this.disconnect();
-          } else {
-            this.accounts = accounts;
-            this.currentAccount = accounts.find((acc) => acc.addressType === 'p2tr') || accounts[0];
-            this.connected = true;
-            console.log('PhantomWallet: Updated accounts:', this.currentAccount);
-          }
-        });
-
-        provider.on('connect', () => {
-          console.log('PhantomWallet: Connected');
-        });
-
-        provider.on('disconnect', () => {
-          console.log('PhantomWallet: Disconnected');
-          this.disconnect();
-        });
-
-        console.log('PhantomWallet: Event listener setup complete');
-      } else {
-        console.log('PhantomWallet: Provider not available for event listener, retrying...');
-        setTimeout(setupListener, 100);
-      }
-    };
-
-    setupListener();
-  }
-
   private getProvider(): PhantomBitcoinProvider | null {
-    if (typeof window === 'undefined') return null;
-    
-    const provider = window.phantom?.bitcoin;
-    if (!provider || !provider.isPhantom) {
-      return null;
-    }
-    
-    this.provider = provider;
-    return provider;
-  }
-
-  public isPhantomInstalled(): boolean {
-    return this.getProvider() !== null;
-  }
-
-  public async requestConnection(): Promise<BtcAccount[]> {
-    const provider = this.getProvider();
-    if (!provider) {
-      throw new Error('Phantom wallet is not installed');
-    }
-
-    try {
-      // First connect to establish the session
-      console.log('PhantomWallet: Connecting to Phantom...');
-      await provider.connect();
-
-      // Then request accounts which will trigger the modal
-      console.log('PhantomWallet: Requesting accounts...');
-      const accounts = await provider.requestAccounts();
-      console.log('PhantomWallet: Received accounts:', accounts);
-
-      if (!accounts || accounts.length === 0) {
-        throw new Error('No accounts available');
+    if ('phantom' in window) {
+      const provider = window.phantom?.bitcoin;
+      if (provider && provider.isPhantom) {
+        return provider;
       }
-
-      this.accounts = accounts;
-      this.connected = true;
-      this.currentAccount = accounts.find((acc) => acc.addressType === 'p2tr') || accounts[0];
-
-      return accounts;
-    } catch (error) {
-      console.error('PhantomWallet: Connection error:', error);
-      this.connected = false;
-      this.accounts = [];
-      this.currentAccount = null;
-      throw error;
     }
-  }
-
-  public async silentConnect(): Promise<BtcAccount[] | null> {
-    const provider = this.getProvider();
-    if (!provider) return null;
-
-    try {
-      // Try to connect silently first
-      await provider.connect();
-      
-      // Then request accounts
-      const accounts = await provider.requestAccounts();
-      if (accounts && accounts.length > 0) {
-        this.accounts = accounts;
-        this.connected = true;
-        this.currentAccount = accounts.find((acc) => acc.addressType === 'p2tr') || accounts[0];
-        return accounts;
-      }
-    } catch (error) {
-      console.log('PhantomWallet: Silent connect failed:', error);
-    }
+    window.open('https://phantom.app/', '_blank');
     return null;
   }
 
-  public async disconnect(): Promise<void> {
-    this.connected = false;
-    this.accounts = [];
-    this.currentAccount = null;
+  public async isPhantomInstalled(): Promise<boolean> {
+    try {
+      const provider = this.getProvider();
+      return provider !== null;
+    } catch (error) {
+      console.error('Error checking Phantom installation:', error);
+      return false;
+    }
   }
 
-  public async signMessage(message: string): Promise<string> {
-    const provider = this.getProvider();
-    if (!provider) {
-      throw new Error('Phantom wallet is not installed');
-    }
-
-    if (!this.connected || !this.currentAccount) {
-      throw new Error('Wallet not connected');
-    }
-
+  public async requestConnection(): Promise<BtcAccount[]> {
     try {
-      const signature = await provider.request({
-        method: 'signMessage',
-        params: {
-          message: new TextEncoder().encode(message),
-          displayContent: message,
-        },
+      const provider = this.getProvider();
+      if (!provider) {
+        throw new Error('Phantom wallet is not installed');
+      }
+
+      this.provider = provider;
+
+      // Use the connect method to show the modal
+      const response = await provider.connect({
+        onlyIfTrusted: false, // This ensures the modal always appears
       });
-      return signature;
+
+      console.log('Phantom connection response:', response);
+
+      // The response should contain the accounts
+      const accounts = response.accounts;
+      console.log('Phantom accounts:', accounts);
+
+      return Array.isArray(accounts) ? accounts : [accounts];
     } catch (error) {
-      console.error('PhantomWallet: Error signing message:', error);
+      console.error('Failed to connect to Phantom:', error);
       throw error;
     }
   }
 
-  public isConnected(): boolean {
-    return this.connected && !!this.currentAccount;
+  public async disconnect(): Promise<void> {
+    try {
+      if (this.provider?.removeAllListeners) {
+        this.provider.removeAllListeners();
+      }
+      this.provider = null;
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      throw error;
+    }
   }
 
-  public getCurrentAccount(): BtcAccount | null {
-    return this.currentAccount;
-  }
+  public async signMessage(message: string): Promise<string> {
+    if (!this.provider) {
+      throw new Error('Wallet not connected');
+    }
 
-  public getPublicKey(): string | null {
-    return this.currentAccount?.publicKey || null;
-  }
-
-  public getAccounts(): BtcAccount[] {
-    return this.accounts;
+    const messageBytes = new TextEncoder().encode(message);
+    const response = await this.provider.signMessage(messageBytes, message);
+    return response.signature;
   }
 } 

@@ -6,7 +6,17 @@ import { MemeVideoMetadata } from '../../../shared/types/meme';
 import * as scrypt from 'scryptlib';
 import styles from './WalletModal.module.css';
 import { WalletType } from '../../../shared/types/wallet';
-import { PhantomWallet } from '../../utils/wallets/phantom-wallet';
+import { createPhantom } from '@phantom/wallet-sdk';
+import { BtcAccount, PhantomBitcoinProvider } from '../../types/phantom';
+
+// Initialize Phantom with configuration
+const initPhantom = () => {
+  const opts = {
+    zIndex: 10_000,
+    hideLauncherBeforeOnboarded: true,
+  };
+  createPhantom(opts);
+};
 
 // BSV address validation regex
 const BSV_ADDRESS_REGEX = /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/;
@@ -43,47 +53,92 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
   const [isValidAddress, setIsValidAddress] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isPhantomConnected, setIsPhantomConnected] = useState(false);
-  const phantomWallet = PhantomWallet.getInstance();
 
-  const initializePhantom = async () => {
+  // Initialize Phantom when component mounts
+  useEffect(() => {
+    let isMounted = true;
+    
+    const init = async () => {
+      try {
+        console.log('Initializing Phantom...');
+        initPhantom();
+        
+        // Wait a bit for Phantom to initialize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (!isMounted) return;
+        
+        console.log('Checking Phantom installation...');
+        console.log('Phantom object:', window.phantom);
+        
+        if (window.phantom?.bitcoin) {
+          console.log('Phantom Bitcoin object:', window.phantom.bitcoin);
+          console.log('Methods available:', Object.keys(window.phantom.bitcoin));
+          await connectToPhantom();
+        } else {
+          console.log('Phantom Bitcoin not detected');
+          setError('Please install Phantom wallet to continue');
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Failed to initialize Phantom:', error);
+        setError(error instanceof Error ? error.message : 'Failed to initialize Phantom');
+      }
+    };
+
+    init();
+    return () => { isMounted = false; };
+  }, []);
+
+  const connectToPhantom = async () => {
     try {
-      console.log('Checking Phantom installation...');
-      if (!phantomWallet.isPhantomInstalled()) {
-        console.log('Phantom not installed');
-        setError('Please install Phantom wallet to continue');
-        return;
+      if (!window.phantom?.bitcoin) {
+        throw new Error('Phantom Bitcoin not available');
       }
 
-      // First, request Phantom BTC connection - this will show the modal
-      console.log('Requesting Phantom BTC connection...');
-      const btcAccount = await phantomWallet.requestConnection();
+      console.log('Requesting Phantom BTC accounts...');
+      const accounts = await window.phantom.bitcoin.requestAccounts();
+      console.log('Connected with accounts:', accounts);
       setIsPhantomConnected(true);
-      console.log('Connected to Phantom with BTC account:', btcAccount);
 
-      // Get the public key from the BTC account
-      const publicKey = btcAccount.publicKey;
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No BTC accounts available');
+      }
+
+      // Find the payment account first, fallback to first account
+      const paymentAccount = accounts.find((acc: BtcAccount) => acc.purpose === 'payment') || accounts[0];
+      const publicKey = paymentAccount.publicKey;
+      
       if (!publicKey) {
         throw new Error('No public key available from Phantom');
       }
 
-      // Only after successful Phantom connection, initialize BSV wallet with the public key
-      console.log('Using Phantom public key to initialize BSV wallet...');
+      // Initialize BSV wallet with the public key
+      console.log('Using Phantom public key to initialize BSV wallet:', publicKey);
       const wallet = await walletManager.connect(WalletType.BSV, publicKey);
+      
       if (wallet) {
         const balance = await wallet.getBalance();
         setBalance(balance);
         console.log('BSV wallet initialized with Phantom public key');
       }
     } catch (error) {
-      console.error('Failed to initialize Phantom:', error);
-      setError('Please connect your Phantom wallet to continue');
+      console.error('Failed to connect to Phantom:', error);
+      setError(error instanceof Error ? error.message : 'Failed to connect to Phantom');
       setIsPhantomConnected(false);
     }
   };
 
-  useEffect(() => {
-    initializePhantom();
-  }, []);
+  const handlePhantomConnect = async () => {
+    try {
+      setError(null);
+      await connectToPhantom();
+    } catch (error) {
+      console.error('Failed to connect to Phantom:', error);
+      setError('Failed to connect to Phantom wallet');
+      setIsPhantomConnected(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserMemes = async () => {
@@ -140,16 +195,17 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
       setIsLoading(true);
 
       // Check Phantom wallet connection first
-      if (!phantomWallet.isPhantomInstalled()) {
+      const phantom = window.phantom?.bitcoin;
+      if (!phantom) {
         throw new Error('Please install Phantom wallet to continue');
       }
 
       if (!isPhantomConnected) {
         try {
-          console.log('Requesting Phantom connection...');
-          const account = await phantomWallet.connect();
+          console.log('Requesting Phantom accounts...');
+          const accounts = await phantom.requestAccounts();
           setIsPhantomConnected(true);
-          console.log('Connected to Phantom with account:', account);
+          console.log('Connected with accounts:', accounts);
         } catch (err) {
           throw new Error('Please connect your Phantom wallet to continue');
         }
@@ -187,50 +243,23 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
     }
   };
 
-  const handlePhantomConnect = async () => {
-    try {
-      setError(null);
-      if (!phantomWallet.isPhantomInstalled()) {
-        window.open('https://phantom.app/', '_blank');
-        return;
-      }
-
-      // Request Phantom BTC connection first - this will show the modal
-      console.log('Requesting Phantom BTC connection...');
-      const btcAccount = await phantomWallet.requestConnection();
-      setIsPhantomConnected(true);
-      console.log('Connected to Phantom with BTC account:', btcAccount);
-
-      // Get the public key from the BTC account
-      const publicKey = btcAccount.publicKey;
-      if (!publicKey) {
-        throw new Error('No public key available from Phantom');
-      }
-
-      // Only after successful Phantom connection, initialize BSV wallet with the public key
-      console.log('Using Phantom public key to initialize BSV wallet...');
-      const wallet = await walletManager.connect(WalletType.BSV, publicKey);
-      if (wallet) {
-        const balance = await wallet.getBalance();
-        setBalance(balance);
-        console.log('BSV wallet initialized with Phantom public key');
-      }
-    } catch (error) {
-      console.error('Failed to connect to Phantom:', error);
-      setError('Failed to connect to Phantom wallet');
-      setIsPhantomConnected(false);
-    }
-  };
-
   const handlePhantomDisconnect = async () => {
     try {
-      await phantomWallet.disconnect();
+      const phantom = window.phantom?.bitcoin;
+      if (phantom) {
+        // Check if disconnect method exists
+        if (typeof phantom.disconnect === 'function') {
+          await phantom.disconnect();
+        } else if (typeof phantom.request === 'function') {
+          await phantom.request({ method: "disconnect" });
+        }
+      }
       setIsPhantomConnected(false);
       // Also disconnect BSV wallet since it depends on Phantom
       await walletManager.disconnect();
       setBalance(0);
     } catch (error) {
-      console.error('Error disconnecting from Phantom:', error);
+      console.error('Error disconnecting:', error);
     }
   };
 
@@ -260,7 +289,8 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
 
   // Render Phantom connection status
   const renderPhantomStatus = () => {
-    if (!phantomWallet.isPhantomInstalled()) {
+    const phantom = window.phantom?.bitcoin;
+    if (!phantom) {
       return (
         <a
           href="https://phantom.app/"
