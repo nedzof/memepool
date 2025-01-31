@@ -79,6 +79,8 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
           console.log('Phantom Bitcoin object:', window.phantom.bitcoin);
           console.log('Methods available:', Object.keys(window.phantom.bitcoin));
           setIsPhantomInitialized(true);
+          // Automatically trigger connection
+          connectToPhantom();
         } else {
           console.log('Phantom Bitcoin not detected');
           setError('Please install Phantom wallet to continue');
@@ -105,16 +107,6 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
       console.log('Connected with accounts:', accounts);
       setAccounts(accounts);
       setIsPhantomConnected(true);
-
-      // Only after successful connection, dynamically import the rest of the modal
-      const { default: BSVTransactionContent } = await import('./BSVTransactionContent');
-      return <BSVTransactionContent 
-        accounts={accounts} 
-        onClose={onClose} 
-        onDisconnect={handlePhantomDisconnect}
-        address={address}
-        onAddressChange={onAddressChange}
-      />;
     } catch (error) {
       console.error('Failed to connect to Phantom:', error);
       setError(error instanceof Error ? error.message : 'Failed to connect to Phantom');
@@ -308,17 +300,13 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
           <FiX size={24} />
         </button>
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">Connect Wallet</h2>
-          {error && (
-            <div className="p-4 bg-red-500/10 border-l-4 border-red-500 text-red-400 rounded mb-4">
-              {error}
-            </div>
-          )}
-          {renderPhantomStatus()}
-        </div>
+        {error && (
+          <div className="p-4 bg-red-500/10 border-l-4 border-red-500 text-red-400 rounded mb-4">
+            {error}
+          </div>
+        )}
 
-        {isPhantomConnected && accounts.length > 0 && (
+        {isPhantomConnected && accounts.length > 0 ? (
           <BSVTransactionContent 
             accounts={accounts}
             onClose={onClose}
@@ -326,6 +314,13 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
             address={address}
             onAddressChange={onAddressChange}
           />
+        ) : (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="text-gray-400 mb-4">Waiting for Phantom wallet connection...</div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+            </div>
+          </div>
         )}
       </div>
     </div>
