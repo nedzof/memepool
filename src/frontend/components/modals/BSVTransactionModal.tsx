@@ -96,7 +96,24 @@ const BSVTransactionModal: React.FC<BSVTransactionModalProps> = ({ onClose, onDi
         throw new Error('Phantom Bitcoin not available');
       }
 
+      // First, try to disconnect to ensure we get a fresh connection
+      try {
+        await window.phantom.bitcoin.request({ method: "disconnect" });
+        setIsPhantomConnected(false);
+        await walletManager.disconnect();
+        setBalance(0);
+      } catch (err) {
+        console.log('No existing connection to disconnect');
+      }
+
       console.log('Requesting Phantom BTC accounts...');
+      // Force the modal by using request method
+      const response = await window.phantom.bitcoin.request({ 
+        method: "connect",
+        params: { onlyIfTrusted: false }
+      });
+      console.log('Connect response:', response);
+
       const accounts = await window.phantom.bitcoin.requestAccounts();
       console.log('Connected with accounts:', accounts);
       setIsPhantomConnected(true);
