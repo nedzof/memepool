@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMemeTemplates } from '../hooks/useMemeTemplates';
 import { useBlockMemes } from '../hooks/useBlockMemes';
-import { FiX, FiLoader, FiTrendingUp, FiZap } from 'react-icons/fi';
+import { FiX, FiLoader, FiTrendingUp, FiZap, FiAlertCircle } from 'react-icons/fi';
 import { videoGenerationService } from '../services/videoGeneration.service';
+import { InscriptionService } from '../../services/inscriptionService';
+import { useWallet } from '../providers/WalletProvider';
 
 interface Block {
   id: string;
@@ -38,6 +40,8 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
     refreshBlockInfo
   } = useBlockMemes();
 
+  const { btcAddress, connected } = useWallet();
+
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
@@ -48,6 +52,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const [distortionLevel, setDistortionLevel] = useState(0);
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 });
   const [waveEffect, setWaveEffect] = useState(0);
+  const [isInscribing, setIsInscribing] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const distortionIntervalRef = useRef<NodeJS.Timeout>();
 
@@ -128,14 +133,25 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
         reader.readAsDataURL(imageBlob);
       });
 
-      const videoUrl = await videoGenerationService.generateVideo({
+      // Generate video
+      const videoResponse = await videoGenerationService.generateVideo({
         image: base64Image.split(',')[1],
         fps: 4,
         numFrames: 12,
         motionScale: 0.5
       });
 
-      setVideoPreviewUrl(videoUrl);
+      // Convert video URL to base64
+      const videoBlob = await fetch(videoResponse).then(r => r.blob());
+      const videoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(videoBlob);
+      });
+
+      setVideoPreviewUrl(videoBase64);
       
       // Calculate virality score with fun animation
       let score = 0;
@@ -162,10 +178,29 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
     e.preventDefault();
     if (!templates.length || isGenerating) return;
 
+    if (!connected || !btcAddress) {
+      setError('Please connect your Phantom wallet first');
+      return;
+    }
+
     if (!videoPreviewUrl) {
       await generateVideo();
     } else {
       try {
+        setIsInscribing(true);
+        setError(null);
+
+        // First, inscribe the meme video
+        // The videoPreviewUrl is already in base64 format from generateVideo
+        const response = await InscriptionService.inscribeImage(
+          videoPreviewUrl,
+          'video/mp4', // Explicitly set video MIME type
+          btcAddress
+        );
+
+        console.log('Video meme inscribed:', response);
+
+        // Then create the meme metadata with the inscription details
         onMemeCreated({
           templateId: templates[0].id,
           prompt,
@@ -173,10 +208,19 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
           blockNumber: currentBlock.blockNumber || currentBlock.blockHeight,
           currentMemeUrl: currentMeme?.memeUrl,
           videoUrl: videoPreviewUrl,
-          viralityScore
+          viralityScore,
+          inscriptionId: response.inscriptionId,
+          transferTxId: response.transferTxId,
+          type: 'video/mp4' // Add type information to metadata
         });
+
+        // Close the modal after successful creation
+        onClose();
       } catch (error) {
-        console.error('Error creating meme:', error);
+        console.error('Error creating video meme:', error);
+        setError(error instanceof Error ? error.message : 'Failed to create video meme');
+      } finally {
+        setIsInscribing(false);
       }
     }
   };
@@ -201,9 +245,17 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
             </div>
           </div>
 
+          {!connected && (
+            <div className="p-4 bg-yellow-500/20 border-l-4 border-yellow-500 text-yellow-400 flex items-center gap-2">
+              <FiAlertCircle className="w-5 h-5" />
+              <span>Connect your Phantom wallet to inscribe memes</span>
+            </div>
+          )}
+
           {error && (
-            <div className="p-4 bg-red-500/20 border-l-4 border-red-500 text-red-400">
-              {error}
+            <div className="p-4 bg-red-500/20 border-l-4 border-red-500 text-red-400 flex items-center gap-2">
+              <FiAlertCircle className="w-5 h-5" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -332,9 +384,9 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isGenerating || (!videoPreviewUrl && !prompt.trim())}
+                disabled={isGenerating || isInscribing || (!videoPreviewUrl && !prompt.trim()) || !connected}
                 className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
-                  isGenerating || (!videoPreviewUrl && !prompt.trim())
+                  isGenerating || isInscribing || (!videoPreviewUrl && !prompt.trim()) || !connected
                     ? 'bg-[#2A2A40] text-gray-400 cursor-not-allowed'
                     : 'bg-[#00ffa3] text-black hover:bg-[#00ffa3]/90'
                 }`}
@@ -344,12 +396,23 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                     <FiLoader className="w-5 h-5 animate-spin mr-2" />
                     Generating...
                   </span>
+                ) : isInscribing ? (
+                  <span className="flex items-center justify-center">
+                    <FiLoader className="w-5 h-5 animate-spin mr-2" />
+                    Inscribing...
+                  </span>
                 ) : !videoPreviewUrl ? (
                   'Generate Video'
                 ) : (
-                  'Create Meme'
+                  'Create & Inscribe Meme'
                 )}
               </button>
+
+              {connected && btcAddress && (
+                <p className="mt-2 text-center text-sm text-gray-400">
+                  Meme will be inscribed to: <span className="font-mono text-[#00ffa3]">{btcAddress}</span>
+                </p>
+              )}
             </div>
           </form>
         </div>
