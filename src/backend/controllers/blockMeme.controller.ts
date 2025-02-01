@@ -7,8 +7,12 @@ class BlockMemeController {
   private blockStateService: BlockStateService;
 
   constructor() {
-    this.blockMemeService = new BlockMemeService();
     this.blockStateService = BlockStateService.getInstance();
+    this.blockMemeService = new BlockMemeService(this.blockStateService);
+  }
+
+  async initialize() {
+    await this.blockStateService.start();
   }
 
   async getCurrentBlockInfo(req: Request, res: Response) {
@@ -99,4 +103,6 @@ class BlockMemeController {
   }
 }
 
-export default new BlockMemeController(); 
+const controller = new BlockMemeController();
+controller.initialize();
+export default controller; 

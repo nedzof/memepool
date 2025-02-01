@@ -20,10 +20,48 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onVideoGenerated }) => 
   const [topText, setTopText] = useState('');
   const [bottomText, setBottomText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [generationParams, setGenerationParams] = useState({
+    fps: 6,
+    frames: 14,
+    motionScale: 0.5
+  });
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     fetchTemplates();
   }, []);
+
+  useEffect(() => {
+    if (!activeTaskId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`/api/video/tasks/${activeTaskId}`);
+        const task = response.data;
+        
+        if (task.status === 'completed') {
+          clearInterval(interval);
+          setActiveTaskId(null);
+          if (onVideoGenerated && task.payload?.videoUrl) {
+            onVideoGenerated(task.payload.videoUrl);
+          }
+        } else if (task.status === 'failed') {
+          clearInterval(interval);
+          setActiveTaskId(null);
+          setError('Video generation failed');
+        }
+        
+        const age = Date.now() - new Date(task.createdAt).getTime();
+        setProgress(Math.min(95, Math.floor(age / 1000)));
+
+      } catch (error) {
+        console.error('Error checking task status:', error);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [activeTaskId, onVideoGenerated]);
 
   const fetchTemplates = async () => {
     try {
@@ -55,34 +93,24 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onVideoGenerated }) => 
   };
 
   const handleGenerate = async () => {
-    if (!previewUrl) {
-      setError('Please select a meme template first');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
     try {
-      // Convert the meme URL to base64
-      const response = await axios.get(previewUrl, { responseType: 'arraybuffer' });
-      const base64Image = Buffer.from(response.data, 'binary').toString('base64');
-
-      const videoResponse = await axios.post('/api/video/generate', {
+      setIsLoading(true);
+      setError(null);
+      
+      const base64Image = await convertPreviewToBase64();
+      
+      const response = await axios.post('/api/video/generate', {
         image: base64Image,
-        framesPerSecond: 6,
-        numFrames: 14,
-        motionBucketId: 127,
-        condAug: 0.5
+        fps: generationParams.fps,
+        frames: generationParams.frames,
+        motion: generationParams.motionScale
       });
 
-      if (onVideoGenerated) {
-        onVideoGenerated(videoResponse.data.video);
-      }
-    } catch (err) {
-      setError('Failed to generate video. Please try again.');
-      console.error('Video generation error:', err);
-    } finally {
+      setActiveTaskId(response.data.taskId);
+      setProgress(0);
+    } catch (error) {
+      console.error('Generation failed:', error);
+      setError('Failed to start video generation');
       setIsLoading(false);
     }
   };
@@ -154,6 +182,72 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onVideoGenerated }) => 
             alt="Meme Preview"
             className="max-w-xs rounded-lg shadow-sm"
           />
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            FPS (3-30)
+            <input
+              type="number"
+              min="3"
+              max="30"
+              value={generationParams.fps}
+              onChange={(e) => setGenerationParams(prev => ({
+                ...prev,
+                fps: Math.min(30, Math.max(3, parseInt(e.target.value) || 3))
+              }))}
+              className="w-full p-2 border rounded"
+            />
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Frames (14-100)
+            <input
+              type="number"
+              min="14"
+              max="100"
+              value={generationParams.frames}
+              onChange={(e) => setGenerationParams(prev => ({
+                ...prev,
+                frames: Math.min(100, Math.max(14, parseInt(e.target.value) || 14))
+              }))}
+              className="w-full p-2 border rounded"
+            />
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Motion Scale (0-1)
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="1"
+              value={generationParams.motionScale}
+              onChange={(e) => setGenerationParams(prev => ({
+                ...prev,
+                motionScale: Math.min(1, Math.max(0, parseFloat(e.target.value) || 0))
+              }))}
+              className="w-full p-2 border rounded"
+            />
+          </label>
+        </div>
+      </div>
+
+      {activeTaskId && (
+        <div className="mt-4">
+          <div className="h-2 bg-gray-200 rounded">
+            <div 
+              className="h-full bg-blue-500 rounded transition-all duration-300" 
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <p className="text-sm text-gray-600 mt-1">
+            Generating video... {progress}%
+          </p>
         </div>
       )}
 

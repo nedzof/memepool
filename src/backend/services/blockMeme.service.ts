@@ -2,6 +2,7 @@ import axios from 'axios';
 import { createMetadata, getMetadata } from './aerospikeService';
 import memegenService from './memegen.service';
 import { BlockStateService } from './blockState.service';
+import { CacheService } from './cache.service';
 
 interface BlockMeme {
   blockHeight: number;
@@ -14,9 +15,11 @@ export class BlockMemeService {
   private readonly MEME_PREFIX = 'block_meme_';
   private readonly BUFFER_BLOCKS = 50;
   private blockStateService: BlockStateService;
+  private cacheService: CacheService;
 
   constructor() {
     this.blockStateService = BlockStateService.getInstance();
+    this.cacheService = CacheService.getInstance();
     this.initializeBlockMemes();
     this.setupBlockHeightListener();
   }
@@ -140,8 +143,23 @@ export class BlockMemeService {
   }
 
   async getCurrentMeme(): Promise<BlockMeme> {
+    if (!this.blockStateService.isInitialized()) {
+      throw new Error('Block state service not initialized');
+    }
+    
     const currentHeight = this.blockStateService.getCurrentBlockHeight();
-    return await this.getMemeForBlock(currentHeight);
+    if (currentHeight <= 0) {
+      throw new Error('Invalid block height');
+    }
+
+    // Add cache check
+    const cachedMeme = await this.cacheService.get(`meme-${currentHeight}`);
+    if (cachedMeme) {
+      return cachedMeme;
+    }
+
+    // If meme doesn't exist, generate it
+    return await this.generateMemeForBlock(currentHeight);
   }
 
   async shiftBlocks(): Promise<void> {

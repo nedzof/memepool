@@ -72,4 +72,10 @@ export class AerospikeService {
       memeIds: []
     };
   }
+}
+
+export async function ping() {
+  const client = await connect();
+  await client.info('statistics');
+  return true;
 } 

@@ -6,42 +6,26 @@ import BlocksLayout from '../components/BlocksLayout';
 import BSVTransactionModal from '../components/modals/BSVTransactionModal';
 import { MemeVideoMetadata } from '../../shared/types/meme';
 import { useBlockMemes } from '../hooks/useBlockMemes';
-import { generateBtcAddress } from '../utils/wallet';
+import { useWallet } from '../providers/WalletProvider';
 import { FiDollarSign } from 'react-icons/fi';
 import { Header } from '../../components/Header';
 
 const App: React.FC = () => {
   const { currentHeight } = useBlockMemes();
-  const [isPhantomInstalled, setIsPhantomInstalled] = useState<boolean>(false);
-  const [connected, setConnected] = useState<boolean>(false);
-  const [publicKey, setPublicKey] = useState<string>('');
-  const [btcAddress, setBtcAddress] = useState<string>('');
+  const { 
+    isPhantomInstalled, 
+    connected, 
+    btcAddress, 
+    connect: connectPhantom,
+    disconnect: disconnectPhantom
+  } = useWallet();
+  
   const [showBSVModal, setShowBSVModal] = useState(false);
   const [totalLocked, setTotalLocked] = useState(0);
   const [threshold] = useState(1000); // Default threshold
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [participantCount, setParticipantCount] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
-
-  useEffect(() => {
-    const provider = window?.phantom?.bitcoin;
-    setIsPhantomInstalled(provider?.isPhantom || false);
-  }, []);
-
-  useEffect(() => {
-    if (connected && publicKey) {
-      try {
-        const address = generateBtcAddress(publicKey);
-        console.log('Generated BSV address:', address);
-        setBtcAddress(address);
-      } catch (error) {
-        console.error('Error generating BSV address:', error);
-        setBtcAddress('');
-      }
-    } else {
-      setBtcAddress('');
-    }
-  }, [connected, publicKey]);
 
   // Add timer effect
   useEffect(() => {
@@ -134,17 +118,7 @@ const App: React.FC = () => {
     }
 
     try {
-      const provider = window.phantom?.bitcoin;
-      if (!provider) return;
-
-      // Request Bitcoin accounts
-      const accounts = await provider.requestAccounts();
-      if (accounts && accounts.length > 0) {
-        const account = accounts[0];
-        setPublicKey(account.publicKey);
-        setConnected(true);
-        console.log('Connected with public key:', account.publicKey);
-      }
+      await connectPhantom();
     } catch (error) {
       console.error('Error connecting to Phantom wallet:', error);
     }
@@ -152,20 +126,10 @@ const App: React.FC = () => {
 
   const handleDisconnect = async () => {
     try {
-      const provider = window.phantom?.bitcoin;
-      if (!provider) return;
-
-      await provider.disconnect();
-      setConnected(false);
-      setPublicKey('');
-      setBtcAddress('');
+      await disconnectPhantom();
     } catch (error) {
       console.error('Error disconnecting from Phantom wallet:', error);
     }
-  };
-
-  const handleAddressChange = (newAddress: string) => {
-    setBtcAddress(newAddress);
   };
 
   return (
@@ -178,7 +142,7 @@ const App: React.FC = () => {
         roundNumber={roundNumber}
         onSearch={handleSearch}
         onShowBSVModal={() => setShowBSVModal(true)}
-        btcAddress={btcAddress}
+        btcAddress={btcAddress || ''}
         isPhantomInstalled={isPhantomInstalled}
         connected={connected}
         onConnectPhantom={handlePhantomClick}
@@ -209,7 +173,7 @@ const App: React.FC = () => {
           onClose={() => setShowBSVModal(false)}
           onDisconnect={handleDisconnect}
           address={btcAddress}
-          onAddressChange={handleAddressChange}
+          onAddressChange={() => {}} // Remove address change handler as it's managed by WalletProvider
         />
       )}
     </div>

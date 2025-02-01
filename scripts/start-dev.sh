@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Exit on error and show commands
+set -ex
+
 # Function to check if a port is in use
 check_port() {
     lsof -i:$1 >/dev/null 2>&1
@@ -81,22 +84,53 @@ start_comfyui() {
 }
 
 # Clear ports
-kill_port 3000
-kill_port 4000
-kill_port 8188  # ComfyUI port
+sudo kill -9 $(sudo lsof -t -i:3000 -i:3001 -i:8000) 2>/dev/null || true
 
 # Wait a moment to ensure ports are cleared
 sleep 1
 
-# Setup SVD model
-setup_svd_model
-
-# Start ComfyUI server
-start_comfyui
-
-# Wait for ComfyUI to initialize
+# Add delay before starting servers
+echo "Waiting for services to initialize..."
 sleep 5
 
 # Start the development servers
 echo "Starting development servers..."
-npm run dev:all 
+npm run dev:all
+
+echo "Starting video worker..."
+ts-node src/backend/workers/videoWorker.ts &
+
+echo "Starting local model server..."
+ts-node src/backend/services/modelServing.service.ts start &
+
+echo "Activating default model version..."
+ts-node src/backend/scripts/activateModel.ts
+
+echo "Starting auto-scaling worker..."
+ts-node src/backend/workers/scalingWorker.ts &
+
+# Start the development servers
+npm run dev:all
+
+# Start core services first
+echo "Starting model server..."
+ts-node src/backend/services/modelServing.service.ts start 2>&1 | tee logs/model-server.log &
+
+echo "Waiting for model server..."
+sleep 5
+curl -v http://localhost:8000/health || echo "Model server not ready"
+
+echo "Starting block state service..."
+ts-node src/backend/services/blockState.service.ts 2>&1 | tee logs/block-state.log &
+
+echo "Waiting for block state initialization..."
+sleep 3
+curl -v http://localhost:3001/api/health || echo "Block state not ready"
+
+# Start main server
+echo "Starting main server..."
+tsx watch src/backend/server.ts 2>&1 | tee logs/main-server.log &
+
+# Start frontend
+echo "Starting frontend..."
+cd src/frontend && vite 2>&1 | tee -a logs/frontend.log 
