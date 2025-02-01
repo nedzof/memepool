@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "sudo kill -9 $(sudo lsof -t -i:3000 -i:4000) 2>/dev/null || true",
+    "predev": "sudo kill -9 $(sudo lsof -t -i:3000 -i:3001) 2>/dev/null || true",
     "dev": "vite",
     "dev:server": "tsx watch src/backend/server.ts",
     "dev:all": "npm run predev && concurrently \"npm run dev:server\" \"npm run dev\"",

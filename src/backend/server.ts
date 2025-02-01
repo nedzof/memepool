@@ -1,21 +1,27 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import memegenService from './services/memegen.service.js';
 import { createMetadata, getMetadata } from './services/aerospikeService.js';
+import inscriptionsRouter from './routes/inscriptions';
 import blockMemeRoutes from './routes/blockMeme.routes';
 import axios from 'axios';
+import faucetRouter from './routes/faucet';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
-const port = 4000; // Backend always runs on port 4000
+const port = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000'], // Frontend runs on 3000
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const COMFY_API_URL = 'http://127.0.0.1:8188';
 
@@ -130,20 +136,17 @@ app.get('/api/comfy/view', async (req, res) => {
   }
 });
 
+// Routes
+app.use('/api/inscriptions', inscriptionsRouter);
+app.use('/api/faucet', faucetRouter);
+
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 // Start server
 app.listen(port, () => {
-  console.log(`Backend server running at http://localhost:${port}`);
-}).on('error', (error: any) => {
-  if (error.code === 'EACCES') {
-    console.error(`Error: Permission denied to bind to port ${port}`);
-    console.error('Try running: sudo kill -9 $(sudo lsof -t -i:4000) to free the port');
-    process.exit(1);
-  } else if (error.code === 'EADDRINUSE') {
-    console.error(`Error: Port ${port} is already in use`);
-    console.error('Try running: sudo kill -9 $(sudo lsof -t -i:4000) to free the port');
-    process.exit(1);
-  } else {
-    console.error('Server error:', error);
-    process.exit(1);
-  }
+  console.log(`Server is running on port ${port}`);
 }); 
