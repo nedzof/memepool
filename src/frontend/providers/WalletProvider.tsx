@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { PhantomWallet } from '../utils/wallets/phantom-wallet';
-import type { BtcAccount, PhantomBitcoinProvider } from '../types/phantom';
+import type { BtcAccount, PhantomBitcoinProvider, ConnectResponse } from '../types/phantom';
 import { generateBtcAddress } from '../utils/wallet';
 
 interface Inscription {
@@ -69,19 +69,18 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error('Phantom provider not found');
       }
 
-      console.log('Requesting Phantom accounts...');
-      const accounts = await provider.request({ method: 'requestAccounts' });
-      console.log('Received accounts:', accounts);
+      console.log('Connecting to Phantom...');
+      const accounts = await provider.requestAccounts();
+      console.log('Phantom connection response:', accounts);
 
       if (accounts && accounts.length > 0) {
-        const account = accounts[0];
-        setPublicKey(account.publicKey);
+        const publicKey = accounts[0].publicKey;
+        console.log('Connected with public key:', publicKey);
+        setPublicKey(publicKey);
         setAccounts(accounts);
         setConnected(true);
-        console.log('Connected with public key:', account.publicKey);
-      } else {
-        throw new Error('No accounts returned from Phantom');
       }
+      return accounts;
     } catch (error) {
       console.error('Failed to connect:', error);
       setConnected(false);
@@ -92,11 +91,38 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  useEffect(() => {
+    const provider = window.phantom?.bitcoin;
+    if (provider) {
+      provider.on('accountsChanged', (accounts: BtcAccount[]) => {
+        if (accounts.length > 0) {
+          setPublicKey(accounts[0].publicKey);
+          setAccounts(accounts);
+          setConnected(true);
+        } else {
+          // User switched to an unconnected account, try to reconnect
+          provider.requestAccounts().catch((error) => {
+            console.error('Failed to reconnect:', error);
+            setConnected(false);
+            setAccounts([]);
+            setBtcAddress(null);
+            setPublicKey(null);
+          });
+        }
+      });
+    }
+    return () => {
+      if (provider && provider.removeAllListeners) {
+        provider.removeAllListeners();
+      }
+    };
+  }, []);
+
   const disconnect = async () => {
     try {
       const provider = window.phantom?.bitcoin;
       if (provider) {
-        await provider.request({ method: 'disconnect' });
+        await provider.disconnect();
       }
       setConnected(false);
       setAccounts([]);

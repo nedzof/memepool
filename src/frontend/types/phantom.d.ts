@@ -1,5 +1,6 @@
 export interface PhantomBitcoinProvider {
   isPhantom: boolean;
+  requestAccounts: () => Promise<BtcAccount[]>;
   request: (args: { method: string; params?: any }) => Promise<any>;
   on?: (event: string, handler: Function) => void;
   removeAllListeners?: () => void;

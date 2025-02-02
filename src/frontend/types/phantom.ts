@@ -11,8 +11,7 @@ export interface ConnectResponse {
 
 export interface PhantomBitcoinProvider {
   isPhantom: boolean;
-  connect: (options?: { onlyIfTrusted?: boolean }) => Promise<ConnectResponse>;
-  disconnect: () => Promise<void>;
+  requestAccounts: () => Promise<BtcAccount[]>;
   request: (args: { method: string; params?: any }) => Promise<any>;
   signMessage: (message: Uint8Array, display?: string) => Promise<{ signature: string }>;
   on: (event: string, handler: Function) => void;
