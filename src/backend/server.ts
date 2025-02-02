@@ -55,14 +55,36 @@ app.use('/api/block-memes', async (req, res, next) => {
 app.use('/api/video', aiVideoRoutes);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
   const health = {
     status: 'ok',
     blockState: blockStateService.isInitialized() ? 'initialized' : 'not initialized',
-    currentBlockHeight: blockStateService.getCurrentBlockHeight()
+    currentBlockHeight: blockStateService.getCurrentBlockHeight(),
+    aerospike: await checkAerospikeConnection()
   };
   res.json(health);
 });
+
+async function checkAerospikeConnection() {
+  try {
+    const client = await initAerospike();
+    await client.close();
+    return { 
+      status: 'connected',
+      host: process.env.AEROSPIKE_HOST || 'localhost',
+      port: parseInt(process.env.AEROSPIKE_PORT || "3003")
+    };
+  } catch (error) {
+    return { 
+      status: 'disconnected',
+      error: error.message,
+      config: {
+        host: process.env.AEROSPIKE_HOST || 'localhost',
+        port: parseInt(process.env.AEROSPIKE_PORT || "3003")
+      }
+    };
+  }
+}
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

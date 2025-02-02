@@ -113,34 +113,13 @@ const videoSchema = {
 };
 
 export async function initAerospike() {
-  const client = new aerospike.Client({
-    hosts: [{
-      addr: config.AEROSPIKE_HOST,
-      port: config.AEROSPIKE_PORT
-    }]
+  const client = await aerospike.connect({
+    hosts: [
+      { 
+        addr: process.env.AEROSPIKE_HOST || "localhost", // Use environment variable
+        port: parseInt(process.env.AEROSPIKE_PORT || "3003") // Default to external port
+      }
+    ]
   });
-
-  await client.connect();
-  
-  try {
-    // Check if namespace exists
-    const info = await new Promise<string>((resolve, reject) => {
-      client.info('namespaces', 'localhost', (error: Error | null, response: string) => {
-        if (error) reject(error);
-        else resolve(response);
-      });
-    });
-    
-    const namespaces = info.split(';').find((i: string) => i.startsWith('namespaces'))?.split('=')[1] || '';
-    
-    if (!namespaces.includes(config.AEROSPIKE_NAMESPACE)) {
-      throw new Error('Namespace does not exist');
-    }
-  } catch (err) {
-    console.error('Error checking namespace:', err);
-    // Note: Namespace creation requires server-side configuration
-    throw new Error('Required namespace does not exist. Please configure Aerospike server with the correct namespace.');
-  } finally {
-    await client.close();
-  }
+  return client;
 } 

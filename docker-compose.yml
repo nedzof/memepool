@@ -4,13 +4,12 @@ services:
   aerospike:
     image: aerospike/aerospike-server
     ports:
-      - "3000:3000"
+      - "3003:3000"
       - "3001:3001"
       - "3002:3002"
-      - "3003:3003"
     volumes:
+      - ./data/aerospike:/opt/aerospike/data
       - ./config/aerospike:/etc/aerospike:rw
-      - aerospike-data:/opt/aerospike/data
     environment:
       - NAMESPACE=memepool
     healthcheck:
@@ -28,6 +27,8 @@ services:
           memory: 2G
         reservations:
           memory: 1G
+    networks:
+      - memepool-net
 
   backend:
     build: 
@@ -43,6 +44,8 @@ services:
     depends_on:
       aerospike:
         condition: service_healthy
+    networks:
+      - memepool-net
 
   frontend:
     build:
@@ -56,4 +59,8 @@ services:
       - backend
 
 volumes:
-  aerospike-data: 
+  aerospike-data:
+
+networks:
+  memepool-net:
+    driver: bridge 

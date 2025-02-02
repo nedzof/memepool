@@ -235,6 +235,7 @@ main() {
 
     # Start main server
     echo "Starting main server..."
+    AEROSPIKE_HOST=localhost AEROSPIKE_PORT=3003 \
     tsx watch src/backend/server.ts 2>&1 | tee logs/main-server.log &
 
     # Start frontend
