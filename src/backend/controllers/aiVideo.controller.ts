@@ -23,6 +23,27 @@ class AIVideoController {
       res.status(500).json({ error: 'Failed to get video status' });
     }
   }
+
+  async getTaskStatus(req: Request, res: Response) {
+    try {
+      const { taskId } = req.params;
+      const status = await videoProcessingService.getJobStatus(taskId);
+      res.json(status);
+    } catch (error) {
+      console.error('Task status check error:', error);
+      res.status(500).json({ error: 'Failed to get task status' });
+    }
+  }
+
+  async getQueueMetrics(req: Request, res: Response) {
+    try {
+      const metrics = await videoProcessingService.getQueueMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Queue metrics error:', error);
+      res.status(500).json({ error: 'Failed to get queue metrics' });
+    }
+  }
 }
 
 export default new AIVideoController(); 
