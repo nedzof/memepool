@@ -2,13 +2,13 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import memegenService from './services/memegen.service.js';
-import { createMetadata, getMetadata } from './services/aerospikeService.js';
+import { createMetadata, getMetadata, initAerospike } from './services/aerospikeService.js';
 import inscriptionsRouter from './routes/inscriptions';
 import blockMemeRoutes from './routes/blockMeme.routes';
 import faucetRouter from './routes/faucet';
 import aiVideoRoutes from './routes/aiVideo.routes';
 import { BlockStateService } from './services/blockState.service';
-import modelServingService from './services/modelServing.service.js';
+import { modelServingService } from './services/modelServing.service.js';
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +51,9 @@ app.use('/api/block-memes', async (req, res, next) => {
   }
 }, blockMemeRoutes);
 
+// AI Video Routes
+app.use('/api/video', aiVideoRoutes);
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   const health = {
@@ -76,6 +79,9 @@ const startServer = async () => {
     console.log('Initializing BlockStateService...');
     await blockStateService.start();
     console.log('BlockStateService initialized successfully');
+
+    await initAerospike();
+    console.log('Aerospike initialized successfully');
 
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);

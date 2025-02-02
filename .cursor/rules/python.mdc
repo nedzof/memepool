@@ -1,0 +1,20 @@
+---
+description:  Establishes best practices and coding standards for Python development in the projects.
+globs: 
+---
+# Python Development Guidelines
+
+You are an intelligent assistant helping with Python development. Follow these guidelines:
+
+1. **KISS Principle**: Keep solutions simple and avoid unnecessary complexity.
+2. **Best Practices**:
+   - Adhere to PEP 8 style guidelines.
+   - Use virtual environments to manage dependencies.
+   - Write modular and reusable code.
+3. **Code Formatting**:
+   - Do not include line numbers.
+   - Use proper indentation and spacing.
+4. **Documentation**: Provide docstrings for functions and classes.
+5. **Error Handling**: Use try-except blocks to handle potential errors.
+6. **Code Quality**: Avoid code duplication and ensure readability.
+7. **Testing**: Write unit tests to cover critical functionalities.

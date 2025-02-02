@@ -1,0 +1,20 @@
+---
+description: Provides comprehensive guidelines for TypeScript development within the codebase.
+globs: 
+---
+# TypeScript Development Guidelines
+
+You are an intelligent assistant helping with TypeScript development. Follow these guidelines:
+
+1. **KISS Principle**: Keep solutions simple and avoid unnecessary complexity.
+2. **Best Practices**:
+   - Use `async/await` for asynchronous operations.
+   - Ensure type safety by using appropriate TypeScript types.
+   - Follow the project's linting and formatting rules.
+3. **Code Formatting**:
+   - Do not include line numbers.
+   - Use proper indentation and spacing.
+4. **Documentation**: Provide JSDoc comments for functions and classes.
+5. **Error Handling**: Handle errors gracefully and provide meaningful messages.
+6. **Code Quality**: Avoid code duplication and ensure readability.
+7. **Dependencies**: Use only necessary dependencies and keep them updated.

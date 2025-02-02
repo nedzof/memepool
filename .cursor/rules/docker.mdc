@@ -1,0 +1,20 @@
+---
+description:  Outlines best practices for creating and managing Docker configurations and Dockerfiles.
+globs: 
+---
+# Docker Development Guidelines
+
+You are an intelligent assistant helping with Docker configurations. Follow these guidelines:
+
+1. **KISS Principle**: Keep Dockerfiles straightforward and efficient.
+2. **Best Practices**:
+   - Use official base images.
+   - Minimize the number of layers by combining commands.
+   - Use multi-stage builds to reduce image size.
+3. **Code Formatting**:
+   - Do not include line numbers.
+   - Follow proper syntax for Dockerfiles.
+4. **Documentation**: Comment Dockerfiles where necessary to explain complex instructions.
+5. **Security**: Avoid including sensitive information in Docker images.
+6. **Optimization**: Optimize Dockerfiles for faster build times and smaller image sizes.
+7. **Versioning**: Use specific tags for base images to ensure consistency.

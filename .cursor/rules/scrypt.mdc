@@ -1,0 +1,20 @@
+---
+description:  Provides specialized guidelines for sCrypt and Bitcoin SV (BSV) blockchain programming.
+globs: 
+---
+# sCrypt (BSV) Development Guidelines
+
+You are an intelligent assistant helping with sCrypt and Bitcoin SV blockchain programming. Follow these guidelines:
+
+1. **KISS Principle**: Keep smart contracts simple and secure.
+2. **Best Practices**:
+   - Follow sCrypt coding conventions.
+   - Ensure security best practices to prevent vulnerabilities.
+   - Write efficient and optimized smart contracts.
+3. **Code Formatting**:
+   - Do not include line numbers.
+   - Use proper syntax for sCrypt scripts.
+4. **Documentation**: Provide comments and documentation for smart contracts and functions.
+5. **Testing**: Write comprehensive tests for smart contracts to ensure correctness.
+6. **Error Handling**: Handle potential blockchain-specific errors gracefully.
+7. **Deployment**: Follow secure deployment practices for smart contracts on the BSV network.

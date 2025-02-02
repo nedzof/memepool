@@ -94,6 +94,16 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onVideoGenerated }) => 
 
   const handleGenerate = async () => {
     try {
+      if (!selectedTemplate) {
+        setError('Please select a meme template');
+        return;
+      }
+
+      if (generationParams.frames < 12 || generationParams.frames > 100) {
+        setError('Frames must be between 12-100');
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       
@@ -101,16 +111,18 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onVideoGenerated }) => 
       
       const response = await axios.post('/api/video/generate', {
         image: base64Image,
-        fps: generationParams.fps,
-        frames: generationParams.frames,
-        motion: generationParams.motionScale
+        config: {
+          fps: generationParams.fps,
+          frames: generationParams.frames,
+          motion: generationParams.motionScale
+        }
       });
 
-      setActiveTaskId(response.data.taskId);
+      setActiveTaskId(response.data.jobId);
       setProgress(0);
     } catch (error) {
       console.error('Generation failed:', error);
-      setError('Failed to start video generation');
+      setError(error.response?.data?.error || 'Generation failed');
       setIsLoading(false);
     }
   };

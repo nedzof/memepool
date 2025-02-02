@@ -1,3 +1,6 @@
+import * as aerospike from 'aerospike';
+import { config } from '../../shared/config/constants';
+
 // Temporary in-memory cache for development
 const cache: Record<string, any> = {};
 
@@ -75,7 +78,69 @@ export class AerospikeService {
 }
 
 export async function ping() {
-  const client = await connect();
-  await client.info('statistics');
-  return true;
+  const client = new aerospike.Client({
+    hosts: [{
+      addr: config.AEROSPIKE_HOST,
+      port: config.AEROSPIKE_PORT
+    }]
+  });
+  
+  try {
+    await client.connect();
+    await new Promise<void>((resolve, reject) => {
+      client.info('statistics', 'localhost', (error: Error | null) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+    await client.close();
+    return true;
+  } catch (error) {
+    console.error('Aerospike ping failed:', error);
+    return false;
+  }
+}
+
+const videoSchema = {
+  name: 'videos',
+  key: 'videoKey',
+  bins: {
+    video: 'bytes',
+    metadata: 'object',
+    timestamp: 'number'
+  },
+  ttl: 86400 // 24 hours
+};
+
+export async function initAerospike() {
+  const client = new aerospike.Client({
+    hosts: [{
+      addr: config.AEROSPIKE_HOST,
+      port: config.AEROSPIKE_PORT
+    }]
+  });
+
+  await client.connect();
+  
+  try {
+    // Check if namespace exists
+    const info = await new Promise<string>((resolve, reject) => {
+      client.info('namespaces', 'localhost', (error: Error | null, response: string) => {
+        if (error) reject(error);
+        else resolve(response);
+      });
+    });
+    
+    const namespaces = info.split(';').find((i: string) => i.startsWith('namespaces'))?.split('=')[1] || '';
+    
+    if (!namespaces.includes(config.AEROSPIKE_NAMESPACE)) {
+      throw new Error('Namespace does not exist');
+    }
+  } catch (err) {
+    console.error('Error checking namespace:', err);
+    // Note: Namespace creation requires server-side configuration
+    throw new Error('Required namespace does not exist. Please configure Aerospike server with the correct namespace.');
+  } finally {
+    await client.close();
+  }
 } 

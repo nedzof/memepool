@@ -1,0 +1,19 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Force PyTorch to use CPU
+ENV CUDA_VISIBLE_DEVICES=
+ENV USE_CPU=1
+
+COPY . .
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"] 
