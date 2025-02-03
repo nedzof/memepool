@@ -9,12 +9,13 @@ import faucetRouter from './routes/faucet';
 import aiVideoRoutes from './routes/aiVideo.routes';
 import { BlockStateService } from './services/blockState.service';
 import { modelServingService } from './services/modelServing.service.js';
+import videoRoutes from './routes/video.routes';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3005;
 
 // Middleware
 app.use(cors({
@@ -53,6 +54,9 @@ app.use('/api/block-memes', async (req, res, next) => {
 
 // AI Video Routes
 app.use('/api/video', aiVideoRoutes);
+
+// Register routes
+app.use('/api/video', videoRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

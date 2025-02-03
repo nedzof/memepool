@@ -1,19 +1,19 @@
 import * as grpc from '@grpc/grpc-js';
-import * as video_proto from '../../generated/video';
+import { VideoGeneratorClient, VideoRequest, VideoResponse } from '../generated/video';
 
 class GRPCClient {
-  private client: video_proto.VideoGeneratorClient;
+  private client: VideoGeneratorClient;
   
   constructor() {
-    this.client = new video_proto.VideoGeneratorClient(
+    this.client = new VideoGeneratorClient(
       'localhost:50051',
       grpc.credentials.createInsecure()
     );
   }
 
-  generateVideo(request: video_proto.VideoRequest): Promise<video_proto.VideoResponse> {
+  generateVideo(request: VideoRequest): Promise<VideoResponse> {
     return new Promise((resolve, reject) => {
-      this.client.GenerateVideo(request, (err, response) => {
+      this.client.generateVideo(request, (err, response) => {
         if (err) reject(err);
         else resolve(response);
       });

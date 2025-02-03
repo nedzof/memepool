@@ -8,6 +8,7 @@ import video_pb2_grpc
 import io
 from PIL import Image
 import os
+import time
 
 app = FastAPI()
 
@@ -15,20 +16,51 @@ app = FastAPI()
 USE_CPU = os.getenv('USE_CPU', '0') == '1'
 DEVICE = "cpu" if USE_CPU else "cuda"
 
-# Initialize the pipeline with appropriate device
-pipe = StableVideoDiffusionPipeline.from_pretrained(
-    "stabilityai/stable-video-diffusion-img2vid-xt",
-    torch_dtype=torch.float16 if not USE_CPU else torch.float32,
-    variant="fp16" if not USE_CPU else None
-).to(DEVICE)
+# Track model loading status
+model_loading = True
+model_loading_start = time.time()
 
-# If using CPU, enable memory efficient attention
-if USE_CPU:
-    pipe.enable_model_cpu_offload()
-    pipe.enable_attention_slicing()
+@app.on_event("startup")
+async def startup_event():
+    print(f"Starting AI Video Service on {DEVICE}")
+    print("Note: The service will be ready to handle requests after the model is loaded")
+    print("Model loading progress will be shown in the logs")
+
+@app.get("/health")
+async def health_check():
+    global model_loading, model_loading_start
+    return {
+        "status": "loading" if model_loading else "ready",
+        "elapsed_seconds": int(time.time() - model_loading_start),
+        "device": DEVICE
+    }
+
+# Initialize the pipeline with appropriate device
+pipe = None
+try:
+    print("Loading Stable Video Diffusion model...")
+    pipe = StableVideoDiffusionPipeline.from_pretrained(
+        "stabilityai/stable-video-diffusion-img2vid-xt",
+        torch_dtype=torch.float16 if not USE_CPU else torch.float32,
+        variant="fp16" if not USE_CPU else None
+    ).to(DEVICE)
+
+    # If using CPU, enable memory efficient attention
+    if USE_CPU:
+        pipe.enable_model_cpu_offload()
+        pipe.enable_attention_slicing()
+    
+    model_loading = False
+    print("Model loaded successfully!")
+except Exception as e:
+    print(f"Error loading model: {e}")
 
 class VideoGeneratorServicer(video_pb2_grpc.VideoGeneratorServicer):
     def GenerateVideo(self, request, context):
+        global model_loading, pipe
+        if model_loading or pipe is None:
+            context.abort(grpc.StatusCode.UNAVAILABLE, "Model is still loading")
+            
         # Convert bytes to image
         image = Image.open(io.BytesIO(request.image))
         
@@ -65,6 +97,11 @@ async def generate_video(
     frames: int = 14,
     motion: float = 0.5
 ):
+    global model_loading, pipe
+    if model_loading or pipe is None:
+        elapsed_minutes = int((time.time() - model_loading_start) / 60)
+        return {"error": f"Model is still loading ({elapsed_minutes} minutes elapsed)"}
+        
     # Process image
     img_data = await image.read()
     

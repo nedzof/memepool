@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+service VideoGenerator {
+  rpc GenerateVideo(VideoRequest) returns (VideoResponse) {}
+}
+
+message VideoRequest {
+  bytes image = 1;
+  uint32 fps = 2;
+  uint32 frames = 3;
+  float motion = 4;
+}
+
+message VideoResponse {
+  bytes video = 1;
+  VideoMetadata metadata = 2;
+}
+
+message VideoMetadata {
+  string model_version = 1;
+  float duration = 2;
+  float processing_time = 3;
+} 

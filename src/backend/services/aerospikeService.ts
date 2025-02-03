@@ -35,6 +35,22 @@ export class AerospikeService {
     // Using in-memory cache for development
   }
 
+  async createMetadata(key: string, data: any): Promise<void> {
+    await createMetadata(key, data);
+  }
+
+  async getMetadata(key: string): Promise<any> {
+    return getMetadata(key);
+  }
+
+  async updateMetadata(key: string, data: any): Promise<void> {
+    await updateMetadata(key, data);
+  }
+
+  async deleteMetadata(key: string): Promise<void> {
+    await deleteMetadata(key);
+  }
+
   async createMeme(meme: any): Promise<void> {
     await createMetadata(meme.id, meme);
   }

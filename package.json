@@ -16,6 +16,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@grpc/grpc-js": "^1.12.5",
     "@noble/hashes": "^1.7.1",
     "@phantom/wallet-sdk": "^0.0.12",
     "@scure/base": "^1.2.4",
@@ -26,6 +27,7 @@
     "@solana/web3.js": "^1.98.0",
     "@types/bitcoinjs-lib": "^5.0.4",
     "@types/cors": "^2.8.17",
+    "@types/multer": "^1.4.12",
     "axios": "^1.4.0",
     "bip32": "^5.0.0-rc.0",
     "bip39": "^3.1.0",
@@ -38,6 +40,7 @@
     "express": "^4.21.2",
     "fast-text-encoding": "^1.0.6",
     "gsap": "^3.12.7",
+    "multer": "^1.4.5-lts.1",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.2.0",
@@ -51,6 +54,7 @@
     "web-encoding": "^1.1.5"
   },
   "devDependencies": {
+    "@grpc/proto-loader": "^0.7.13",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
@@ -71,6 +75,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "grpc-tools": "^1.12.4",
     "https-browserify": "^1.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
@@ -83,6 +88,7 @@
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
+    "ts-proto": "^2.6.1",
     "typescript": "^5.7.3",
     "url": "^0.11.4",
     "vite": "^5.1.4"

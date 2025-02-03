@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useMemeTemplates } from '../hooks/useMemeTemplates';
 import { useBlockMemes } from '../hooks/useBlockMemes';
 import { FiX, FiLoader, FiTrendingUp, FiZap, FiAlertCircle } from 'react-icons/fi';
 import { videoGenerationService } from '../services/videoGeneration.service';
@@ -28,13 +27,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   if (!currentBlock) return null;
 
   const {
-    templates,
-    isLoading: isLoadingTemplates,
-    generateMemeWithText,
-    isTemplateLoaded
-  } = useMemeTemplates();
-
-  const {
     currentMeme,
     isLoading: isLoadingBlock,
     refreshBlockInfo
@@ -42,19 +34,21 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
 
   const { btcAddress, connected } = useWallet();
 
-  const [prompt, setPrompt] = useState('');
+  const [memeName, setMemeName] = useState('');
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [viralityScore, setViralityScore] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [distortionLevel, setDistortionLevel] = useState(0);
-  const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 });
-  const [waveEffect, setWaveEffect] = useState(0);
+  const [generationParams, setGenerationParams] = useState({
+    fps: 6,
+    frames: 14,
+    motionScale: 0.5
+  });
   const [isInscribing, setIsInscribing] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const distortionIntervalRef = useRef<NodeJS.Timeout>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch current block info when modal opens
   useEffect(() => {
@@ -63,111 +57,94 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
     }
   }, [currentBlock, refreshBlockInfo]);
 
-  // Use default template
-  useEffect(() => {
-    if (templates.length > 0 && !isLoadingTemplates && currentBlock) {
-      handlePromptChange(templates[0].id);
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Reset states
+    setError(null);
+    setVideoPreviewUrl(null);
+    setViralityScore(null);
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
     }
-  }, [templates, isLoadingTemplates, currentBlock]);
 
-  const handlePromptChange = async (templateId: string) => {
-    // Clear previous timeouts
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    if (distortionIntervalRef.current) {
-      clearInterval(distortionIntervalRef.current);
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB');
+      return;
     }
 
-    setIsTyping(true);
-    setDistortionLevel(0);
-    setGlitchOffset({ x: 0, y: 0 });
-    setWaveEffect(0);
-
-    // Create random distortion effects while typing
-    distortionIntervalRef.current = setInterval(() => {
-      // Random distortion level
-      setDistortionLevel(Math.random());
-      
-      // Random glitch offset
-      setGlitchOffset({
-        x: (Math.random() - 0.5) * 10,
-        y: (Math.random() - 0.5) * 10
-      });
-      
-      // Random wave effect
-      setWaveEffect(Math.random() * Math.PI * 2);
-    }, 100);
-
-    // Set new timeout to stop effects after typing
-    typingTimeoutRef.current = setTimeout(() => {
-      if (distortionIntervalRef.current) {
-        clearInterval(distortionIntervalRef.current);
-      }
-      setIsTyping(false);
-      setDistortionLevel(0);
-      setGlitchOffset({ x: 0, y: 0 });
-      setWaveEffect(0);
-    }, 1000);
+    setUploadedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const generateVideo = async () => {
+    if (!uploadedImage && !currentBlock.imageUrl) {
+      setError('Please upload an image or use the current block image');
+      return;
+    }
+
+    if (!memeName.trim()) {
+      setError('Please enter a name for your meme');
+      return;
+    }
+
     setIsGenerating(true);
     setGenerationProgress(0);
+    setError(null);
 
     const progressInterval = setInterval(() => {
       setGenerationProgress(prev => {
-        if (prev >= 100) return 100;
+        if (prev >= 95) return 95;
         return prev + 1;
       });
-    }, 30);
+    }, 100);
 
     try {
-      const imageResponse = await fetch(currentBlock.imageUrl);
-      const imageBlob = await imageResponse.blob();
-      const base64Image = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.readAsDataURL(imageBlob);
-      });
-
-      // Generate video
-      const videoResponse = await videoGenerationService.generateVideo({
-        image: base64Image.split(',')[1],
-        fps: 4,
-        numFrames: 12,
-        motionScale: 0.5
-      });
-
-      // Convert video URL to base64
-      const videoBlob = await fetch(videoResponse).then(r => r.blob());
-      const videoBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.readAsDataURL(videoBlob);
-      });
-
-      setVideoPreviewUrl(videoBase64);
+      let imageToUse: string | File;
       
-      // Calculate virality score with fun animation
-      let score = 0;
-      const scoreInterval = setInterval(() => {
-        score += Math.random() * 5;
-        if (score >= 100) {
-          score = Math.min(score, 100);
-          clearInterval(scoreInterval);
-        }
-        setViralityScore(Math.floor(score));
-      }, 50);
+      if (uploadedImage) {
+        imageToUse = uploadedImage;
+      } else {
+        // Fetch and convert current block image to base64
+        const response = await fetch(currentBlock.imageUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        imageToUse = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      // Generate video using either uploaded image or current block image
+      const videoResponse = await videoGenerationService.generateVideo({
+        image: imageToUse,
+        name: memeName.trim(),
+        fps: generationParams.fps,
+        numFrames: generationParams.frames,
+        motionScale: generationParams.motionScale
+      });
+
+      setVideoPreviewUrl(videoResponse);
+      setGenerationProgress(100);
+      
+      // Calculate virality score
+      const score = Math.floor(Math.random() * 30) + 70;
+      setViralityScore(score);
 
     } catch (error) {
       console.error('Error generating video:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
       setError(errorMessage);
+      setGenerationProgress(0);
     } finally {
       clearInterval(progressInterval);
       setIsGenerating(false);
@@ -176,52 +153,48 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!templates.length || isGenerating) return;
-
+    
     if (!connected || !btcAddress) {
-      setError('Please connect your Phantom wallet first');
+      setError('Please connect your wallet first');
       return;
     }
 
     if (!videoPreviewUrl) {
       await generateVideo();
-    } else {
-      try {
-        setIsInscribing(true);
-        setError(null);
+      return;
+    }
 
-        // First, inscribe the meme video
-        // The videoPreviewUrl is already in base64 format from generateVideo
-        const response = await InscriptionService.inscribeImage(
-          videoPreviewUrl,
-          'video/mp4', // Explicitly set video MIME type
-          btcAddress
-        );
+    try {
+      setIsInscribing(true);
+      setError(null);
 
-        console.log('Video meme inscribed:', response);
+      // Inscribe the video
+      const response = await InscriptionService.inscribeImage(
+        videoPreviewUrl,
+        'video/mp4',
+        btcAddress
+      );
 
-        // Then create the meme metadata with the inscription details
-        onMemeCreated({
-          templateId: templates[0].id,
-          prompt,
-          imageUrl: currentBlock.imageUrl,
-          blockNumber: currentBlock.blockNumber || currentBlock.blockHeight,
-          currentMemeUrl: currentMeme?.memeUrl,
-          videoUrl: videoPreviewUrl,
-          viralityScore,
-          inscriptionId: response.inscriptionId,
-          transferTxId: response.transferTxId,
-          type: 'video/mp4' // Add type information to metadata
-        });
+      // Create metadata
+      onMemeCreated({
+        prompt: memeName,
+        imageUrl: currentBlock.imageUrl,
+        blockNumber: currentBlock.blockNumber || currentBlock.blockHeight,
+        currentMemeUrl: currentMeme?.memeUrl,
+        videoUrl: videoPreviewUrl,
+        viralityScore,
+        inscriptionId: response.inscriptionId,
+        transferTxId: response.transferTxId,
+        type: 'video/mp4',
+        generationParams
+      });
 
-        // Close the modal after successful creation
-        onClose();
-      } catch (error) {
-        console.error('Error creating video meme:', error);
-        setError(error instanceof Error ? error.message : 'Failed to create video meme');
-      } finally {
-        setIsInscribing(false);
-      }
+      onClose();
+    } catch (error) {
+      console.error('Error creating video meme:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create video meme');
+    } finally {
+      setIsInscribing(false);
     }
   };
 
@@ -259,161 +232,171 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="p-4">
-            {/* Single Image Display */}
-            <div className="relative aspect-square rounded-lg overflow-hidden border border-[#3D3D60] mb-4">
-              {isLoadingBlock ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#2A2A40]">
-                  <FiLoader className="w-8 h-8 text-[#00ffa3] animate-spin" />
-                </div>
-              ) : (
-                <>
-                  {/* Original Image */}
-                  <div className="relative w-full h-full">
-                    <img
-                      src={currentMeme?.memeUrl || currentBlock.memeUrl || currentBlock.imageUrl}
-                      alt="Meme"
-                      className={`w-full h-full object-cover transition-all duration-300 ${
-                        isTyping 
-                          ? `blur-${Math.floor(distortionLevel * 3)}xl`
-                          : ''
-                      }`}
-                      style={{
-                        transform: isTyping 
-                          ? `
-                            translate(${glitchOffset.x}px, ${glitchOffset.y}px)
-                            rotate(${distortionLevel * 2}deg)
-                            scale(${1 + distortionLevel * 0.1})
-                            skew(${distortionLevel * 5}deg)
-                          `
-                          : 'none',
-                        transition: 'all 0.2s ease-out'
-                      }}
-                    />
-                    {isTyping && (
-                      <>
-                        {/* Glitch Overlay 1 */}
-                        <div
-                          className="absolute inset-0 mix-blend-screen"
-                          style={{
-                            transform: `translate(${-glitchOffset.x * 2}px, ${-glitchOffset.y * 1.5}px)`,
-                            background: `rgba(255, 0, 0, ${distortionLevel * 0.2})`,
-                            clipPath: `polygon(${Math.random() * 100}% 0, 100% ${Math.random() * 100}%, ${Math.random() * 100}% 100%, 0 ${Math.random() * 100}%)`
-                          }}
-                        />
-                        {/* Glitch Overlay 2 */}
-                        <div
-                          className="absolute inset-0 mix-blend-screen"
-                          style={{
-                            transform: `translate(${glitchOffset.x * 1.5}px, ${glitchOffset.y * 2}px)`,
-                            background: `rgba(0, 255, 255, ${distortionLevel * 0.2})`,
-                            clipPath: `polygon(${Math.random() * 100}% 0, 100% ${Math.random() * 100}%, ${Math.random() * 100}% 100%, 0 ${Math.random() * 100}%)`
-                          }}
-                        />
-                        {/* Wave Effect */}
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{
-                            background: `linear-gradient(${waveEffect * 180}deg, transparent, rgba(255, 255, 255, ${distortionLevel * 0.1}), transparent)`,
-                            transform: `translateY(${Math.sin(waveEffect) * 100}%)`,
-                            transition: 'transform 0.5s ease-out'
-                          }}
-                        />
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Video Preview Overlay */}
-                  {videoPreviewUrl && !isTyping && !isGenerating && (
-                    <video
-                      src={videoPreviewUrl}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                    />
-                  )}
-
-                  {/* Generation Progress Overlay */}
-                  {isGenerating && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
-                      <FiZap className="w-12 h-12 text-[#00ffa3] animate-pulse mb-4" />
-                      <div className="w-48 h-2 bg-[#2A2A40] rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-[#00ffa3] transition-all duration-300"
-                          style={{ width: `${generationProgress}%` }}
-                        />
-                      </div>
-                      <span className="text-[#00ffa3] mt-2">Generating video...</span>
-                    </div>
-                  )}
-
-                  {/* Virality Score */}
-                  {viralityScore !== null && !isTyping && !isGenerating && (
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/60 backdrop-blur-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <FiTrendingUp className="w-5 h-5 text-[#00ffa3]" />
-                          <span className="ml-2 text-[#00ffa3] font-medium">
-                            Virality Score: {viralityScore}%
-                          </span>
-                        </div>
-                        <span className="text-[#00ffa3]/60 text-sm">
-                          3s • 12 frames
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Prompt Input */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Image Upload */}
             <div className="space-y-4">
-              <textarea
-                value={prompt}
-                onChange={(e) => {
-                  setPrompt(e.target.value);
-                  handlePromptChange(templates[0]?.id);
-                }}
-                className="w-full p-4 bg-[#2A2A40] border border-[#3D3D60] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00ffa3] focus:border-transparent resize-none h-24"
-                placeholder="✨ Drop your creative prompt here and watch the magic happen..."
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Meme Name
+                </label>
+                <input
+                  type="text"
+                  value={memeName}
+                  onChange={(e) => setMemeName(e.target.value)}
+                  placeholder="Enter a name for your meme"
+                  className="w-full px-3 py-2 bg-[#2A2A40] border border-[#3D3D60] rounded text-white placeholder-gray-500 focus:outline-none focus:border-[#00ffa3]"
+                  required
+                />
+              </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isGenerating || isInscribing || (!videoPreviewUrl && !prompt.trim()) || !connected}
-                className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
-                  isGenerating || isInscribing || (!videoPreviewUrl && !prompt.trim()) || !connected
-                    ? 'bg-[#2A2A40] text-gray-400 cursor-not-allowed'
-                    : 'bg-[#00ffa3] text-black hover:bg-[#00ffa3]/90'
-                }`}
-              >
-                {isGenerating ? (
-                  <span className="flex items-center justify-center">
-                    <FiLoader className="w-5 h-5 animate-spin mr-2" />
-                    Generating...
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Upload Image (optional)
+                </label>
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 bg-[#2A2A40] border border-[#3D3D60] rounded text-white hover:bg-[#3D3D60] transition-colors"
+                  >
+                    Choose File
+                  </button>
+                  <span className="text-sm text-gray-400">
+                    {uploadedImage?.name || 'No file chosen'}
                   </span>
-                ) : isInscribing ? (
-                  <span className="flex items-center justify-center">
-                    <FiLoader className="w-5 h-5 animate-spin mr-2" />
-                    Inscribing...
-                  </span>
-                ) : !videoPreviewUrl ? (
-                  'Generate Video'
-                ) : (
-                  'Create & Inscribe Meme'
-                )}
-              </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+            </div>
 
-              {connected && btcAddress && (
-                <p className="mt-2 text-center text-sm text-gray-400">
-                  Meme will be inscribed to: <span className="font-mono text-[#00ffa3]">{btcAddress}</span>
-                </p>
+            {/* Video Preview / Generation Controls */}
+            <div className="relative aspect-square bg-[#2A2A40] rounded-lg overflow-hidden">
+              {!videoPreviewUrl && !isGenerating && (
+                <img
+                  src={imagePreviewUrl || currentBlock.imageUrl}
+                  alt="Original Image"
+                  className="w-full h-full object-cover"
+                />
+              )}
+
+              {videoPreviewUrl && !isGenerating && (
+                <video
+                  src={videoPreviewUrl}
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              )}
+
+              {/* Generation Progress */}
+              {isGenerating && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+                  <FiZap className="w-12 h-12 text-[#00ffa3] animate-pulse mb-4" />
+                  <div className="w-48 h-2 bg-[#2A2A40] rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[#00ffa3] transition-all duration-300"
+                      style={{ width: `${generationProgress}%` }}
+                    />
+                  </div>
+                  <span className="text-[#00ffa3] mt-2">Generating video...</span>
+                </div>
+              )}
+
+              {/* Generation Parameters */}
+              {!videoPreviewUrl && !isGenerating && (
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/60 backdrop-blur-sm">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-1">FPS</label>
+                      <input
+                        type="number"
+                        min="4"
+                        max="30"
+                        value={generationParams.fps}
+                        onChange={(e) => setGenerationParams(prev => ({
+                          ...prev,
+                          fps: Math.min(30, Math.max(4, parseInt(e.target.value) || 4))
+                        }))}
+                        className="w-full px-2 py-1 bg-[#2A2A40] border border-[#3D3D60] rounded text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-1">Frames</label>
+                      <input
+                        type="number"
+                        min="12"
+                        max="50"
+                        value={generationParams.frames}
+                        onChange={(e) => setGenerationParams(prev => ({
+                          ...prev,
+                          frames: Math.min(50, Math.max(12, parseInt(e.target.value) || 12))
+                        }))}
+                        className="w-full px-2 py-1 bg-[#2A2A40] border border-[#3D3D60] rounded text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-1">Motion</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        value={generationParams.motionScale}
+                        onChange={(e) => setGenerationParams(prev => ({
+                          ...prev,
+                          motionScale: Math.min(1, Math.max(0, parseFloat(e.target.value) || 0))
+                        }))}
+                        className="w-full px-2 py-1 bg-[#2A2A40] border border-[#3D3D60] rounded text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="p-3 bg-red-500/20 border-l-4 border-red-500 text-red-400">
+                {error}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isGenerating || isInscribing || (!connected && !!videoPreviewUrl) || !memeName.trim()}
+              className={`w-full py-3 px-6 rounded-lg font-medium text-lg transition-all duration-300 ${
+                isGenerating || isInscribing || (!connected && !!videoPreviewUrl) || !memeName.trim()
+                  ? 'bg-[#2A2A40] text-gray-400 cursor-not-allowed'
+                  : videoPreviewUrl
+                  ? 'bg-[#00ffa3] text-black hover:bg-[#00ffa3]/90'
+                  : 'bg-[#9945FF] text-white hover:bg-[#9945FF]/90'
+              }`}
+            >
+              {isGenerating ? (
+                <span className="flex items-center justify-center">
+                  <FiLoader className="w-5 h-5 animate-spin mr-2" />
+                  Generating...
+                </span>
+              ) : isInscribing ? (
+                <span className="flex items-center justify-center">
+                  <FiLoader className="w-5 h-5 animate-spin mr-2" />
+                  Inscribing...
+                </span>
+              ) : !videoPreviewUrl ? (
+                'Generate Video'
+              ) : (
+                'Create & Inscribe Meme'
+              )}
+            </button>
           </form>
         </div>
       </div>
