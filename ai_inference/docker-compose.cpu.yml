@@ -1,13 +1,25 @@
+version: '3.8'
+
 services:
   ai-video:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.cpu
     ports:
       - "8001:8001"  # HTTP
       - "50051:50051" # gRPC
     volumes:
-      - ./models:/app/models
+      - .:/app
+      - model-cache:/root/.cache/huggingface
     environment:
       - CUDA_VISIBLE_DEVICES=  # Disable CUDA
-      - USE_CPU=1 
+      - USE_CPU=1
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+    restart: unless-stopped
+
+volumes:
+  model-cache:
+    name: ai-video-model-cache 

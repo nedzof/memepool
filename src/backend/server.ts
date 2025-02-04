@@ -6,10 +6,9 @@ import { createMetadata, getMetadata, initAerospike } from './services/aerospike
 import inscriptionsRouter from './routes/inscriptions';
 import blockMemeRoutes from './routes/blockMeme.routes';
 import faucetRouter from './routes/faucet';
-import aiVideoRoutes from './routes/aiVideo.routes';
+import videoRoutes from './routes/video.routes';
 import { BlockStateService } from './services/blockState.service';
 import { modelServingService } from './services/modelServing.service.js';
-import videoRoutes from './routes/video.routes';
 
 // Load environment variables
 dotenv.config();
@@ -52,10 +51,7 @@ app.use('/api/block-memes', async (req, res, next) => {
   }
 }, blockMemeRoutes);
 
-// AI Video Routes
-app.use('/api/video', aiVideoRoutes);
-
-// Register routes
+// Video Routes
 app.use('/api/video', videoRoutes);
 
 // Health check endpoint
@@ -64,7 +60,8 @@ app.get('/health', async (req, res) => {
     status: 'ok',
     blockState: blockStateService.isInitialized() ? 'initialized' : 'not initialized',
     currentBlockHeight: blockStateService.getCurrentBlockHeight(),
-    aerospike: await checkAerospikeConnection()
+    aerospike: await checkAerospikeConnection(),
+    aiVideo: await checkAiVideoService()
   };
   res.json(health);
 });
@@ -86,6 +83,22 @@ async function checkAerospikeConnection() {
         host: process.env.AEROSPIKE_HOST || 'localhost',
         port: parseInt(process.env.AEROSPIKE_PORT || "3003")
       }
+    };
+  }
+}
+
+async function checkAiVideoService() {
+  try {
+    const response = await fetch('http://localhost:8001/docs');
+    return {
+      status: response.ok ? 'connected' : 'error',
+      port: 8001
+    };
+  } catch (error) {
+    return {
+      status: 'disconnected',
+      error: error.message,
+      port: 8001
     };
   }
 }

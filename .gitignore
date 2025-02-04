@@ -83,4 +83,11 @@ thumbnails/
 # Cache directories
 .cache/
 .npm/
-.eslintcache 
+.eslintcache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+ai_inference/__pycache__/
+ai_inference/**/__pycache__/ 

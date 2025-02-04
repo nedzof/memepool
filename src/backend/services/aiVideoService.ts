@@ -7,20 +7,44 @@ import { grpcClient } from './grpcClient';
 class AIVideoService {
   private isModelLoading = true;
   private modelLoadingStartTime = Date.now();
+  private readonly healthCheckUrl = 'http://localhost:8001/health';
 
   constructor() {
     // Check model status every 5 seconds
     setInterval(async () => {
       try {
-        const response = await fetch('http://localhost:8001/health');
+        const response = await fetch(this.healthCheckUrl);
         if (response.ok) {
           const data = await response.json();
           this.isModelLoading = data.status === 'loading';
+          if (!this.isModelLoading) {
+            console.log('AI model is ready to handle requests');
+          }
         }
       } catch (error) {
         console.error('Error checking model status:', error);
       }
     }, 5000);
+  }
+
+  private async checkModelStatus(): Promise<{ isLoading: boolean; elapsedMinutes: number }> {
+    try {
+      const response = await fetch(this.healthCheckUrl);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          isLoading: data.status === 'loading',
+          elapsedMinutes: Math.floor((Date.now() - this.modelLoadingStartTime) / 60000)
+        };
+      }
+      throw new Error('Health check failed');
+    } catch (error) {
+      console.error('Error checking model status:', error);
+      return {
+        isLoading: true,
+        elapsedMinutes: Math.floor((Date.now() - this.modelLoadingStartTime) / 60000)
+      };
+    }
   }
 
   async generateVideo(options: {
@@ -49,9 +73,14 @@ class AIVideoService {
       throw new Error('Motion scale must be between 0-1');
     }
 
-    if (this.isModelLoading) {
-      const elapsedMinutes = Math.floor((Date.now() - this.modelLoadingStartTime) / 60000);
-      throw new Error(`The AI model is still loading (${elapsedMinutes} minutes elapsed). Please try again in a few minutes.`);
+    // Check model status before proceeding
+    const { isLoading, elapsedMinutes } = await this.checkModelStatus();
+    if (isLoading) {
+      throw new Error(
+        `The AI model is still loading (${elapsedMinutes} minutes elapsed). ` +
+        'The first startup takes about 10-15 minutes to download and load the model. ' +
+        'Please try again in a few minutes.'
+      );
     }
 
     try {
@@ -59,6 +88,9 @@ class AIVideoService {
     } catch (error) {
       console.error('Video generation failed:', error);
       if (error instanceof Error) {
+        if (error.message.includes('UNAVAILABLE')) {
+          throw new Error('Video generation service is not running. Please ensure the AI service is started.');
+        }
         throw new Error(`Video generation failed: ${error.message}`);
       }
       throw new Error('Video generation failed unexpectedly');
@@ -96,9 +128,6 @@ class AIVideoService {
       };
     } catch (error) {
       console.error('Local model generation failed:', error);
-      if (error instanceof Error && error.message.includes('UNAVAILABLE')) {
-        throw new Error('Video generation service is not running. Please ensure the AI service is started.');
-      }
       throw error;
     }
   }

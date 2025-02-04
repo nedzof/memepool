@@ -7,11 +7,21 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy application code and ensure proper permissions
+COPY app.py video_pb2.py video_pb2_grpc.py ./
+RUN chmod +x /app/app.py
 
-ENV DEVICE=cpu
+# Create cache directory with proper permissions
+RUN mkdir -p /root/.cache/huggingface && chmod -R 777 /root/.cache/huggingface
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"] 
+# Set Python path
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8001 50051
+
+CMD ["python", "app.py"] 

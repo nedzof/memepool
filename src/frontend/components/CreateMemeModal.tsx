@@ -41,6 +41,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [viralityScore, setViralityScore] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isModelLoading, setIsModelLoading] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationParams, setGenerationParams] = useState({
     fps: 6,
@@ -100,6 +101,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
     setIsGenerating(true);
     setGenerationProgress(0);
     setError(null);
+    setIsModelLoading(false);
 
     const progressInterval = setInterval(() => {
       setGenerationProgress(prev => {
@@ -143,7 +145,14 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
     } catch (error) {
       console.error('Error generating video:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
-      setError(errorMessage);
+      
+      // Check if the error is related to model loading
+      if (errorMessage.includes('AI model is still loading')) {
+        setIsModelLoading(true);
+        setError(errorMessage);
+      } else {
+        setError(errorMessage);
+      }
       setGenerationProgress(0);
     } finally {
       clearInterval(progressInterval);
@@ -226,7 +235,7 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
           )}
 
           {error && (
-            <div className="p-4 bg-red-500/20 border-l-4 border-red-500 text-red-400 flex items-center gap-2">
+            <div className={`p-4 ${isModelLoading ? 'bg-blue-500/20 border-l-4 border-blue-500 text-blue-400' : 'bg-red-500/20 border-l-4 border-red-500 text-red-400'} flex items-center gap-2`}>
               <FiAlertCircle className="w-5 h-5" />
               <span>{error}</span>
             </div>
@@ -361,13 +370,6 @@ const CreateMemeModal: React.FC<CreateMemeModalProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Error Display */}
-            {error && (
-              <div className="p-3 bg-red-500/20 border-l-4 border-red-500 text-red-400">
-                {error}
-              </div>
-            )}
 
             {/* Submit Button */}
             <button

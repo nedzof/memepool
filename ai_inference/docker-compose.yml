@@ -2,12 +2,15 @@ version: '3.8'
 
 services:
   ai-video:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8001:8001"  # HTTP
       - "50051:50051" # gRPC
     volumes:
-      - ./models:/app/models
+      - ./app:/app
+      - model-cache:/root/.cache/huggingface
     deploy:
       resources:
         reservations:
@@ -15,5 +18,13 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+        limits:
+          memory: 16G
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all 
+      - NVIDIA_VISIBLE_DEVICES=all
+      - USE_CPU=1
+    restart: unless-stopped
+
+volumes:
+  model-cache:
+    name: ai-video-model-cache 
