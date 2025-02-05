@@ -1,41 +1,56 @@
- Memepool Documentation  
+Memepool Documentation
+The Decentralized Truth Machine
 
-Memepool merges AI-generated 3D memes with BSV blockchain mechanics to create self-sustaining viral economies. Creators earn through dynamic micropayments while viewers gain stake in viral success through **recycled rewards** - turning both successes and failures into value.
+██████ weaponizes viral content markets to become humanity's financial conscience ██████. By merging AI-generated 3D memes with Bitcoin SV's micropayment capabilities, we create anonymous information battlefields where truth wins through economic proof, not algorithmic manipulation.
 
-Traditional platforms extract value from viral content. Memepool inverts this model using Bitcoin SV's blockchain to transform every interaction into owned equity. Creators launch AI-powered 3D meme "startups" where community engagement directly translates to BSV rewards through transparent, algorithmically governed incentives.
+Web3 vs Web2: Truth Wars
+Traditional Platforms
 
-The system operates as a viral prediction market. Successful memes distribute BSV rewards to creators and engaged viewers from a shared pool. Unsuccessful attempts contribute 90% of their remaining value to future rounds through an automated jackpot system. This creates compounding opportunities where even dormant memes fund new viral cycles.
+- Algorithmic amplification of rage/fear 
+- Free propaganda channels for governments/corps
+- Thought control via engagement-optimized feeds
+Memepool's Truth Protocol
 
-Participants earn rewards if they're in the **top 10%** of lockers, with a guaranteed 10x reward multiplier between first and last positions.
++ Virality = Locked BSV conviction 
++ 90% failed narratives fund future truth bombs
++ Immutable hypocrisy ledgers on blockchain
+Battlefield	Memepool	Web2 Platforms
+Truth Verification	Economic proof (BSV locks)	Likes/Bots
+Failure Recycling	90%→Next Truth War	Value Blackhole
+Censorship	On-chain immutability	Shadowban Tools
+Core Mechanics: Truth Warfare
+Anonymous Meme Nukes
+Users submit ██████ memeized evidence packages ██████ containing:
+Video comparisons (official statements vs reality)
+Data clashes (reported stats vs raw numbers)
+AI-generated "what if" scenarios mocking narratives
+Economic Conviction Locks
+Participants lock BSV to memes they believe will destroy mainstream narratives. Early lockers gain 10x rewards over latecomers.
 
+Schrödinger's Truth Engine
 
-| Metric          | Memepool                          | Web2 Platforms       |  
-|-----------------|-----------------------------------|----------------------|  
-| **Early Adopter Bonus** | 10x rewards for first detectors | Uniform distribution |  
-| **Value Recapture** | 90% failure recycling           | Permanent value loss |  
-| **Ownership**     | On-chain provenance              | Platform custody     |  
+````graph LR
+    Joke -->|Mass Locking| Proto-Truth -->|BSV Threshold| AcceptedFact  
+    MSM[Mainstream Media] -->|Forced Coverage| FeedbackLoop --> MoreLocks
+````
+Failed Propaganda Fuel
+90% of BSV from unmemed narratives automatically funds future rounds. ██████ Governments accidentally finance truth by pushing flopped psyops ██████
+Key Code Conflict Point
 
-Memepool weaponizes viral content markets to become humanity's financial conscience. By merging AI-generated 3D memes with Bitcoin SV's immutable ledger, we create an anonymous information battlefield where truth wins through economic proof, not algorithmic manipulation.
+// Censorship impossibility once meme gains traction
+function attemptCensor(memeId: string) {
+  const locks = getChainLocks(memeId); // BSV blockchain
+  if (locks > currentThreshold) {
+    throw Error("Propaganda FAILED: Truth already economically verified");
+  }
+  // Too late - meme is now immutable
+}
+Let's discuss:
 
-Death to Fake News, Psyops & Thought Control
-Traditional Web2 platforms:
-❌ Promote rage-bait through engagement algorithms
-❌ Allow free amplification of government/corporate propaganda
-❌ Keep users trapped in AI-curated echo chambers
-
-Memepool inverts this through Proof-of-Truth Economics:
-
-✅ Anonymous Submissions - No profiles, followers, or influencer advantages
-✅ BSV-Backed Virality - Only content with locked economic conviction trends
-✅ Failure Recycling - 90% of failed propaganda attempts fund future truth bombs
-
-```graph LR
-    A[Fake News] -->|Costs Nothing| B[Floods Web2]
-    C[Memepool Truth] -->|Requires Locked BSV| D[Financial Filter]
-    D -->|No Conviction| E[Garbage Dies]
-    D -->|Mass Locking| F[Truth Trends]
-    F --> G[Mainstream Media Forced to Report]
-```
+██████ placeholder tone - "weaponizes" vs "transforms"?
+Depth of political references - acceptable risk?
+How technical to keep the intro vs societal impact balance
+Want to refine any section first?
 
 ## Block Round Lifecycle  
 *A 10-minute competitive window where memes battle for virality through collective locking:*
