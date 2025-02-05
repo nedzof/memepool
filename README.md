@@ -1,6 +1,10 @@
 # Memepool - Decentralizing Truth Through Viral Prediction Markets
 
+Memepool merges AI-generated 3D memes with BSV blockchain mechanics to create self-sustaining viral economies. Creators earn through dynamic micropayments while viewers gain stake in viral success through recycled rewards - turning both successes and failures into value.
+
 Memepool merges AI-generated 3D memes with Bitcoin SV's blockchain to forge self-sustaining truth economies. Creators monetize truth through dynamic micropayments while viewers gain financial stakes in verifiable reality, with recycled rewards ensuring failed narratives fund future truth bombs.
+
+The system operates as a viral prediction market. Successful memes distribute BSV rewards to creators and engaged viewers from a shared pool. Unsuccessful attempts contribute 90% of their remaining value to future rounds through an automated jackpot system. This creates compounding opportunities where even dormant memes fund new viral cycles.
 
 Traditional platforms amplify state/corporate narratives through centralized algorithms. Memepool inverts this via provably neutral mechanics:
 
