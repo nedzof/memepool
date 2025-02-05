@@ -1,19 +1,39 @@
- Memepool Documentation  
+# Memepool - Decentralizing Truth Through Viral Prediction Markets
 
-Memepool merges AI-generated 3D memes with BSV blockchain mechanics to create self-sustaining viral economies. Creators earn through dynamic micropayments while viewers gain stake in viral success through **recycled rewards** - turning both successes and failures into value.
+Memepool merges AI-generated 3D memes with Bitcoin SV's blockchain to forge self-sustaining truth economies - transforming viral content into a geopolitical weapon against censorship and propaganda. Creators monetize dissent through dynamic micropayments while viewers gain financial stakes in verifiable reality, with recycled rewards ensuring failed narratives fund future truth bombs.
 
-Traditional platforms extract value from viral content. Memepool inverts this model using Bitcoin SV's blockchain to transform every interaction into owned equity. Creators launch AI-powered 3D meme "startups" where community engagement directly translates to BSV rewards through transparent, algorithmically governed incentives.
+Traditional platforms amplify state/corporate narratives through centralized algorithms. Memepool inverts this via provably neutral mechanics:
 
-The system operates as a viral prediction market. Successful memes distribute BSV rewards to creators and engaged viewers from a shared pool. Unsuccessful attempts contribute 90% of their remaining value to future rounds through an automated jackpot system. This creates compounding opportunities where even dormant memes fund new viral cycles.
+Metric	Memepool	Web2 Platforms
+Early Adopter Bonus	10x rewards for first detectors	Uniform distribution
+Value Recapture	90% failure recycling → Fuels counter-narratives	Permanent value loss
+Ownership	Immutable on-chain provenance	Shadowban-ready custody
+Censorship	Impossible post-lock	Government-collaborative
+How Truth Gets Funded
+AI-Powered Dissent: Creators deploy 3D meme "startups" mocking propaganda/hypocrisy
+Stake-to-Viral: Users lock BSV on memes they believe will destabilize mainstream narratives
+Reality Dividends:
+Success: Top 3 memes + early lockers split 99% pool (10x reward decay)
+Failure: 90% BSV jackpots next round → Weaponizing loser propaganda
+```mermaid
+graph TD
+    A[State Propaganda] -->|Free Amplification| B[Web2 Dominance]
+    C[Memepool Truth] -->|Locked BSV Cost| D{Reality Check}
+    D -->|Low Conviction| E[Fake News Bankrupt]
+    D -->|Mass Locking| F[Trending Truth]
+    F --> G[Mainstream Media Forced to Report]
+    G --> H[More Users Join Next Round]
+```
+### Geopolitical Innovation Cycle
+Anonymous Submissions: No influencer advantage - AI memes stand on merit
+Truth Oracles: Locking BSV acts as economic proof-of-reality
+Hyperbitcoinization Trigger: Regimes attempting manipulation must buy BSV → Increasing its value → Funding more dissent
 
-Participants earn rewards if they're in the **top 10%** of lockers, with a guaranteed 10x reward multiplier between first and last positions.
+**Example Truth Cascade:**
 
-
-| Metric          | Memepool                          | Web2 Platforms       |  
-|-----------------|-----------------------------------|----------------------|  
-| **Early Adopter Bonus** | 10x rewards for first detectors | Uniform distribution |  
-| **Value Recapture** | 90% failure recycling           | Permanent value loss |  
-| **Ownership**     | On-chain provenance              | Platform custody     |  
+Phase 1: User submits "AI Comparison: Politician X's 2021 vs 2024 Statements"
+Phase 2: Early lockers profit 10x when hypocrisy meme trends
+Phase 3: Failed memes fund next round's counter-narrative
 
 ## Block Round Lifecycle  
 *A 10-minute competitive window where memes battle for virality through collective locking:*
