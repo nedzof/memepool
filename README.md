@@ -27,9 +27,9 @@ graph TD
 - Truth Oracles: Locking BSV acts as economic proof-of-reality
 - Hyperbitcoinization Trigger: Regimes attempting manipulation must buy BSV → Increasing its value → Funding more dissent
 
-Phase 1: User submits "AI Comparison: Politician X's 2021 vs 2024 Statements"
-Phase 2: Early lockers profit 10x when hypocrisy meme trends
-Phase 3: Failed memes fund next round's counter-narrative
+- Phase 1: User submits "AI Comparison: Politician X's 2021 vs 2024 Statements"
+- Phase 2: Early lockers profit 10x when hypocrisy meme trends
+- Phase 3: Failed memes fund next round's counter-narrative
 
 ## Block Round Lifecycle  
 *A 10-minute competitive window where memes battle for virality through collective locking:*
