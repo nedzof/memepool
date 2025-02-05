@@ -36,77 +36,90 @@ graph TD
 - Phase 2: Early lockers profit 10x when hypocrisy meme trends
 - Phase 3: Failed memes fund next round's counter-narrative
 
-Here's the enhanced spec with security integrations:
+Here's the enhanced section with security upgrades integrated natively:
 
 ## Block Round Lifecycle  
 *A 10-minute competitive window where memes battle for virality through collective locking:*
 
 ### 1. **Pre-Round Threshold Adjustment**  
+Before each round begins:  
 ```math
-Tₙ = 0.7T_{prev} + 0.3\left(\frac{1}{N}\sum_{k=1}^{12} S_{k} \cdot \mathbb{I}_{\left[Q1-1.5IQR,\ Q3+1.5IQR\right]}(S_k)\right)
+Tₙ = 0.5T_{prev} + 0.5\left(\text{trimmed\_mean}\left(S_{last12}\right)\right)
 ```
 Where:
 
-S_k = BSV locked in block k
-Q1/Q3 = 25th/75th percentiles of last 12 blocks
-IQR = Q3 - Q1 (interquartile range)
-𝕀 = Indicator function removing outliers
-2. Submission Phase
-Anonymous participation via zk-SNARKs with quadratic fee scaling:
-```typescript
-// Quantum-resistant ZK identity
-const zkIdentity = await zk.createIdentity(creator);
+- S_last12 = Total BSV locked in previous 12 blocks
+- trimmed_mean = Average after removing top/bottom 10% outliers
+- Auto-adjusts with attack-resistant smoothing:
+```math
+if ∣Sk​−μ∣>3σ:Sk​=min(Sk​,μ+σ)
+```
 
-// Non-linear fee algorithm
-function getLockDifficulty(threshold: number): number {
-  let base = 0.000004 * Math.pow(threshold, 1.2);
-  if (threshold > 500) base += 0.000002 * (threshold - 500)**2;
-  return Math.max(0.01, base); 
+2. Submission Phase
+Anonymous creators pay non-linear ZK fees to participate:
+```typescript
+// Quantum-resistant ZK Address Generation
+function generateZKAddress(pubKey: string): string {
+  const nonce = crypto.randomBytes(32);
+  return crypto.createHash('sha3-512')
+    .update(pubKey + nonce)
+    .digest('hex');
 }
 
-// Content anchoring via OP_RETURN
-async function submitMeme(memeData: string) {
-  const fee = getLockDifficulty(await getCurrentThreshold());
+// Non-linear fee calculation with attack damping
+function getLockDifficulty(threshold: number): number {
+  const base = 0.000004 * Math.pow(threshold, 1.5); // Increased exponent
+  let fee = base;
   
-  // Generate ZK proof of payment capability
-  const zkProof = await zk.provePayment(zkIdentity, fee);
+  // Quadratic surcharge for threshold spikes
+  if (threshold > 1000) { // 1000 BSV threshold
+    const excess = threshold - 1000;
+    fee += 0.00000002 * Math.pow(excess, 2);
+  }
   
-  // Immutable content hash
-  const memeHash = bsv.crypto.Hash.sha256(memeData);
+  return Math.max(0.01, fee);
+}
+
+// ZK Meme Submission
+async function submitMeme(zkAddress: string, memeData: string) {
+  const currentThreshold = await getTrimmedThreshold();
+  const fee = getLockDifficulty(currentThreshold);
   
-  // BSV transaction with dual anchors
+  // ZK Payment Protocol
   const tx = await bsv.sendPayment({
-    from: zkIdentity.ZK_ADDRESS,
+    from: zkAddress, // Burnable address
     to: MEMEPOOL_ADDRESS,
     amount: fee,
     opReturn: [
-      '0x6d656d65', // 'meme' prefix
-      memeHash,
-      MerkleTree.root([memeData]) // Batch content proof
+      'MEME', 
+      crypto.createHash('sha256').update(memeData).digest('hex')
     ]
   });
-
-  // Store with ZK-encrypted metadata
-  storeMeme(memeHash, tx.id, zkProof);
+  
+  // Immutable anchoring via BSV
+  storeMeme(
+    memeData, 
+    tx.id,
+    bsval.OP_RETURN.lookup(tx.id) // Permanent on-chain reference
+  );
 }
 ```
-Attack-Resistant Fee Formula
-```math
-Dn​={0.000004Tn1.2​+0.000002(Tn​−500)20.000004Tn1.2​​if Tn​>500otherwise​
-```
 
+Anti-Manipulation Fee Structure
+```math
+Dₙ = \begin{cases} 0.000004Tₙ^{1.5} + 0.00000002(Tₙ-1000)^2 & \text{if } Tₙ > 1000 \\ \max(\\$0.01,\ 0.000004Tₙ^{1.5}) & \text{otherwise} \end{cases}
+```
 Example Flow:
 
-Block 150: Tₙ = 1,000 BSV (IQR-filtered)
-Dₙ = 0.0000041000^1.2 + 0.000002(500)^2 = $0.38 + $0.50 = $0.88
-Creator submits via ZK address zk1234...5678
-Meme hash a1b2c3... anchored in OP_RETURN and Merkle tree
-Security Layers:
-
-Outlier Filtering: Discards blocks >1.5IQR from median
-ZK Obfuscation: Pr[Link(Submitterzk​,Meme)]≤10−18
-Quadratic Fees: 500+ BSV thresholds trigger anti-Sybil tax
-Content Immutability: SHA256 + Merkle proof prevents tampering
+- Block 150 starts with trimmed Tₙ = 950 BSV (outliers removed)
+- Check quadratic condition: 950 < 1000 → No surcharge
+- Dₙ = max($0.01, 0.000004*950^1.5) = $0.41
+- Creator submits through ZK address:
+```bash
+7a3b8f...d91e → MEMEPOOL_ADDRESS (0.41 BSV)
+OP_RETURN: MEME|sha256(memeData)
+```
+- Meme anchored permanently via BSV transaction
 
 ### 3. **Locking Phase**  
 *New users earn starter BSV by predicting 3/10 viral memes correctly, unlocking a faucet pass to either create content or grind more predictions – so no BSV needed to start.*
