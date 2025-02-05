@@ -15,6 +15,28 @@ Participants earn rewards if they're in the **top 10%** of lockers, with a guara
 | **Value Recapture** | 90% failure recycling           | Permanent value loss |  
 | **Ownership**     | On-chain provenance              | Platform custody     |  
 
+Memepool weaponizes viral content markets to become humanity's financial conscience. By merging AI-generated 3D memes with Bitcoin SV's immutable ledger, we create an anonymous information battlefield where truth wins through economic proof, not algorithmic manipulation.
+
+Death to Fake News, Psyops & Thought Control
+Traditional Web2 platforms:
+❌ Promote rage-bait through engagement algorithms
+❌ Allow free amplification of government/corporate propaganda
+❌ Keep users trapped in AI-curated echo chambers
+
+Memepool inverts this through Proof-of-Truth Economics:
+
+✅ Anonymous Submissions - No profiles, followers, or influencer advantages
+✅ BSV-Backed Virality - Only content with locked economic conviction trends
+✅ Failure Recycling - 90% of failed propaganda attempts fund future truth bombs
+
+graph LR
+    A[Fake News] -->|Costs Nothing| B[Floods Web2]
+    C[Memepool Truth] -->|Requires Locked BSV| D[Financial Filter]
+    D -->|No Conviction| E[Garbage Dies]
+    D -->|Mass Locking| F[Truth Trends]
+    F --> G[Mainstream Media Forced to Report]
+    
+
 ## Block Round Lifecycle  
 *A 10-minute competitive window where memes battle for virality through collective locking:*
 
