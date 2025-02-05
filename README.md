@@ -29,13 +29,13 @@ Memepool inverts this through Proof-of-Truth Economics:
 ✅ BSV-Backed Virality - Only content with locked economic conviction trends
 ✅ Failure Recycling - 90% of failed propaganda attempts fund future truth bombs
 
-graph LR
+```graph LR
     A[Fake News] -->|Costs Nothing| B[Floods Web2]
     C[Memepool Truth] -->|Requires Locked BSV| D[Financial Filter]
     D -->|No Conviction| E[Garbage Dies]
     D -->|Mass Locking| F[Truth Trends]
     F --> G[Mainstream Media Forced to Report]
-    
+```
 
 ## Block Round Lifecycle  
 *A 10-minute competitive window where memes battle for virality through collective locking:*
