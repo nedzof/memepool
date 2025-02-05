@@ -4,17 +4,6 @@ Memepool merges AI-generated 3D memes with Bitcoin SV's blockchain to forge self
 
 Traditional platforms amplify state/corporate narratives through centralized algorithms. Memepool inverts this via provably neutral mechanics:
 
-Metric	Memepool	Web2 Platforms
-Early Adopter Bonus	10x rewards for first detectors	Uniform distribution
-Value Recapture	90% failure recycling → Fuels counter-narratives	Permanent value loss
-Ownership	Immutable on-chain provenance	Shadowban-ready custody
-Censorship	Impossible post-lock	Government-collaborative
-How Truth Gets Funded
-AI-Powered Dissent: Creators deploy 3D meme "startups" mocking propaganda/hypocrisy
-Stake-to-Viral: Users lock BSV on memes they believe will destabilize mainstream narratives
-Reality Dividends:
-Success: Top 3 memes + early lockers split 99% pool (10x reward decay)
-Failure: 90% BSV jackpots next round → Weaponizing loser propaganda
 
 | Metric                  | Memepool                                      | Web2 Platforms                  |
 |-------------------------|----------------------------------------------|---------------------------------|
