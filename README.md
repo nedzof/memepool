@@ -55,7 +55,7 @@ Where:
 if ∣Sk​−μ∣>3σ:Sk​=min(Sk​,μ+σ)
 ```
 
-2. Submission Phase
+### 2. Submission Phase
 Anonymous creators pay non-linear ZK fees to participate:
 ```typescript
 // Quantum-resistant ZK Address Generation
