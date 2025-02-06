@@ -2,12 +2,11 @@
 
 Zeitgeist is a minimalist BSV protocol where users anonymously lock BSV to surface what matters in real-time. By staking value on information, the platform acts as society's truth barometer—ranking content purely by collective financial conviction, not algorithms.
 
-Signal True Value: Lock BSV on underrated info to profit if it trends.
-Early Recognition: First lockers gain visibility as posts rise.
-0.001% Fee: Minimal cost to participate vs traditional platforms.
-For Society
-Truth Through Cost: Fake news dies when amplification isn't free.
-Uncensorable History: All posts/locks immutable on BSV.
+- Signal True Value: Lock BSV on underrated info to profit if it trends.
+- Early Recognition: First lockers gain visibility as posts rise.
+- 0.001% Fee: Minimal cost to participate vs traditional platforms.
+- Truth Through Cost: Fake news dies when amplification isn't free.
+- Uncensorable History: All posts/locks immutable on BSV.
 
 ### 📈 Why Zeitgeist Wins
 Traditional Media	Zeitgeist
