@@ -15,13 +15,14 @@ Algorithms boost rage	Money amplifies truth
 Shadowbanning rife	All content immutable
 Celebrities dominate	Anonymous meritocracy
 Free to spread lies	Fake news becomes unprofitable
+
 ```mermaid
 graph LR
     A[User Sees News] --> B{Value Check}
     B -->|Worth Locking BSV| C[Incentive to Verify]
     B -->|Not Worth Locking| D[Signal Fades]
     C --> E[Collective Truth Emerges]
-```mermaid
+```
 
 ## 🚀 Key Features
 Post Anonymously: No accounts. Submit links/text via BSV OP_RETURN.
