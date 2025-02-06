@@ -10,6 +10,7 @@ Telegram Integration: Real-time updates of top locked narratives.
 Scrypt Smart Contracts: Secure, auditable locking logic on-chain.
 ⚙️ How It Works
 1. Post Content
+```typescript
 // Submit post via BSV transaction
 async function submitPost(content: string) {
   const tx = await bsv.sendPayment({
@@ -18,11 +19,11 @@ async function submitPost(content: string) {
   });
   return tx.id; // post_id = TX hash
 }
+```
 
 // Example OP_RETURN: Z_POST|https://news.com/earthquake
-
+```typescript
 2. Lock BSV to Signal Value
-```
 // Lock BSV for 10 minutes to boost a post
 async function lockBSV(postId: string, amount: number) {
   const fee = amount * 0.000001; // 0.0001% fee
@@ -44,7 +45,6 @@ async function lockBSV(postId: string, amount: number) {
   return tx.id;
 }
 ```
-
 3. Dynamic Feed Algorithm
 ```typescript
 // Calculate post rankings every block 
@@ -54,9 +54,8 @@ function calculateRankings(posts: Post[]) {
   });
 }
 ```
-
 // Telegram Bot Update
-```typescript
+```
 async function updateChannel() {
   const topPosts = await fetchRankedPosts();
   const message = topPosts.map((post, i) => 
@@ -74,6 +73,7 @@ async function updateChannel() {
 
 🏗 Architecture
 ```mermaid
+graph TD
     A[User] -->|Post with OP_RETURN| B[BSV Blockchain]
     A -->|Lock BSV with nLockTime| B
     C[Indexer] -->|Parse transactions| B
@@ -81,7 +81,8 @@ async function updateChannel() {
     D -->|Top 50 Posts| E[Telegram Bot]
     E --> F[Real-time Feed]
     D --> G[APIs]
-```
+```mermaid
+
 BSV Layer
 Posts: OP_RETURN with Z_POST|content
 Locks: P2SH transactions with nLockTime (10 minutes)
@@ -116,9 +117,10 @@ Algorithms boost rage	Money amplifies truth
 Shadowbanning rife	All content immutable
 Celebrities dominate	Anonymous meritocracy
 Free to spread lies	Fake news becomes unprofitable
-```graph LR
+```mermaid
+graph LR
     A[User Sees News] --> B{Value Check}
     B -->|Worth Locking BSV| C[Incentive to Verify]
     B -->|Not Worth Locking| D[Signal Fades]
     C --> E[Collective Truth Emerges]
-```
+```mermaid
