@@ -8,13 +8,6 @@ Zeitgeist is a minimalist BSV protocol where users anonymously lock BSV to surfa
 - Truth Through Cost: Fake news dies when amplification isn't free.
 - Uncensorable History: All posts/locks immutable on BSV.
 
-### 📈 Why Zeitgeist Wins
-Traditional Media	Zeitgeist
-Algorithms boost rage	Money amplifies truth
-Shadowbanning rife	All content immutable
-Celebrities dominate	Anonymous meritocracy
-Free to spread lies	Fake news becomes unprofitable
-
 ```mermaid
 graph LR
     A[User Sees News] --> B{Value Check}
