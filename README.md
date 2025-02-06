@@ -1,14 +1,36 @@
-Zeitgeist - Amplifying Truth Through Locked Conviction
+# Zeitgeist - Amplifying Truth Through Locked Conviction
 
 Zeitgeist is a minimalist BSV protocol where users anonymously lock BSV to surface what matters in real-time. By staking value on information, the platform acts as society's truth barometer—ranking content purely by collective financial conviction, not algorithms.
 
-🚀 Key Features
+Signal True Value: Lock BSV on underrated info to profit if it trends.
+Early Recognition: First lockers gain visibility as posts rise.
+0.001% Fee: Minimal cost to participate vs traditional platforms.
+For Society
+Truth Through Cost: Fake news dies when amplification isn't free.
+Uncensorable History: All posts/locks immutable on BSV.
+
+### 📈 Why Zeitgeist Wins
+Traditional Media	Zeitgeist
+Algorithms boost rage	Money amplifies truth
+Shadowbanning rife	All content immutable
+Celebrities dominate	Anonymous meritocracy
+Free to spread lies	Fake news becomes unprofitable
+```mermaid
+graph LR
+    A[User Sees News] --> B{Value Check}
+    B -->|Worth Locking BSV| C[Incentive to Verify]
+    B -->|Not Worth Locking| D[Signal Fades]
+    C --> E[Collective Truth Emerges]
+```mermaid
+
+## 🚀 Key Features
 Post Anonymously: No accounts. Submit links/text via BSV OP_RETURN.
 Lock BSV as Signal: Use nLockTime to stake on posts you believe in.
 Dynamic Truth Feed: Live rankings sorted by locked BSV (0.001% platform fee).
 Telegram Integration: Real-time updates of top locked narratives.
 Scrypt Smart Contracts: Secure, auditable locking logic on-chain.
-⚙️ How It Works
+
+## ⚙️ How It Works
 1. Post Content
 ```typescript
 // Submit post via BSV transaction
@@ -71,7 +93,7 @@ async function updateChannel() {
 }
 ```
 
-🏗 Architecture
+## 🏗 Architecture
 ```mermaid
 graph TD
     A[User] -->|Post with OP_RETURN| B[BSV Blockchain]
@@ -81,9 +103,9 @@ graph TD
     D -->|Top 50 Posts| E[Telegram Bot]
     E --> F[Real-time Feed]
     D --> G[APIs]
-```mermaid
+```
 
-BSV Layer
+## Blockchain Layer
 Posts: OP_RETURN with Z_POST|content
 Locks: P2SH transactions with nLockTime (10 minutes)
 Indexer
@@ -93,34 +115,3 @@ Ranking Engine
 Sorts posts by locked BSV, updates every block
 Telegram Frontend
 Auto-updating channel with latest rankings
-💡 Incentives
-For Users
-Signal True Value: Lock BSV on underrated info to profit if it trends.
-Early Recognition: First lockers gain visibility as posts rise.
-0.001% Fee: Minimal cost to participate vs traditional platforms.
-For Society
-Truth Through Cost: Fake news dies when amplification isn't free.
-Uncensorable History: All posts/locks immutable on BSV.
-🛠 Setup
-# Install dependencies
-npm install scrypt-ts @bsv/sdk telegram-bot-api
-
-# Run indexer
-npx zeitgeist-indexer --network=mainnet
-
-# Start Telegram bot
-BOT_TOKEN=YOUR_TOKEN npx zeitgeist-bot
-
-📈 Why Zeitgeist Wins
-Traditional Media	Zeitgeist
-Algorithms boost rage	Money amplifies truth
-Shadowbanning rife	All content immutable
-Celebrities dominate	Anonymous meritocracy
-Free to spread lies	Fake news becomes unprofitable
-```mermaid
-graph LR
-    A[User Sees News] --> B{Value Check}
-    B -->|Worth Locking BSV| C[Incentive to Verify]
-    B -->|Not Worth Locking| D[Signal Fades]
-    C --> E[Collective Truth Emerges]
-```mermaid
