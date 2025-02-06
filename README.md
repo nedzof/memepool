@@ -70,7 +70,7 @@ async function updateChannel() {
     `🔴 LIVE ZEITGEIST RANKINGS:\n\n${message}`
   );
 }
-```typescript
+```
 
 🏗 Architecture
 ```mermaid
