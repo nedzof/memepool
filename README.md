@@ -30,14 +30,14 @@ OP_RETURN "CLARION" <post_id> <content_hash>
 
 
 Locking: P2SH address with:
+```typescript
 contract TimeLock {
   int lockDuration;
   public function unlock(int currentTime) {
     require(currentTime >= this.lockTime + lockDuration);
   }
 }
-
-
+```
 
 2. Incentive Structure
 
@@ -46,6 +46,7 @@ Lockers: Signal value without KYC. Locked BSV returned after 10min
 Platform: 0.001% fee funds infrastructure
 
 3. Feed Algorithm
+```typescript
 def update_feed():
 current_time = get_chain_time()
 active_locks = filter(lambda x: x.lock_time + 10min <= current_time, all_locks)
@@ -55,6 +56,7 @@ for lock in active_locks:
 
 sorted_posts = sorted(post_scores.items(), key=lambda x: -x[1])
 broadcast(sorted_posts[:100])
+```
 
 Implementation Roadmap
 
