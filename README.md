@@ -22,6 +22,7 @@ async function submitPost(content: string) {
 // Example OP_RETURN: Z_POST|https://news.com/earthquake
 
 2. Lock BSV to Signal Value
+```
 // Lock BSV for 10 minutes to boost a post
 async function lockBSV(postId: string, amount: number) {
   const fee = amount * 0.000001; // 0.0001% fee
@@ -42,16 +43,20 @@ async function lockBSV(postId: string, amount: number) {
 
   return tx.id;
 }
+```
 
 3. Dynamic Feed Algorithm
-// Calculate post rankings every block (10 mins)
+```typescript
+// Calculate post rankings every block 
 function calculateRankings(posts: Post[]) {
   return posts.sort((a, b) => {
     return b.totalLocked - a.totalLocked; // Descending
   });
 }
+```
 
 // Telegram Bot Update
+```typescript
 async function updateChannel() {
   const topPosts = await fetchRankedPosts();
   const message = topPosts.map((post, i) => 
@@ -65,9 +70,10 @@ async function updateChannel() {
     `🔴 LIVE ZEITGEIST RANKINGS:\n\n${message}`
   );
 }
+```typescript
 
 🏗 Architecture
-```graph TD
+```mermaid
     A[User] -->|Post with OP_RETURN| B[BSV Blockchain]
     A -->|Lock BSV with nLockTime| B
     C[Indexer] -->|Parse transactions| B
@@ -110,8 +116,9 @@ Algorithms boost rage	Money amplifies truth
 Shadowbanning rife	All content immutable
 Celebrities dominate	Anonymous meritocracy
 Free to spread lies	Fake news becomes unprofitable
-graph LR
+```mermaid
     A[User Sees News] --> B{Value Check}
     B -->|Worth Locking BSV| C[Incentive to Verify]
     B -->|Not Worth Locking| D[Signal Fades]
     C --> E[Collective Truth Emerges]
+```
