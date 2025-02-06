@@ -1,130 +1,117 @@
-# Clarion - Decentralized Truth Through Economic Signaling
+Zeitgeist - Amplifying Truth Through Locked Conviction
 
-Clarion leverages Bitcoin SV's nLockTime to create a real-time barometer of societal value. Users anonymously lock BSV to amplify information they deem critical, creating a self-regulating feed ranked purely by economic conviction. The platform takes 0.001% of each lock as its sole fee.
+Zeitgeist is a minimalist BSV protocol where users anonymously lock BSV to surface what matters in real-time. By staking value on information, the platform acts as society's truth barometer—ranking content purely by collective financial conviction, not algorithms.
 
-## How It Works
-
-### Core Mechanics
-1. **Post**: Submit text/URL via BSV transaction with OP_RETURN
-2. **Lock**: Users lock BSV for 10min to boost posts (0.001% fee)
-3. **Dynamic Feed**: Real-time ranking based on currently locked BSV
-4. **Telegram Integration**: Top 100 posts streamed with lock amounts
-
-```mermaid
-graph TD
-    A[User Posts] --> B[BSV OP_RETURN Anchoring]
-    C[User Locks BSV] --> D[10min nLockTime Contract]
-    D -->|0.001% Fee| E[Platform Wallet]
-    B --> F[Post Database]
-    D --> F
-    F --> G[Real-Time Feed Engine]
-    G --> H[Telegram Ranking]
-    G --> I[Web View]
-```
-
-## Architecture
-1. Blockchain Layer
-
-Posting: OP_RETURN with schema:
-OP_RETURN "CLARION" <post_id> <content_hash>
-
-
-Locking: P2SH address with:
-```typescript
-contract TimeLock {
-  int lockDuration;
-  public function unlock(int currentTime) {
-    require(currentTime >= this.lockTime + lockDuration);
-  }
+🚀 Key Features
+Post Anonymously: No accounts. Submit links/text via BSV OP_RETURN.
+Lock BSV as Signal: Use nLockTime to stake on posts you believe in.
+Dynamic Truth Feed: Live rankings sorted by locked BSV (0.001% platform fee).
+Telegram Integration: Real-time updates of top locked narratives.
+Scrypt Smart Contracts: Secure, auditable locking logic on-chain.
+⚙️ How It Works
+1. Post Content
+// Submit post via BSV transaction
+async function submitPost(content: string) {
+  const tx = await bsv.sendPayment({
+    from: 'burner', // Anonymous
+    opReturn: ['Z_POST', content]
+  });
+  return tx.id; // post_id = TX hash
 }
+
+// Example OP_RETURN: Z_POST|https://news.com/earthquake
+
+2. Lock BSV to Signal Value
+// Lock BSV for 10 minutes to boost a post
+async function lockBSV(postId: string, amount: number) {
+  const fee = amount * 0.000001; // 0.0001% fee
+  const lockTime = Math.floor(Date.now() / 1000) + 600; // 10 min
+
+  const contract = new sCrypt.Contract(`
+    // Locking contract with nLockTime
+    @method
+    public function unlock() {
+      require(tx.time >= ${lockTime});
+    }
+  `);
+
+  const tx = await contract.lock(amount - fee)
+    .to(postId) // Link lock to post
+    .withFee(fee)
+    .execute();
+
+  return tx.id;
+}
+
+3. Dynamic Feed Algorithm
+// Calculate post rankings every block (10 mins)
+function calculateRankings(posts: Post[]) {
+  return posts.sort((a, b) => {
+    return b.totalLocked - a.totalLocked; // Descending
+  });
+}
+
+// Telegram Bot Update
+async function updateChannel() {
+  const topPosts = await fetchRankedPosts();
+  const message = topPosts.map((post, i) => 
+    `${i+1}. [${post.lockedBSV} BSV] ${post.content}`
+  ).join('\n');
+
+  await bot.telegram.editMessageText(
+    CHANNEL_ID, 
+    LAST_MESSAGE_ID,
+    undefined, 
+    `🔴 LIVE ZEITGEIST RANKINGS:\n\n${message}`
+  );
+}
+
+🏗 Architecture
+```graph TD
+    A[User] -->|Post with OP_RETURN| B[BSV Blockchain]
+    A -->|Lock BSV with nLockTime| B
+    C[Indexer] -->|Parse transactions| B
+    C --> D[Ranking Engine]
+    D -->|Top 50 Posts| E[Telegram Bot]
+    E --> F[Real-time Feed]
+    D --> G[APIs]
 ```
+BSV Layer
+Posts: OP_RETURN with Z_POST|content
+Locks: P2SH transactions with nLockTime (10 minutes)
+Indexer
+Tracks Z_POST transactions and linked locks
+Aggregates total locked BSV per post
+Ranking Engine
+Sorts posts by locked BSV, updates every block
+Telegram Frontend
+Auto-updating channel with latest rankings
+💡 Incentives
+For Users
+Signal True Value: Lock BSV on underrated info to profit if it trends.
+Early Recognition: First lockers gain visibility as posts rise.
+0.001% Fee: Minimal cost to participate vs traditional platforms.
+For Society
+Truth Through Cost: Fake news dies when amplification isn't free.
+Uncensorable History: All posts/locks immutable on BSV.
+🛠 Setup
+# Install dependencies
+npm install scrypt-ts @bsv/sdk telegram-bot-api
 
-2. Incentive Structure
+# Run indexer
+npx zeitgeist-indexer --network=mainnet
 
-Creators: Posts rise based on locked BSV sum
-Lockers: Signal value without KYC. Locked BSV returned after 10min
-Platform: 0.001% fee funds infrastructure
+# Start Telegram bot
+BOT_TOKEN=YOUR_TOKEN npx zeitgeist-bot
 
-3. Feed Algorithm
-```typescript
-def update_feed():
-current_time = get_chain_time()
-active_locks = filter(lambda x: x.lock_time + 10min <= current_time, all_locks)
-post_scores = defaultdict(float)
-for lock in active_locks:
-    post_scores[lock.post_id] += lock.amount
-
-sorted_posts = sorted(post_scores.items(), key=lambda x: -x[1])
-broadcast(sorted_posts[:100])
-```
-
-Implementation Roadmap
-
-
-BSV Core
-
-Fork hodlocker for nLockTime base
-Implement sCrypt timelock contracts
-
-
-
-Telegram Bot
-async def send_ranking():
-while True:
-posts = get_top_100()
-text = "Clarion Top Posts:\n\n" + "\n".join(
-[f"{i+1}. {p.content[:50]} (⛓️ {p.locked} BSV)"
-for i, p in enumerate(posts)])
-await bot.send_message(CHANNEL_ID, text)
-sleep(300)  # Update every 5min
-
-
-Dynamic Adjustment
-
-Lock window auto-scales based on network activity:
-
-new_window = max(10min, 0.8 * avg_last_6_blocks)
-
-
-
-Why It Disrupts Fake News
-
-
-
-Metric
-Clarion
-Traditional Media
-
-
-
-
-Amplification
-$1 lock = 1 vote
-Free virality
-
-
-Accountability
-Locked BSV proves conviction
-Anonymous shares
-
-
-Time Horizon
-10min rolling window
-24hr news cycle
-
-
-Censorship
-Immutable BSV anchors
-Centralized takedowns
-
-
-
-Example Flow:
-
-User posts "BREAKING: Conflict Resolution in Region X"
-50 users lock 0.5 BSV each (25 BSV total)
-Post trends #1 on Telegram feed
-After 10min, 24.975 BSV returned (0.025 BSV fee)
-Feed updates with new locking data
-
-Clarion creates a financial truth serum - where society's real priorities surface through provable economic action, not algorithmic manipulation.
+📈 Why Zeitgeist Wins
+Traditional Media	Zeitgeist
+Algorithms boost rage	Money amplifies truth
+Shadowbanning rife	All content immutable
+Celebrities dominate	Anonymous meritocracy
+Free to spread lies	Fake news becomes unprofitable
+graph LR
+    A[User Sees News] --> B{Value Check}
+    B -->|Worth Locking BSV| C[Incentive to Verify]
+    B -->|Not Worth Locking| D[Signal Fades]
+    C --> E[Collective Truth Emerges]
