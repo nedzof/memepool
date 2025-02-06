@@ -24,11 +24,11 @@ graph LR
 ```
 
 ## 🚀 Key Features
-Post Anonymously: No accounts. Submit links/text via BSV OP_RETURN.
-Lock BSV as Signal: Use nLockTime to stake on posts you believe in.
-Dynamic Truth Feed: Live rankings sorted by locked BSV (0.001% platform fee).
-Telegram Integration: Real-time updates of top locked narratives.
-Scrypt Smart Contracts: Secure, auditable locking logic on-chain.
+- Post Anonymously: No accounts. Submit links/text via BSV OP_RETURN.
+- Lock BSV as Signal: Use nLockTime to stake on posts you believe in.
+- Dynamic Truth Feed: Live rankings sorted by locked BSV (0.001% platform fee).
+- Telegram Integration: Real-time updates of top locked narratives.
+- Scrypt Smart Contracts: Secure, auditable locking logic on-chain.
 
 ## ⚙️ How It Works
 1. Post Content
@@ -106,12 +106,15 @@ graph TD
 ```
 
 ## Blockchain Layer
-Posts: OP_RETURN with Z_POST|content
-Locks: P2SH transactions with nLockTime (10 minutes)
-Indexer
-Tracks Z_POST transactions and linked locks
-Aggregates total locked BSV per post
-Ranking Engine
-Sorts posts by locked BSV, updates every block
-Telegram Frontend
-Auto-updating channel with latest rankings
+- Posts: OP_RETURN with Z_POST|content
+- Locks: P2SH transactions with nLockTime (10 minutes)
+
+## Indexer
+- Tracks Z_POST transactions and linked locks
+- Aggregates total locked BSV per post
+
+## Ranking Engine
+- Sorts posts by locked BSV, updates every block
+
+## Telegram Frontend
+- Auto-updating channel with latest rankings
