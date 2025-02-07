@@ -3,7 +3,7 @@ import { FiBell, FiPlus, FiTrash2, FiTrendingUp, FiUnlock, FiUser, FiStar } from
 
 interface NotificationSetting {
   id: string;
-  type: 'threshold' | 'viral' | 'unlock' | 'creator' | 'milestone';
+  type: 'threshold' | 'viral' | 'unlock' | 'creator' | 'milestone' | 'filter';
   enabled: boolean;
   value?: number | string;
   label: string;
@@ -51,8 +51,33 @@ const DEFAULT_SETTINGS: NotificationSetting[] = [
   }
 ];
 
+const FILTER_SETTINGS: NotificationSetting[] = [
+  {
+    id: 'filter_time',
+    type: 'filter',
+    enabled: true,
+    label: 'Time Filters',
+    description: 'Show time-based filters (All Time, Last 24h, Last 7d, Last 30d)'
+  },
+  {
+    id: 'filter_top',
+    type: 'filter',
+    enabled: true,
+    label: 'Top Posts',
+    description: 'Show top post filters (Top Post, Top 3, Top 10)'
+  },
+  {
+    id: 'filter_following',
+    type: 'filter',
+    enabled: true,
+    label: 'Following',
+    description: 'Show following filter when connected'
+  }
+];
+
 const Notifications: React.FC = () => {
   const [settings, setSettings] = useState<NotificationSetting[]>(DEFAULT_SETTINGS);
+  const [filterSettings, setFilterSettings] = useState<NotificationSetting[]>(FILTER_SETTINGS);
   const [showAddCreator, setShowAddCreator] = useState(false);
   const [newCreatorAddress, setNewCreatorAddress] = useState('');
   const [showAddMilestone, setShowAddMilestone] = useState(false);
@@ -242,27 +267,66 @@ const Notifications: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-4">
-            {/* Platform Notifications */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Platform Notifications</h3>
-              {settings.filter(s => s.type === 'viral' || s.type === 'unlock').map(renderSettingCard)}
+          {/* Filter Visibility Settings */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-4 text-gray-300">Filter Visibility</h3>
+            <div className="space-y-3">
+              {filterSettings.map((setting) => (
+                <div
+                  key={setting.id}
+                  className="flex items-center justify-between p-3 bg-[#1A1B23] rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-[#00ffa3]">{setting.label}</p>
+                    <p className="text-sm text-gray-400">{setting.description}</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={setting.enabled}
+                      onChange={() => {
+                        setFilterSettings(prev =>
+                          prev.map(s =>
+                            s.id === setting.id ? { ...s, enabled: !s.enabled } : s
+                          )
+                        );
+                      }}
+                    />
+                    <div className={`
+                      w-11 h-6 bg-gray-700 rounded-full peer 
+                      peer-checked:after:translate-x-full peer-checked:bg-[#00ffa3]
+                      after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
+                      after:bg-white after:rounded-full after:h-5 after:w-5 
+                      after:transition-all
+                    `}></div>
+                  </label>
+                </div>
+              ))}
             </div>
+          </div>
 
-            {/* Milestone Notifications */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Milestone Notifications</h3>
-              {settings.filter(s => s.type === 'milestone').map(renderSettingCard)}
-            </div>
+          <div className="h-px bg-gray-700 my-8" />
 
-            {/* Creator Notifications */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Creator Notifications</h3>
-              {settings.filter(s => s.type === 'creator').map(renderSettingCard)}
-              {settings.filter(s => s.type === 'creator').length === 0 && (
-                <p className="text-gray-400 text-sm">No creators followed yet</p>
-              )}
-            </div>
+          {/* Platform Notifications */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Platform Notifications</h3>
+            {settings.filter(s => s.type === 'viral' || s.type === 'unlock').map(renderSettingCard)}
+          </div>
+
+          {/* Milestone Notifications */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Milestone Notifications</h3>
+            {settings.filter(s => s.type === 'milestone').map(renderSettingCard)}
+          </div>
+
+          {/* Creator Notifications */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Creator Notifications</h3>
+            {settings.filter(s => s.type === 'creator').map(renderSettingCard)}
+            {settings.filter(s => s.type === 'creator').length === 0 && (
+              <p className="text-gray-400 text-sm">No creators followed yet</p>
+            )}
           </div>
 
           <div className="mt-6 p-4 bg-[#1A1B23] rounded-lg">
