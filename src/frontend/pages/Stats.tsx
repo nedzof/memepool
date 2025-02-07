@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storage.service';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { FiTrendingUp, FiUsers, FiAward, FiActivity, FiBarChart2 } from 'react-icons/fi';
+import { FiBarChart2 } from 'react-icons/fi';
 
 interface StatsData {
   totalPosts: number;
@@ -10,19 +10,13 @@ interface StatsData {
   averageLockAmount: number;
   timeSeriesData: Array<{
     timestamp: string;
-    locked: number;
+    totalLocked: number;
+    uniqueLocks: number;
   }>;
   postDistribution: Array<{
     name: string;
     value: number;
   }>;
-  engagementMetrics: {
-    averageLockTime: number; // in hours
-    mostActiveHour: number; // 0-23
-    returnRate: number; // percentage
-    averageResponseTime: number; // in minutes
-    postSuccessRate: number; // percentage
-  };
   lockValueDistribution: Array<{
     range: string;
     count: number;
@@ -49,13 +43,6 @@ const Stats: React.FC = () => {
     averageLockAmount: 0,
     timeSeriesData: [],
     postDistribution: [],
-    engagementMetrics: {
-      averageLockTime: 0,
-      mostActiveHour: 0,
-      returnRate: 0,
-      averageResponseTime: 0,
-      postSuccessRate: 0
-    },
     lockValueDistribution: []
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -80,17 +67,32 @@ const Stats: React.FC = () => {
           post.locklikes.forEach(locklike => participants.add(locklike.txid));
         });
 
-        // Create time series data
-        const timeSeriesData = posts
-          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-          .map(post => {
-            const totalLocked = (post.locks / 100000000) + 
-              post.locklikes.reduce((sum, locklike) => sum + (locklike.amount / 100000000), 0);
-            return {
-              timestamp: new Date(post.createdAt).toLocaleDateString(),
-              locked: totalLocked
-            };
+        // Create time series data with total locked and unique locks
+        const timeSeriesMap = new Map();
+        posts.forEach(post => {
+          const date = new Date(post.createdAt).toLocaleDateString();
+          const postData = timeSeriesMap.get(date) || { totalLocked: 0, uniqueLocks: new Set() };
+          
+          // Add initial post lock
+          postData.totalLocked += post.locks / 100000000;
+          postData.uniqueLocks.add(post.creator);
+          
+          // Add locklikes
+          post.locklikes.forEach(locklike => {
+            postData.totalLocked += locklike.amount / 100000000;
+            postData.uniqueLocks.add(locklike.txid);
           });
+          
+          timeSeriesMap.set(date, postData);
+        });
+
+        const timeSeriesData = Array.from(timeSeriesMap.entries())
+          .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+          .map(([timestamp, data]) => ({
+            timestamp,
+            totalLocked: data.totalLocked,
+            uniqueLocks: data.uniqueLocks.size
+          }));
 
         // Create post distribution data
         const postsByLockAmount = [
@@ -109,47 +111,6 @@ const Stats: React.FC = () => {
           else if (totalLocked <= 10) postsByLockAmount[2].value++;
           else postsByLockAmount[3].value++;
         });
-
-        // Calculate engagement metrics
-        const currentBlockHeight = 830000;
-        const hourCounts = new Array(24).fill(0);
-        let totalLockTime = 0;
-        let totalResponseTime = 0;
-        let postsWithLocks = 0;
-        const uniqueUsers = new Set<string>();
-        const returningUsers = new Set<string>();
-
-        posts.forEach(post => {
-          const postDate = new Date(post.createdAt);
-          hourCounts[postDate.getHours()]++;
-
-          post.locklikes.forEach(lock => {
-            const lockTime = (lock.locked_until - currentBlockHeight) * 10;
-            totalLockTime += lockTime;
-
-            if (uniqueUsers.has(lock.txid)) {
-              returningUsers.add(lock.txid);
-            } else {
-              uniqueUsers.add(lock.txid);
-            }
-
-            const lockDate = new Date(lock.created_at);
-            const responseTime = (lockDate.getTime() - postDate.getTime()) / (1000 * 60);
-            totalResponseTime += responseTime;
-          });
-
-          if (post.locklikes.length > 0) {
-            postsWithLocks++;
-          }
-        });
-
-        const engagementMetrics = {
-          averageLockTime: totalLockTime / (60 * posts.reduce((sum, post) => sum + post.locklikes.length, 0) || 1),
-          mostActiveHour: hourCounts.indexOf(Math.max(...hourCounts)),
-          returnRate: (returningUsers.size / uniqueUsers.size) * 100 || 0,
-          averageResponseTime: totalResponseTime / posts.reduce((sum, post) => sum + post.locklikes.length, 0) || 0,
-          postSuccessRate: (postsWithLocks / posts.length) * 100 || 0
-        };
 
         // Calculate lock value distribution
         const lockValueDistribution = LOCK_RANGES.map(range => {
@@ -177,7 +138,6 @@ const Stats: React.FC = () => {
           averageLockAmount: totalBSVLocked / posts.length,
           timeSeriesData,
           postDistribution: postsByLockAmount,
-          engagementMetrics,
           lockValueDistribution
         });
       } catch (error) {
@@ -189,13 +149,6 @@ const Stats: React.FC = () => {
 
     fetchStats();
   }, []);
-
-  const formatBSV = (amount: number): string => {
-    return amount.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8
-    });
-  };
 
   if (isLoading) {
     return (
@@ -210,109 +163,56 @@ const Stats: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-bold text-[#00ffa3] mb-8 text-center">Platform Insights</h1>
         
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[#2A2A40] rounded-lg p-6 flex items-center">
-            <FiTrendingUp className="w-8 h-8 text-[#00ffa3] mr-4" />
-            <div>
-              <p className="text-gray-400">Total Locked</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">{formatBSV(stats.totalBSVLocked)} BSV</p>
-            </div>
-          </div>
-          
-          <div className="bg-[#2A2A40] rounded-lg p-6 flex items-center">
-            <FiUsers className="w-8 h-8 text-[#00ffa3] mr-4" />
-            <div>
-              <p className="text-gray-400">Community</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">{stats.totalParticipants} Members</p>
-            </div>
-          </div>
-
-          <div className="bg-[#2A2A40] rounded-lg p-6 flex items-center">
-            <FiAward className="w-8 h-8 text-[#00ffa3] mr-4" />
-            <div>
-              <p className="text-gray-400">Posts</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">{stats.totalPosts} Created</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Engagement Metrics */}
+        {/* Total Locked and Unique Locks Chart */}
         <div className="bg-[#2A2A40] rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold flex items-center mb-6">
-            <FiActivity className="w-6 h-6 text-[#00ffa3] mr-2" />
-            Engagement Metrics
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-[#1A1B23] rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Average Lock Duration</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">
-                {stats.engagementMetrics.averageLockTime.toFixed(1)} hours
-              </p>
-            </div>
-            <div className="bg-[#1A1B23] rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Most Active Time</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">
-                {stats.engagementMetrics.mostActiveHour}:00
-              </p>
-            </div>
-            <div className="bg-[#1A1B23] rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Return Rate</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">
-                {stats.engagementMetrics.returnRate.toFixed(1)}%
-              </p>
-            </div>
-            <div className="bg-[#1A1B23] rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Avg. Response Time</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">
-                {stats.engagementMetrics.averageResponseTime.toFixed(0)} min
-              </p>
-            </div>
-            <div className="bg-[#1A1B23] rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Post Success Rate</p>
-              <p className="text-2xl font-bold text-[#00ffa3]">
-                {stats.engagementMetrics.postSuccessRate.toFixed(1)}%
-              </p>
-            </div>
+          <h2 className="text-xl font-semibold mb-6">Total Locked BSV & Unique Locks</h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={stats.timeSeriesData}>
+                <defs>
+                  <linearGradient id="colorLocked" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00ffa3" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#00ffa3" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorUnique" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00ffff" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#00ffff" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="timestamp" stroke="#666" />
+                <YAxis yAxisId="left" stroke="#00ffa3" />
+                <YAxis yAxisId="right" orientation="right" stroke="#00ffff" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#2A2A40',
+                    border: 'none',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: '#666' }}
+                />
+                <Area 
+                  yAxisId="left"
+                  type="monotone" 
+                  dataKey="totalLocked" 
+                  name="Total BSV Locked"
+                  stroke="#00ffa3" 
+                  fill="url(#colorLocked)" 
+                />
+                <Area 
+                  yAxisId="right"
+                  type="monotone" 
+                  dataKey="uniqueLocks" 
+                  name="Unique Locks"
+                  stroke="#00ffff" 
+                  fill="url(#colorUnique)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* BSV Locked Over Time */}
-          <div className="bg-[#2A2A40] rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-6">BSV Locked Over Time</h2>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.timeSeriesData}>
-                  <defs>
-                    <linearGradient id="colorLocked" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00ffa3" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#00ffa3" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="timestamp" stroke="#666" />
-                  <YAxis stroke="#666" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#2A2A40',
-                      border: 'none',
-                      borderRadius: '8px'
-                    }}
-                    labelStyle={{ color: '#666' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="locked" 
-                    stroke="#00ffa3" 
-                    fillOpacity={1}
-                    fill="url(#colorLocked)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
           {/* Post Distribution */}
           <div className="bg-[#2A2A40] rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-6">Post Distribution by Locked BSV</h2>
@@ -345,31 +245,31 @@ const Stats: React.FC = () => {
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
 
-        {/* Lock Value Distribution */}
-        <div className="bg-[#2A2A40] rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold flex items-center mb-6">
-            <FiBarChart2 className="w-6 h-6 text-[#00ffa3] mr-2" />
-            Lock Value Distribution
-          </h2>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.lockValueDistribution}>
-                <XAxis dataKey="range" stroke="#666" />
-                <YAxis yAxisId="left" stroke="#666" />
-                <YAxis yAxisId="right" orientation="right" stroke="#00ffa3" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#2A2A40',
-                    border: 'none',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Bar yAxisId="left" dataKey="count" fill="#666" name="Number of Locks" />
-                <Bar yAxisId="right" dataKey="totalValue" fill="#00ffa3" name="Total BSV" />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Lock Value Distribution */}
+          <div className="bg-[#2A2A40] rounded-lg p-6">
+            <h2 className="text-xl font-semibold flex items-center mb-6">
+              <FiBarChart2 className="w-6 h-6 text-[#00ffa3] mr-2" />
+              Lock Value Distribution
+            </h2>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.lockValueDistribution}>
+                  <XAxis dataKey="range" stroke="#666" />
+                  <YAxis yAxisId="left" stroke="#666" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#00ffa3" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#2A2A40',
+                      border: 'none',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar yAxisId="left" dataKey="count" fill="#666" name="Number of Locks" />
+                  <Bar yAxisId="right" dataKey="totalValue" fill="#00ffa3" name="Total BSV" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 

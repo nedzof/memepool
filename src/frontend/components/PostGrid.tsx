@@ -23,6 +23,7 @@ interface PostGridProps {
 }
 
 const TIME_PERIODS = [
+  { id: 'all', label: 'All Time' },
   { id: '1d', label: 'Last 24h' },
   { id: '7d', label: 'Last 7d' },
   { id: '30d', label: 'Last 30d' }
@@ -49,8 +50,8 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
   const [recentLocks, setRecentLocks] = useState<Array<{ submissionId: string; amount: number; timestamp: number }>>([]);
   const [showConfetti, setShowConfetti] = useState<string | null>(null);
   const imageRefs = useRef<{ [key: string]: HTMLImageElement }>({});
-  const [selectedPeriod, setSelectedPeriod] = useState<typeof TIME_PERIODS[number]['id']>('1d');
-  const [selectedTopFilter, setSelectedTopFilter] = useState<typeof TOP_FILTERS[number]['id']>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<typeof TIME_PERIODS[number]['id']>('all');
+  const [selectedTopFilter, setSelectedTopFilter] = useState<typeof TOP_FILTERS[number]['id']>('top1');
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -217,24 +218,24 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
     <div className="min-h-screen bg-[#1A1B23] text-white p-4 md:p-8">
       {/* Filters */}
       <div className="max-w-7xl mx-auto mb-8">
-        <div className="bg-[#2A2A40] rounded-lg p-6">
+        <div className="bg-[#2A2A40]/30 backdrop-blur-sm rounded-lg p-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             {/* Time Period Filter */}
             <div className="flex flex-col w-full md:w-auto">
-              <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center">
+              <h3 className="text-sm font-semibold text-gray-400/80 mb-2 flex items-center">
                 <FiClock className="w-4 h-4 mr-2" />
                 Time Period
               </h3>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 {TIME_PERIODS.map(period => (
                   <button
                     key={period.id}
                     onClick={() => setSelectedPeriod(period.id)}
                     className={`
-                      px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      px-3 py-1.5 rounded-lg text-sm font-medium transition-all
                       ${selectedPeriod === period.id
-                        ? 'bg-[#00ffa3] text-black'
-                        : 'bg-[#1A1B23] text-gray-400 hover:text-[#00ffa3]'
+                        ? 'bg-[#00ffa3]/20 text-[#00ffa3]'
+                        : 'bg-transparent text-gray-400/80 hover:text-[#00ffa3] hover:bg-[#00ffa3]/10'
                       }
                     `}
                   >
@@ -246,20 +247,20 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
 
             {/* Top Posts Filter */}
             <div className="flex flex-col w-full md:w-auto">
-              <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center">
+              <h3 className="text-sm font-semibold text-gray-400/80 mb-2 flex items-center">
                 <FiFilter className="w-4 h-4 mr-2" />
                 Filter Posts
               </h3>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 {TOP_FILTERS.map(filter => (
                   <button
                     key={filter.id}
                     onClick={() => setSelectedTopFilter(filter.id)}
                     className={`
-                      px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      px-3 py-1.5 rounded-lg text-sm font-medium transition-all
                       ${selectedTopFilter === filter.id
-                        ? 'bg-[#00ffa3] text-black'
-                        : 'bg-[#1A1B23] text-gray-400 hover:text-[#00ffa3]'
+                        ? 'bg-[#00ffa3]/20 text-[#00ffa3]'
+                        : 'bg-transparent text-gray-400/80 hover:text-[#00ffa3] hover:bg-[#00ffa3]/10'
                       }
                     `}
                   >
@@ -299,81 +300,84 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
           </div>
 
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {filterSubmissions(submissions).map((submission) => (
-                <div
-                  key={submission.id}
-                  className="bg-[#2A2A40] rounded-lg overflow-hidden relative group aspect-square"
-                >
-                  <div className="relative h-3/4">
-                    <img
-                      ref={(el) => el && (imageRefs.current[submission.id] = el)}
-                      src={submission.fileUrl}
-                      alt={submission.description}
-                      className="w-full h-full object-cover"
-                    />
-                    {showConfetti === submission.id && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        {/* Add your confetti animation here */}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-3 h-1/4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <FiLock className="text-[#00ffa3] w-4 h-4" />
-                        <span className="text-[#00ffa3] font-bold text-sm">{formatBSV(submission.totalLocked)}</span>
-                      </div>
-                    </div>
-
-                    <div className="relative h-1 bg-gray-700 rounded-full overflow-hidden mb-2">
-                      <div
-                        className={`absolute left-0 top-0 h-full transition-all duration-500 ${getProgressColor(
-                          submission.totalLocked,
-                          submission.threshold
-                        )}`}
-                        style={{
-                          width: `${Math.min(
-                            ((submission.totalLocked || 0) / (submission.threshold || 1000)) * 100,
-                            100
-                          )}%`,
-                        }}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-cols-max">
+              <div className="col-span-full lg:col-span-3 flex flex-wrap justify-center gap-6">
+                {filterSubmissions(submissions).map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="bg-[#2A2A40] rounded-lg overflow-hidden relative group w-full max-w-md flex-shrink-0"
+                    style={{ width: 'calc(100% - 1.5rem)' }}
+                  >
+                    <div className="relative h-[400px]">
+                      <img
+                        ref={(el) => el && (imageRefs.current[submission.id] = el)}
+                        src={submission.fileUrl}
+                        alt={submission.description}
+                        className="w-full h-full object-cover"
                       />
+                      {showConfetti === submission.id && (
+                        <div className="absolute inset-0 pointer-events-none">
+                          {/* Add your confetti animation here */}
+                        </div>
+                      )}
                     </div>
 
-                    {showLockInput === submission.id ? (
-                      <div className="flex space-x-2">
-                        <input
-                          type="number"
-                          value={lockAmount}
-                          onChange={(e) => setLockAmount(e.target.value)}
-                          className="flex-1 bg-[#1A1B23] border border-gray-700 rounded px-2 py-1 text-white text-sm"
-                          placeholder="Amount in BSV"
-                        />
-                        <button
-                          onClick={() => handleLockCoins(submission.id, parseFloat(lockAmount))}
-                          disabled={lockingSubmissionId === submission.id || !lockAmount}
-                          className="bg-[#00ffa3] text-black px-3 py-1 rounded font-bold hover:bg-[#00ff9d] transition-colors disabled:opacity-50 text-sm"
-                        >
-                          {lockingSubmissionId === submission.id ? (
-                            <FiZap className="animate-spin w-4 h-4" />
-                          ) : (
-                            'Lock'
-                          )}
-                        </button>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <FiLock className="text-[#00ffa3] w-4 h-4" />
+                          <span className="text-[#00ffa3] font-bold text-sm">{formatBSV(submission.totalLocked)}</span>
+                        </div>
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => setShowLockInput(submission.id)}
-                        className="w-full bg-[#1A1B23] text-[#00ffa3] px-3 py-1 rounded font-bold hover:bg-[#2A2A40] transition-colors text-sm"
-                      >
-                        Lock BSV
-                      </button>
-                    )}
+
+                      <div className="relative h-1 bg-gray-700 rounded-full overflow-hidden mb-2">
+                        <div
+                          className={`absolute left-0 top-0 h-full transition-all duration-500 ${getProgressColor(
+                            submission.totalLocked,
+                            submission.threshold
+                          )}`}
+                          style={{
+                            width: `${Math.min(
+                              ((submission.totalLocked || 0) / (submission.threshold || 1000)) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+
+                      {showLockInput === submission.id ? (
+                        <div className="flex space-x-2">
+                          <input
+                            type="number"
+                            value={lockAmount}
+                            onChange={(e) => setLockAmount(e.target.value)}
+                            className="flex-1 bg-[#1A1B23] border border-gray-700 rounded px-2 py-1 text-white text-sm"
+                            placeholder="Amount in BSV"
+                          />
+                          <button
+                            onClick={() => handleLockCoins(submission.id, parseFloat(lockAmount))}
+                            disabled={lockingSubmissionId === submission.id || !lockAmount}
+                            className="bg-[#00ffa3] text-black px-3 py-1 rounded font-bold hover:bg-[#00ff9d] transition-colors disabled:opacity-50 text-sm"
+                          >
+                            {lockingSubmissionId === submission.id ? (
+                              <FiZap className="animate-spin w-4 h-4" />
+                            ) : (
+                              'Lock'
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowLockInput(submission.id)}
+                          className="w-full bg-[#1A1B23] text-[#00ffa3] px-3 py-1 rounded font-bold hover:bg-[#2A2A40] transition-colors text-sm"
+                        >
+                          Lock BSV
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </>
