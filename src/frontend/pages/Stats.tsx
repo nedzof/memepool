@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storage.service';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FiTrendingUp, FiUsers, FiAward } from 'react-icons/fi';
+import { FiTrendingUp, FiUsers, FiAward, FiClock } from 'react-icons/fi';
 
 interface StatsData {
   totalPosts: number;
@@ -20,9 +20,21 @@ interface StatsData {
     name: string;
     value: number;
   }>;
+  topPostsByPeriod: {
+    [K in '24h' | '7d' | '30d']: Array<{
+      content: string;
+      lockedAmount: number;
+      createdAt: Date;
+    }>;
+  };
 }
 
 const COLORS = ['#00ffa3', '#00ff9d', '#00ffff', '#ff00ff'];
+const TIME_PERIODS = [
+  { id: '24h', label: 'Last 24 Hours' },
+  { id: '7d', label: 'Last 7 Days' },
+  { id: '30d', label: 'Last 30 Days' }
+] as const;
 
 const Stats: React.FC = () => {
   const [stats, setStats] = useState<StatsData>({
@@ -32,8 +44,14 @@ const Stats: React.FC = () => {
     averageLockAmount: 0,
     topPost: null,
     timeSeriesData: [],
-    postDistribution: []
+    postDistribution: [],
+    topPostsByPeriod: {
+      '24h': [],
+      '7d': [],
+      '30d': []
+    }
   });
+  const [selectedPeriod, setSelectedPeriod] = useState('24h');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,6 +75,43 @@ const Stats: React.FC = () => {
             ? { content: post.description, lockedAmount: totalLocked }
             : max;
         }, null as StatsData['topPost']);
+
+        // Calculate top posts by time period
+        const now = new Date();
+        const topPostsByPeriod = {
+          '24h': [] as Array<{ content: string; lockedAmount: number; createdAt: Date }>,
+          '7d': [] as Array<{ content: string; lockedAmount: number; createdAt: Date }>,
+          '30d': [] as Array<{ content: string; lockedAmount: number; createdAt: Date }>
+        };
+
+        posts.forEach(post => {
+          const postDate = new Date(post.createdAt);
+          const totalLocked = (post.locks / 100000000) + 
+            post.locklikes.reduce((sum, locklike) => sum + (locklike.amount / 100000000), 0);
+          
+          const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
+          
+          const postData = {
+            content: post.description,
+            lockedAmount: totalLocked,
+            createdAt: postDate
+          };
+
+          if (hoursDiff <= 24) {
+            topPostsByPeriod['24h'].push(postData);
+          }
+          if (hoursDiff <= 168) { // 7 days
+            topPostsByPeriod['7d'].push(postData);
+          }
+          if (hoursDiff <= 720) { // 30 days
+            topPostsByPeriod['30d'].push(postData);
+          }
+        });
+
+        // Sort posts by locked amount for each period
+        (Object.keys(topPostsByPeriod) as Array<keyof typeof topPostsByPeriod>).forEach(period => {
+          topPostsByPeriod[period].sort((a, b) => b.lockedAmount - a.lockedAmount);
+        });
 
         // Calculate unique participants
         const participants = new Set();
@@ -102,7 +157,8 @@ const Stats: React.FC = () => {
           averageLockAmount: totalBSVLocked / posts.length,
           topPost,
           timeSeriesData,
-          postDistribution: postsByLockAmount
+          postDistribution: postsByLockAmount,
+          topPostsByPeriod
         });
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -118,6 +174,15 @@ const Stats: React.FC = () => {
     return amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 8
+    });
+  };
+
+  const formatDate = (date: Date): string => {
+    return new Date(date).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -158,6 +223,59 @@ const Stats: React.FC = () => {
               <p className="text-gray-400">Posts</p>
               <p className="text-2xl font-bold text-[#00ffa3]">{stats.totalPosts} Created</p>
             </div>
+          </div>
+        </div>
+
+        {/* Time Period Filter */}
+        <div className="bg-[#2A2A40] rounded-lg p-6 mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold flex items-center mb-4 md:mb-0">
+              <FiClock className="w-6 h-6 text-[#00ffa3] mr-2" />
+              Top Posts
+            </h2>
+            <div className="w-full md:w-auto grid grid-cols-3 gap-2">
+              {TIME_PERIODS.map(period => (
+                <button
+                  key={period.id}
+                  onClick={() => setSelectedPeriod(period.id)}
+                  className={`
+                    px-6 py-3 rounded-lg text-sm font-medium transition-all
+                    border-2 border-transparent
+                    ${selectedPeriod === period.id
+                      ? 'bg-[#00ffa3] text-black shadow-lg scale-105 transform'
+                      : 'bg-[#1A1B23] text-gray-400 hover:border-[#00ffa3] hover:text-[#00ffa3]'
+                    }
+                  `}
+                >
+                  {period.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {stats.topPostsByPeriod[selectedPeriod as keyof typeof stats.topPostsByPeriod].slice(0, 5).map((post, index: number) => (
+              <div key={index} className="bg-[#1A1B23] rounded-lg p-4 hover:bg-[#2A2A40] transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      <span className="text-[#00ffa3] font-bold mr-2">#{index + 1}</span>
+                      <p className="text-gray-300">{post.content}</p>
+                    </div>
+                    <p className="text-sm text-gray-500">{formatDate(post.createdAt)}</p>
+                  </div>
+                  <div className="ml-4 flex flex-col items-end">
+                    <p className="text-[#00ffa3] font-bold">{formatBSV(post.lockedAmount)} BSV</p>
+                    <p className="text-xs text-gray-500">locked</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {stats.topPostsByPeriod[selectedPeriod as keyof typeof stats.topPostsByPeriod].length === 0 && (
+              <div className="text-center text-gray-400 py-8">
+                No posts found for this time period
+              </div>
+            )}
           </div>
         </div>
 
@@ -230,22 +348,6 @@ const Stats: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Top Post */}
-        {stats.topPost && (
-          <div className="bg-[#2A2A40] rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <FiAward className="w-6 h-6 text-[#00ffa3] mr-2" />
-              Most Locked Post
-            </h2>
-            <div className="border-l-4 border-[#00ffa3] pl-4">
-              <p className="text-gray-300 mb-2">{stats.topPost.content}</p>
-              <p className="text-[#00ffa3] font-bold">
-                {formatBSV(stats.topPost.lockedAmount)} BSV locked
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Footer */}
         <div className="mt-8 text-center text-gray-400 text-sm">
