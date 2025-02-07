@@ -88,65 +88,73 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({ onClose, onPos
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div ref={modalRef} className="bg-[#2A2A40] rounded-lg p-6 w-full max-w-2xl mx-4">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div 
+        ref={modalRef} 
+        className="bg-[#2A2A40] rounded-xl w-full max-w-xl shadow-2xl border border-[#3D3D60]"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b border-[#3D3D60]">
           <h2 className="text-xl font-bold text-white">Create Post</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-[#3D3D60] rounded-lg"
           >
             <FiX className="w-6 h-6" />
           </button>
         </div>
 
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="What's on your mind?"
-          className="w-full h-32 bg-[#1A1B23] text-white rounded-lg p-4 mb-4 resize-none"
-        />
+        {/* Content */}
+        <div className="p-4">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="What's on your mind?"
+            className="w-full h-32 bg-[#1A1B23] text-white rounded-lg p-4 mb-4 resize-none border border-[#3D3D60] focus:border-[#00ffa3] focus:ring-1 focus:ring-[#00ffa3] focus:outline-none transition-colors placeholder-gray-500"
+          />
 
-        {imagePreview && (
-          <div className="relative mb-4">
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="max-h-64 rounded-lg object-contain"
-            />
-            <button
-              onClick={() => setImagePreview(null)}
-              className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-1"
-            >
-              <FiX className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        )}
+          {imagePreview && (
+            <div className="relative mb-4 bg-[#1A1B23] p-2 rounded-lg border border-[#3D3D60]">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="max-h-64 rounded-lg object-contain mx-auto"
+              />
+              <button
+                onClick={() => setImagePreview(null)}
+                className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 rounded-full p-1 transition-colors"
+              >
+                <FiX className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          )}
 
-        {linkPreview && (
-          <div className="mb-4 border border-gray-700 rounded-lg p-4">
-            <img
-              src={linkPreview.image}
-              alt={linkPreview.title}
-              className="w-full h-32 object-cover rounded-lg mb-2"
-            />
-            <h3 className="text-white font-semibold">{linkPreview.title}</h3>
-            <p className="text-gray-400 text-sm">{linkPreview.url}</p>
-          </div>
-        )}
+          {linkPreview && (
+            <div className="mb-4 border border-gray-700 rounded-lg p-4">
+              <img
+                src={linkPreview.image}
+                alt={linkPreview.title}
+                className="w-full h-32 object-cover rounded-lg mb-2"
+              />
+              <h3 className="text-white font-semibold">{linkPreview.title}</h3>
+              <p className="text-gray-400 text-sm">{linkPreview.url}</p>
+            </div>
+          )}
+        </div>
 
-        <div className="flex justify-between items-center">
+        {/* Footer */}
+        <div className="flex justify-between items-center p-4 border-t border-[#3D3D60]">
           <div className="flex space-x-4">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-[#00ffa3] transition-colors p-2 hover:bg-[#1A1B23] rounded-lg"
             >
-              <FiImage className="w-6 h-6" />
+              <FiImage className="w-5 h-5" />
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               onChange={handleImageUpload}
               className="hidden"
             />
@@ -155,28 +163,28 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({ onClose, onPos
                 const url = prompt('Enter Twitter URL:');
                 if (url) handleTwitterLinkPaste(url);
               }}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-[#00ffa3] transition-colors p-2 hover:bg-[#1A1B23] rounded-lg"
             >
-              <FiTwitter className="w-6 h-6" />
+              <FiTwitter className="w-5 h-5" />
             </button>
             <button
               onClick={() => {
                 const url = prompt('Enter URL:');
                 if (url) handleLinkPaste(url);
               }}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-[#00ffa3] transition-colors p-2 hover:bg-[#1A1B23] rounded-lg"
             >
-              <FiLink className="w-6 h-6" />
+              <FiLink className="w-5 h-5" />
             </button>
           </div>
 
           <button
             onClick={handleSubmit}
             disabled={isLoading || !content.trim()}
-            className={`px-6 py-2 rounded-lg font-semibold ${
+            className={`px-6 py-2 rounded-lg font-semibold transition-all ${
               isLoading || !content.trim()
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'bg-[#00ffa3] text-black hover:bg-[#00ff9d] transition-colors'
+                : 'bg-[#00ffa3] text-black hover:bg-[#00ff9d] hover:shadow-lg transform hover:scale-105'
             }`}
           >
             {isLoading ? 'Posting...' : 'Post'}
