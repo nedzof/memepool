@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletName } from '@solana/wallet-adapter-base';
-import { FiTrendingUp, FiLock, FiClock, FiZap, FiDollarSign, FiArrowUp } from 'react-icons/fi';
+import { FiTrendingUp, FiLock, FiClock, FiZap, FiDollarSign, FiArrowUp, FiUsers, FiEdit3 } from 'react-icons/fi';
 
 // Add Phantom provider type to the window object
 declare global {
@@ -19,11 +19,9 @@ declare global {
 
 interface HeaderProps {
   totalLocked: number;
-  threshold: number;
-  timeLeft: number;
   participantCount: number;
-  roundNumber: number;
   onShowBSVModal?: () => void;
+  onCreatePost?: () => void;
   btcAddress?: string;
   isPhantomInstalled?: boolean;
   connected?: boolean;
@@ -33,11 +31,9 @@ interface HeaderProps {
 
 const HeaderComponent: React.FC<HeaderProps> = ({
   totalLocked,
-  threshold,
-  timeLeft,
   participantCount,
-  roundNumber,
   onShowBSVModal,
+  onCreatePost,
   btcAddress,
   isPhantomInstalled,
   connected,
@@ -70,50 +66,10 @@ const HeaderComponent: React.FC<HeaderProps> = ({
     return `${amount.toFixed(2)} BSV`;
   }, []);
 
-  const formatTimeElapsed = useCallback((seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }, []);
-
-  const progress = useMemo(() => (totalLocked / threshold) * 100, [totalLocked, threshold]);
-
   const truncatedAddress = useMemo(() => 
     btcAddress ? btcAddress.slice(0, 4) + '...' + btcAddress.slice(-4) : 'Loading...',
     [btcAddress]
   );
-
-  const progressElement = useMemo(() => (
-    <div className="flex-grow relative">
-      <div className="relative h-2 bg-[#2A2A40] rounded-full overflow-hidden">
-        <div
-          className={`absolute left-0 top-0 h-full transition-all duration-500 ${
-            progress >= 100 
-              ? 'bg-gradient-to-r from-[#00ffa3] via-[#00ffa3] to-[#9945FF] animate-pulse'
-              : progress >= 70
-              ? 'bg-gradient-to-r from-[#FFB800] to-[#FF00FF] animate-progress-pulse'
-              : 'bg-gradient-to-r from-[#FF0000] to-[#FF00FF]'
-          }`}
-          style={{ width: `${Math.min(progress, 100)}%` }}
-        />
-      </div>
-      <div className="flex items-center justify-between text-xs mt-1.5">
-        <div className="flex items-center">
-          <div className={`flex items-center ${
-            progress >= 100 ? 'text-[#00ffa3] animate-bounce' : 'text-white/90'
-          }`}>
-            <FiArrowUp className={`w-3 h-3 mr-1 ${progress >= 70 ? 'animate-pulse' : ''}`} />
-            <span className="font-bold">
-              {progress >= 100 ? 'VIRAL AF 🔥' : `${Math.floor(progress)}% TO MOON`}
-            </span>
-          </div>
-        </div>
-        {progress >= 70 && progress < 100 && (
-          <div className="text-[#FFB800] text-xs font-bold animate-pulse">ALMOST VIRAL! 🚀</div>
-        )}
-      </div>
-    </div>
-  ), [progress]);
 
   const walletButton = useMemo(() => (
     connected ? (
@@ -147,6 +103,18 @@ const HeaderComponent: React.FC<HeaderProps> = ({
     )
   ), [connected, onShowBSVModal, truncatedAddress, onConnectPhantom, isPhantomInstalled]);
 
+  const createPostButton = useMemo(() => (
+    connected && onCreatePost && (
+      <button
+        onClick={onCreatePost}
+        className="flex items-center space-x-2 px-6 py-2 bg-[#00ffa3] hover:bg-[#00ff9d] text-black rounded-lg transition-all transform hover:scale-105 font-semibold shadow-lg"
+      >
+        <FiEdit3 className="w-5 h-5" />
+        <span className="text-base">Create Post</span>
+      </button>
+    )
+  ), [connected, onCreatePost]);
+
   return (
     <header className="sticky top-0 z-50 bg-[#1A1B23] border-b border-[#2A2A40]">
       <div className="max-w-7xl mx-auto">
@@ -156,53 +124,41 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             <img src="/assets/images/Memepool_Logo.svg" alt="Memepool Logo" className="h-8" />
           </div>
 
-          <div className="flex items-center space-x-3 flex-shrink-0">
+          <div className="flex items-center space-x-4 flex-shrink-0">
+            {createPostButton}
             {walletButton}
           </div>
         </div>
 
         {/* Stats Bar */}
-        <div className="px-4 py-2 flex items-center space-x-6">
+        <div className="px-4 py-2 flex items-center justify-between border-t border-[#2A2A40]">
           {/* Block Height */}
-          <div className="flex items-center space-x-4">
-            <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
-              <div className={`font-mono text-lg font-bold ${isHeightLoading ? 'animate-pulse' : ''}`}>
-                {isHeightLoading ? (
-                  <span className="text-[#9945FF]">Loading...</span>
-                ) : (
-                  <span className="text-[#00ffa3] animate-number-pulse">{blockHeight?.toLocaleString()}</span>
-                )}
-              </div>
-              <div className="text-[10px] text-white/60 uppercase tracking-wider">Block Height</div>
+          <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
+            <div className={`font-mono text-lg font-bold ${isHeightLoading ? 'animate-pulse' : ''}`}>
+              {isHeightLoading ? (
+                <span className="text-[#9945FF]">Loading...</span>
+              ) : (
+                <span className="text-[#00ffa3] animate-number-pulse">{blockHeight?.toLocaleString()}</span>
+              )}
             </div>
-            <div className="flex items-center text-[#FF00FF] animate-heartbeat">
-              <FiClock className="w-4 h-4 mr-1.5" />
-              <span className="font-mono text-base font-bold">{formatTimeElapsed(timeLeft)}</span>
-            </div>
+            <div className="text-[10px] text-white/60 uppercase tracking-wider">Block Height</div>
           </div>
 
-          {/* Progress Section */}
-          <div className="flex-grow flex items-center space-x-4">
-            {progressElement}
-
-            {/* Stats */}
-            <div className="flex items-center space-x-4 flex-shrink-0">
-              <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
-                <div className="flex items-center text-[#00ffa3]">
-                  <FiLock className="w-3.5 h-3.5 mr-1" />
-                  <span className="text-sm font-bold">{formatBSV(totalLocked)}</span>
-                </div>
-                <div className="text-[10px] text-white/60 uppercase tracking-wider">
-                  Target: {formatBSV(threshold)}
-                </div>
+          {/* Stats */}
+          <div className="flex items-center space-x-4">
+            <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
+              <div className="flex items-center text-[#00ffa3]">
+                <FiLock className="w-3.5 h-3.5 mr-1" />
+                <span className="text-sm font-bold">{formatBSV(totalLocked)}</span>
               </div>
-              <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
-                <div className="flex items-center text-[#FF00FF]">
-                  <FiZap className="w-3.5 h-3.5 mr-1" />
-                  <span className="text-sm font-bold animate-number-pulse">{participantCount}</span>
-                </div>
-                <div className="text-[10px] text-white/60 uppercase tracking-wider">Memers</div>
+              <div className="text-[10px] text-white/60 uppercase tracking-wider">Total Locked</div>
+            </div>
+            <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
+              <div className="flex items-center text-[#FF00FF]">
+                <FiUsers className="w-3.5 h-3.5 mr-1" />
+                <span className="text-sm font-bold animate-number-pulse">{participantCount}</span>
               </div>
+              <div className="text-[10px] text-white/60 uppercase tracking-wider">Memers</div>
             </div>
           </div>
         </div>

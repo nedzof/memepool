@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiTrendingUp, FiLock, FiAward, FiClock, FiZap, FiArrowUp } from 'react-icons/fi';
+import { FiTrendingUp, FiLock, FiAward, FiZap, FiArrowUp } from 'react-icons/fi';
 import { MemeVideoMetadata } from '../../shared/types/metadata';
 import { storageService } from '../services/storage.service';
 import { walletManager } from '../utils/wallet';
@@ -10,7 +10,6 @@ interface SubmissionStats {
   threshold: number;
   isTop10Percent: boolean;
   isTop3: boolean;
-  timeLeft: number;
 }
 
 interface MemeSubmission extends MemeVideoMetadata, SubmissionStats {}
@@ -52,7 +51,6 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
           threshold: currentThreshold || 1000,
           isTop10Percent: false,
           isTop3: false,
-          timeLeft: 600,
           createdAt: submission.createdAt,
           updatedAt: submission.updatedAt
         })) as unknown as MemeSubmission[];
@@ -135,13 +133,6 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
   const formatBSV = (amount: number | undefined): string => {
     if (typeof amount !== 'number') return '0.00 BSV';
     return `${amount.toFixed(2)} BSV`;
-  };
-
-  const formatTimeLeft = (seconds: number | undefined): string => {
-    if (typeof seconds !== 'number') return '0:00';
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const getProgressColor = (locked: number | undefined, threshold: number | undefined): string => {
@@ -249,10 +240,6 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
                   <FiLock className="text-[#00ffa3]" />
                   <span className="text-[#00ffa3] font-bold">{formatBSV(submission.totalLocked)}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <FiClock className="text-gray-400" />
-                  <span className="text-gray-400">{formatTimeLeft(submission.timeLeft)}</span>
-                </div>
               </div>
 
               <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden mb-4">
@@ -332,4 +319,5 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
     </div>
   );
 };
+
 export default MemeSubmissionGrid; 
