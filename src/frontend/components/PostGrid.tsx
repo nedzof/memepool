@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiLock, FiZap, FiClock, FiFilter } from 'react-icons/fi';
+import { FiLock, FiZap, FiClock, FiFilter, FiUser, FiUserPlus, FiUserCheck } from 'react-icons/fi';
 import { PostMetadata } from '../../shared/types/metadata';
 import { storageService } from '../services/storage.service';
 import { walletManager } from '../utils/wallet';
 import { useWallet } from '../providers/WalletProvider';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface SubmissionStats {
   totalLocked: number;
@@ -24,24 +25,19 @@ interface PostGridProps {
 }
 
 const TIME_PERIODS = [
-  { id: 'all', label: 'All Time' },
   { id: '1d', label: 'Last 24h' },
   { id: '7d', label: 'Last 7d' },
   { id: '30d', label: 'Last 30d' }
 ] as const;
 
 const TOP_FILTERS = [
-  { id: 'all', label: 'All Posts' },
   { id: 'top1', label: 'Top Post' },
   { id: 'top3', label: 'Top 3' },
-  { id: 'top10', label: 'Top 10' }
-] as const;
-
-const USER_FILTERS = [
-  { id: 'my_locks', label: 'My Locks' },
-  { id: 'currently_locked', label: 'Currently Locked' },
+  { id: 'top10', label: 'Top 10' },
   { id: 'following', label: 'Following' }
 ] as const;
+
+type TopFilterId = typeof TOP_FILTERS[number]['id'];
 
 const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
   const { connected, btcAddress } = useWallet();
@@ -58,12 +54,18 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
   const [recentLocks, setRecentLocks] = useState<Array<{ submissionId: string; amount: number; timestamp: number }>>([]);
   const [showConfetti, setShowConfetti] = useState<string | null>(null);
   const imageRefs = useRef<{ [key: string]: HTMLImageElement }>({});
-  const [selectedPeriod, setSelectedPeriod] = useState<typeof TIME_PERIODS[number]['id']>('all');
-  const [selectedTopFilter, setSelectedTopFilter] = useState<typeof TOP_FILTERS[number]['id']>('top1');
-  const [selectedUserFilter, setSelectedUserFilter] = useState<typeof USER_FILTERS[number]['id'] | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<typeof TIME_PERIODS[number]['id'] | null>(null);
+  const [selectedTopFilter, setSelectedTopFilter] = useState<TopFilterId | null>('top3');
   const [followedCreators, setFollowedCreators] = useState<Set<string>>(new Set());
   const [showCreatorInput, setShowCreatorInput] = useState(false);
   const [creatorAddress, setCreatorAddress] = useState('');
+
+  // Add filter visibility settings
+  const [filterVisibility] = useLocalStorage('filter-visibility', {
+    filter_time: true,
+    filter_top: true,
+    filter_following: true
+  });
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -71,7 +73,7 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
       setIsLoading(true);
       try {
         console.log('Calling getPosts...');
-        const newSubmissions = await storageService.getPosts(1, 9);
+        const newSubmissions = await storageService.getPosts(1, 100);
         console.log('Received submissions:', newSubmissions);
         
         const submissionsWithStats = newSubmissions.map((submission) => {
@@ -94,10 +96,10 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
         
         console.log('Processed submissions with stats:', submissionsWithStats);
         
-        // Sort by createdAt in descending order (newest first)
+        // Sort by totalLocked in descending order
         const sortedSubmissions = submissionsWithStats.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ).slice(0, 9); // Ensure we never have more than 9 elements
+          b.totalLocked - a.totalLocked
+        );
         
         console.log('Final sorted submissions:', sortedSubmissions);
         setSubmissions(sortedSubmissions);
@@ -211,196 +213,105 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
   const filterSubmissions = (posts: PostSubmission[]): PostSubmission[] => {
     // First apply time period filter
     const now = new Date();
-    let filteredPosts = posts.filter(post => {
-      const postDate = new Date(post.createdAt);
-      const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
-      
-      switch (selectedPeriod) {
-        case '1d':
-          return hoursDiff <= 24;
-        case '7d':
-          return hoursDiff <= 168;
-        case '30d':
-          return hoursDiff <= 720;
-        default:
-          return true;
-      }
-    });
-
-    // Apply user filters if logged in
-    if (connected && btcAddress && selectedUserFilter) {
-      switch (selectedUserFilter) {
-        case 'my_locks':
-          filteredPosts = filteredPosts.filter(post => 
-            post.locklikes.some(lock => lock.txid === btcAddress) || post.creator === btcAddress
-          );
-          break;
-        case 'currently_locked':
-          const currentBlock = 830000; // You should get this dynamically
-          filteredPosts = filteredPosts.filter(post => 
-            post.locklikes.some(lock => 
-              lock.txid === btcAddress && lock.locked_until > currentBlock
-            )
-          );
-          break;
-        case 'following':
-          filteredPosts = filteredPosts.filter(post => 
-            followedCreators.has(post.creator)
-          );
-          break;
-      }
-    }
-
-    // Then apply top filter
-    const sortedByLocks = [...filteredPosts].sort((a, b) => b.totalLocked - a.totalLocked);
+    let filteredPosts = posts;
     
-    switch (selectedTopFilter) {
-      case 'top1':
-        return sortedByLocks.slice(0, 1);
-      case 'top3':
-        return sortedByLocks.slice(0, 3);
-      case 'top10':
-        return sortedByLocks.slice(0, 10);
-      default:
-        return sortedByLocks;
+    if (selectedPeriod) {
+      filteredPosts = posts.filter(post => {
+        const postDate = new Date(post.createdAt);
+        const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
+        
+        switch (selectedPeriod) {
+          case '1d':
+            return hoursDiff <= 24;
+          case '7d':
+            return hoursDiff <= 168;
+          case '30d':
+            return hoursDiff <= 720;
+          default:
+            return true;
+        }
+      });
     }
+
+    // Apply following filter if selected
+    if (selectedTopFilter === 'following' && connected) {
+      filteredPosts = filteredPosts.filter(post => 
+        followedCreators.has(post.creator)
+      );
+      return filteredPosts;
+    }
+
+    // Then apply top filter if selected
+    if (selectedTopFilter) {
+      const sortedByLocks = [...filteredPosts].sort((a, b) => b.totalLocked - a.totalLocked);
+      
+      switch (selectedTopFilter) {
+        case 'top1':
+          return sortedByLocks.slice(0, 1);
+        case 'top3':
+          return sortedByLocks.slice(0, 3);
+        case 'top10':
+          return sortedByLocks.slice(0, 10);
+        default:
+          return sortedByLocks;
+      }
+    }
+
+    // If no top filter selected, return all posts sorted by locks
+    return [...filteredPosts].sort((a, b) => b.totalLocked - a.totalLocked);
   };
 
   return (
-    <div className="min-h-screen bg-[#1A1B23] text-white p-4 md:p-8">
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="bg-[#2A2A40]/30 backdrop-blur-sm rounded-lg p-4">
-          <div className="flex flex-col gap-4">
-            {/* Time Period Filter */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex flex-col w-full md:w-auto">
-                <h3 className="text-sm font-semibold text-gray-400/80 mb-2 flex items-center">
-                  <FiClock className="w-4 h-4 mr-2" />
-                  Time Period
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {TIME_PERIODS.map(period => (
-                    <button
-                      key={period.id}
-                      onClick={() => setSelectedPeriod(period.id)}
-                      className={`
-                        px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                        ${selectedPeriod === period.id
-                          ? 'bg-[#00ffa3]/20 text-[#00ffa3]'
-                          : 'bg-transparent text-gray-400/80 hover:text-[#00ffa3] hover:bg-[#00ffa3]/10'
-                        }
-                      `}
-                    >
-                      {period.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Top Posts Filter */}
-              <div className="flex flex-col w-full md:w-auto">
-                <h3 className="text-sm font-semibold text-gray-400/80 mb-2 flex items-center">
-                  <FiFilter className="w-4 h-4 mr-2" />
-                  Filter Posts
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {TOP_FILTERS.map(filter => (
-                    <button
-                      key={filter.id}
-                      onClick={() => setSelectedTopFilter(filter.id)}
-                      className={`
-                        px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                        ${selectedTopFilter === filter.id
-                          ? 'bg-[#00ffa3]/20 text-[#00ffa3]'
-                          : 'bg-transparent text-gray-400/80 hover:text-[#00ffa3] hover:bg-[#00ffa3]/10'
-                        }
-                      `}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+    <div className="min-h-screen bg-[#1A1B23] text-white p-4">
+      {/* Minimal Filter Bar */}
+      <div className="max-w-7xl mx-auto mb-6">
+        <div className="flex items-center justify-between">
+          {/* Time Period Filters - Left */}
+          {filterVisibility.filter_time && (
+            <div className="flex items-center gap-2">
+              {TIME_PERIODS.map(period => (
+                <button
+                  key={period.id}
+                  onClick={() => setSelectedPeriod(selectedPeriod === period.id ? null : period.id)}
+                  className={`px-3 py-1 rounded text-sm whitespace-nowrap transition-all ${
+                    selectedPeriod === period.id
+                      ? 'bg-[#00ffa3] text-black'
+                      : 'text-gray-400 hover:text-[#00ffa3]'
+                  }`}
+                >
+                  {period.label}
+                </button>
+              ))}
             </div>
+          )}
 
-            {/* User Filters - Only show when logged in */}
-            {connected && (
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-4 border-t border-gray-700">
-                <div className="flex flex-col w-full">
-                  <h3 className="text-sm font-semibold text-gray-400/80 mb-2">My Filters</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {USER_FILTERS.map(filter => (
-                      <button
-                        key={filter.id}
-                        onClick={() => setSelectedUserFilter(
-                          selectedUserFilter === filter.id ? null : filter.id
-                        )}
-                        className={`
-                          px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-                          ${selectedUserFilter === filter.id
-                            ? 'bg-[#00ffa3]/20 text-[#00ffa3]'
-                            : 'bg-transparent text-gray-400/80 hover:text-[#00ffa3] hover:bg-[#00ffa3]/10'
-                          }
-                        `}
-                      >
-                        {filter.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Following Section */}
-                <div className="flex flex-col w-full md:w-auto">
-                  <h3 className="text-sm font-semibold text-gray-400/80 mb-2">Following</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {Array.from(followedCreators).map(creator => (
-                      <div
-                        key={creator}
-                        className="flex items-center bg-[#1A1B23] rounded-lg px-2 py-1"
-                      >
-                        <span className="text-sm text-gray-400">{creator.slice(0, 6)}...{creator.slice(-4)}</span>
-                        <button
-                          onClick={() => handleUnfollowCreator(creator)}
-                          className="ml-2 text-gray-400 hover:text-red-500"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                    {showCreatorInput ? (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={creatorAddress}
-                          onChange={(e) => setCreatorAddress(e.target.value)}
-                          placeholder="Enter creator address"
-                          className="bg-[#1A1B23] border border-gray-700 rounded px-2 py-1 text-sm"
-                        />
-                        <button
-                          onClick={handleFollowCreator}
-                          className="bg-[#00ffa3] text-black px-3 py-1 rounded text-sm"
-                        >
-                          Follow
-                        </button>
-                        <button
-                          onClick={() => setShowCreatorInput(false)}
-                          className="text-gray-400 hover:text-red-500"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setShowCreatorInput(true)}
-                        className="text-[#00ffa3] hover:text-[#00ff9d]"
-                      >
-                        + Follow Creator
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+          {/* Top Posts and Following - Right */}
+          <div className="flex items-center gap-2">
+            {filterVisibility.filter_top && TOP_FILTERS.slice(0, -1).map(filter => (
+              <button
+                key={filter.id}
+                onClick={() => setSelectedTopFilter(selectedTopFilter === filter.id ? null : filter.id)}
+                className={`px-3 py-1 rounded text-sm whitespace-nowrap transition-all ${
+                  selectedTopFilter === filter.id
+                    ? 'bg-[#00ffa3] text-black'
+                    : 'text-gray-400 hover:text-[#00ffa3]'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+            
+            {filterVisibility.filter_following && connected && (
+              <button
+                onClick={() => setSelectedTopFilter(selectedTopFilter === 'following' ? null : 'following')}
+                className={`px-3 py-1 rounded text-sm whitespace-nowrap transition-all ${
+                  selectedTopFilter === 'following'
+                    ? 'bg-[#00ffa3] text-black'
+                    : 'text-gray-400 hover:text-[#00ffa3]'
+                }`}
+              >
+                Following
+              </button>
             )}
           </div>
         </div>
@@ -411,107 +322,91 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
           <div className="animate-pulse text-[#00ffa3]">Loading...</div>
         </div>
       ) : submissions.length === 0 ? (
-        <div className="flex flex-col justify-center items-center h-64 space-y-4">
-          <div className="text-[#00ffa3] text-xl">No posts yet</div>
-          <div className="text-gray-400">Be the first to create a post!</div>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-gray-400">No posts yet</div>
         </div>
       ) : (
-        <>
-          <div className="fixed top-24 right-4 z-50 space-y-2 pointer-events-none">
-            {recentLocks.map((lock, index) => (
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filterSubmissions(submissions).map((submission) => (
               <div
-                key={`${lock.submissionId}-${lock.timestamp}`}
-                className="bg-white/10 backdrop-blur-md rounded-lg p-4 animate-fade-out"
+                key={submission.id}
+                className="bg-[#2A2A40] rounded-lg overflow-hidden"
               >
-                <div className="flex items-center space-x-2">
-                  <FiLock className="text-[#00ffa3]" />
-                  <span className="text-[#00ffa3] font-bold">{formatBSV(lock.amount)}</span>
-                  <span className="text-gray-400">locked</span>
+                <img
+                  ref={(el) => el && (imageRefs.current[submission.id] = el)}
+                  src={submission.fileUrl}
+                  alt={submission.description}
+                  className="w-full aspect-square object-cover"
+                />
+                
+                <div className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FiLock className="text-[#00ffa3] w-4 h-4" />
+                      <span className="text-[#00ffa3] font-medium">{formatBSV(submission.totalLocked)}</span>
+                    </div>
+                    {connected && (
+                      <button
+                        onClick={() => followedCreators.has(submission.creator) 
+                          ? handleUnfollowCreator(submission.creator)
+                          : handleFollowCreator()
+                        }
+                        className="text-gray-400 hover:text-[#00ffa3]"
+                      >
+                        {followedCreators.has(submission.creator) 
+                          ? <FiUserCheck className="w-4 h-4" />
+                          : <FiUserPlus className="w-4 h-4" />
+                        }
+                      </button>
+                    )}
+                  </div>
+
+                  {showLockInput === submission.id ? (
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="number"
+                        value={lockAmount}
+                        onChange={(e) => setLockAmount(e.target.value)}
+                        className="flex-1 bg-[#1A1B23] rounded px-2 py-1 text-sm"
+                        placeholder="BSV amount"
+                      />
+                      <button
+                        onClick={() => handleLockCoins(submission.id, parseFloat(lockAmount))}
+                        disabled={lockingSubmissionId === submission.id || !lockAmount}
+                        className="bg-[#00ffa3] text-black px-3 py-1 rounded text-sm font-medium disabled:opacity-50"
+                      >
+                        {lockingSubmissionId === submission.id ? 'Locking...' : 'Lock'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowLockInput(submission.id)}
+                      className="w-full mt-2 bg-[#1A1B23] text-[#00ffa3] px-3 py-1 rounded text-sm font-medium hover:bg-opacity-75"
+                    >
+                      Lock BSV
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-wrap justify-center gap-6">
-              {filterSubmissions(submissions).map((submission) => (
-                <div
-                  key={submission.id}
-                  className="bg-[#2A2A40] rounded-lg overflow-hidden relative group w-full sm:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)] max-w-md"
-                >
-                  <div className="relative h-[400px]">
-                    <img
-                      ref={(el) => el && (imageRefs.current[submission.id] = el)}
-                      src={submission.fileUrl}
-                      alt={submission.description}
-                      className="w-full h-full object-cover"
-                    />
-                    {showConfetti === submission.id && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        {/* Add your confetti animation here */}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <FiLock className="text-[#00ffa3] w-4 h-4" />
-                        <span className="text-[#00ffa3] font-bold text-sm">{formatBSV(submission.totalLocked)}</span>
-                      </div>
-                    </div>
-
-                    <div className="relative h-1 bg-gray-700 rounded-full overflow-hidden mb-2">
-                      <div
-                        className={`absolute left-0 top-0 h-full transition-all duration-500 ${getProgressColor(
-                          submission.totalLocked,
-                          submission.threshold
-                        )}`}
-                        style={{
-                          width: `${Math.min(
-                            ((submission.totalLocked || 0) / (submission.threshold || 1000)) * 100,
-                            100
-                          )}%`,
-                        }}
-                      />
-                    </div>
-
-                    {showLockInput === submission.id ? (
-                      <div className="flex space-x-2">
-                        <input
-                          type="number"
-                          value={lockAmount}
-                          onChange={(e) => setLockAmount(e.target.value)}
-                          className="flex-1 bg-[#1A1B23] border border-gray-700 rounded px-2 py-1 text-white text-sm"
-                          placeholder="Amount in BSV"
-                        />
-                        <button
-                          onClick={() => handleLockCoins(submission.id, parseFloat(lockAmount))}
-                          disabled={lockingSubmissionId === submission.id || !lockAmount}
-                          className="bg-[#00ffa3] text-black px-3 py-1 rounded font-bold hover:bg-[#00ff9d] transition-colors disabled:opacity-50 text-sm"
-                        >
-                          {lockingSubmissionId === submission.id ? (
-                            <FiZap className="animate-spin w-4 h-4" />
-                          ) : (
-                            'Lock'
-                          )}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setShowLockInput(submission.id)}
-                        className="w-full bg-[#1A1B23] text-[#00ffa3] px-3 py-1 rounded font-bold hover:bg-[#2A2A40] transition-colors text-sm"
-                      >
-                        Lock BSV
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
+        </div>
       )}
+
+      {/* Recent Locks Toast */}
+      <div className="fixed top-20 right-4 z-50 space-y-2 pointer-events-none">
+        {recentLocks.map((lock) => (
+          <div
+            key={`${lock.submissionId}-${lock.timestamp}`}
+            className="bg-[#2A2A40] bg-opacity-90 backdrop-blur rounded px-3 py-2 flex items-center gap-2 animate-fade-out"
+          >
+            <FiLock className="text-[#00ffa3] w-4 h-4" />
+            <span className="text-[#00ffa3] font-medium text-sm">{formatBSV(lock.amount)}</span>
+            <span className="text-gray-400 text-sm">locked</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
