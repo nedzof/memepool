@@ -1,7 +1,5 @@
-import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletName } from '@solana/wallet-adapter-base';
-import { FiTrendingUp, FiLock, FiClock, FiZap, FiDollarSign, FiArrowUp, FiUsers, FiEdit3 } from 'react-icons/fi';
+import React, { useState, useCallback, useMemo, memo } from 'react';
+import { FiEdit3 } from 'react-icons/fi';
 
 // Add Phantom provider type to the window object
 declare global {
@@ -38,30 +36,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   isPhantomInstalled,
   connected,
   onConnectPhantom,
-  onDisconnect
 }) => {
-  const [blockHeight, setBlockHeight] = useState<number | null>(null);
-  const [isHeightLoading, setIsHeightLoading] = useState(true);
-
-  // Fetch current block height
-  useEffect(() => {
-    const fetchBlockHeight = async () => {
-      try {
-        const response = await fetch('https://api.whatsonchain.com/v1/bsv/main/chain/info');
-        const data = await response.json();
-        setBlockHeight(data.blocks);
-      } catch (error) {
-        console.error('Failed to fetch block height:', error);
-      } finally {
-        setIsHeightLoading(false);
-      }
-    };
-
-    fetchBlockHeight();
-    const interval = setInterval(fetchBlockHeight, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, []);
-
   const formatBSV = useCallback((amount: number): string => {
     return `${amount.toFixed(2)} BSV`;
   }, []);
@@ -117,49 +92,19 @@ const HeaderComponent: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 bg-[#1A1B23] border-b border-[#2A2A40]">
-      <div className="max-w-7xl mx-auto">
-        {/* Main Header */}
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center flex-shrink-0">
+      <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-8">
             <img src="/assets/images/Memepool_Logo.svg" alt="Memepool Logo" className="h-8" />
+            <div className="text-[#00ffa3] font-mono">
+              <span className="font-bold">{formatBSV(totalLocked)}</span>
+              <span className="text-white/60 text-sm ml-2">locked</span>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4 flex-shrink-0">
+          <div className="flex items-center space-x-4">
             {createPostButton}
             {walletButton}
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        <div className="px-4 py-2 flex items-center justify-between border-t border-[#2A2A40]">
-          {/* Block Height */}
-          <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
-            <div className={`font-mono text-lg font-bold ${isHeightLoading ? 'animate-pulse' : ''}`}>
-              {isHeightLoading ? (
-                <span className="text-[#9945FF]">Loading...</span>
-              ) : (
-                <span className="text-[#00ffa3] animate-number-pulse">{blockHeight?.toLocaleString()}</span>
-              )}
-            </div>
-            <div className="text-[10px] text-white/60 uppercase tracking-wider">Block Height</div>
-          </div>
-
-          {/* Stats */}
-          <div className="flex items-center space-x-4">
-            <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
-              <div className="flex items-center text-[#00ffa3]">
-                <FiLock className="w-3.5 h-3.5 mr-1" />
-                <span className="text-sm font-bold">{formatBSV(totalLocked)}</span>
-              </div>
-              <div className="text-[10px] text-white/60 uppercase tracking-wider">Total Locked</div>
-            </div>
-            <div className="bg-[#2A2A40] px-3 py-1.5 rounded-lg">
-              <div className="flex items-center text-[#FF00FF]">
-                <FiUsers className="w-3.5 h-3.5 mr-1" />
-                <span className="text-sm font-bold animate-number-pulse">{participantCount}</span>
-              </div>
-              <div className="text-[10px] text-white/60 uppercase tracking-wider">Memers</div>
-            </div>
           </div>
         </div>
       </div>
