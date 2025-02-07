@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiTrendingUp, FiLock, FiAward, FiZap, FiArrowUp } from 'react-icons/fi';
+import { FiLock, FiZap } from 'react-icons/fi';
 import { MemeVideoMetadata } from '../../shared/types/metadata';
 import { storageService } from '../services/storage.service';
 import { walletManager } from '../utils/wallet';

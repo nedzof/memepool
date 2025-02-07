@@ -11,12 +11,17 @@ export interface MemeVideoMetadata {
   thumbnailUrl: string;
   txId: string;
   locks: number;
-  status: 'pending' | 'minted' | 'viral' | 'failed';
+  status: 'minted' | 'pending' | 'failed';
   tags: string[];
-  views: number;
-  likes: number;
-  dislikes: number;
-  shares: number;
   createdAt: Date;
   updatedAt: Date;
+  initialVibes?: number;
+  totalLockLikeVibes?: number;
+  totalVibes?: number;
+  locklikes?: Array<{
+    txid: string;
+    amount: number;
+    locked_until: number;
+    created_at: Date;
+  }>;
 } 
