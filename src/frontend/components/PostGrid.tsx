@@ -300,84 +300,81 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
           </div>
 
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-cols-max">
-              <div className="col-span-full lg:col-span-3 flex flex-wrap justify-center gap-6">
-                {filterSubmissions(submissions).map((submission) => (
-                  <div
-                    key={submission.id}
-                    className="bg-[#2A2A40] rounded-lg overflow-hidden relative group w-full max-w-md flex-shrink-0"
-                    style={{ width: 'calc(100% - 1.5rem)' }}
-                  >
-                    <div className="relative h-[400px]">
-                      <img
-                        ref={(el) => el && (imageRefs.current[submission.id] = el)}
-                        src={submission.fileUrl}
-                        alt={submission.description}
-                        className="w-full h-full object-cover"
-                      />
-                      {showConfetti === submission.id && (
-                        <div className="absolute inset-0 pointer-events-none">
-                          {/* Add your confetti animation here */}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <FiLock className="text-[#00ffa3] w-4 h-4" />
-                          <span className="text-[#00ffa3] font-bold text-sm">{formatBSV(submission.totalLocked)}</span>
-                        </div>
+            <div className="flex flex-wrap justify-center gap-6">
+              {filterSubmissions(submissions).map((submission) => (
+                <div
+                  key={submission.id}
+                  className="bg-[#2A2A40] rounded-lg overflow-hidden relative group w-full sm:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)] max-w-md"
+                >
+                  <div className="relative h-[400px]">
+                    <img
+                      ref={(el) => el && (imageRefs.current[submission.id] = el)}
+                      src={submission.fileUrl}
+                      alt={submission.description}
+                      className="w-full h-full object-cover"
+                    />
+                    {showConfetti === submission.id && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        {/* Add your confetti animation here */}
                       </div>
-
-                      <div className="relative h-1 bg-gray-700 rounded-full overflow-hidden mb-2">
-                        <div
-                          className={`absolute left-0 top-0 h-full transition-all duration-500 ${getProgressColor(
-                            submission.totalLocked,
-                            submission.threshold
-                          )}`}
-                          style={{
-                            width: `${Math.min(
-                              ((submission.totalLocked || 0) / (submission.threshold || 1000)) * 100,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-
-                      {showLockInput === submission.id ? (
-                        <div className="flex space-x-2">
-                          <input
-                            type="number"
-                            value={lockAmount}
-                            onChange={(e) => setLockAmount(e.target.value)}
-                            className="flex-1 bg-[#1A1B23] border border-gray-700 rounded px-2 py-1 text-white text-sm"
-                            placeholder="Amount in BSV"
-                          />
-                          <button
-                            onClick={() => handleLockCoins(submission.id, parseFloat(lockAmount))}
-                            disabled={lockingSubmissionId === submission.id || !lockAmount}
-                            className="bg-[#00ffa3] text-black px-3 py-1 rounded font-bold hover:bg-[#00ff9d] transition-colors disabled:opacity-50 text-sm"
-                          >
-                            {lockingSubmissionId === submission.id ? (
-                              <FiZap className="animate-spin w-4 h-4" />
-                            ) : (
-                              'Lock'
-                            )}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowLockInput(submission.id)}
-                          className="w-full bg-[#1A1B23] text-[#00ffa3] px-3 py-1 rounded font-bold hover:bg-[#2A2A40] transition-colors text-sm"
-                        >
-                          Lock BSV
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
+
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <FiLock className="text-[#00ffa3] w-4 h-4" />
+                        <span className="text-[#00ffa3] font-bold text-sm">{formatBSV(submission.totalLocked)}</span>
+                      </div>
+                    </div>
+
+                    <div className="relative h-1 bg-gray-700 rounded-full overflow-hidden mb-2">
+                      <div
+                        className={`absolute left-0 top-0 h-full transition-all duration-500 ${getProgressColor(
+                          submission.totalLocked,
+                          submission.threshold
+                        )}`}
+                        style={{
+                          width: `${Math.min(
+                            ((submission.totalLocked || 0) / (submission.threshold || 1000)) * 100,
+                            100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+
+                    {showLockInput === submission.id ? (
+                      <div className="flex space-x-2">
+                        <input
+                          type="number"
+                          value={lockAmount}
+                          onChange={(e) => setLockAmount(e.target.value)}
+                          className="flex-1 bg-[#1A1B23] border border-gray-700 rounded px-2 py-1 text-white text-sm"
+                          placeholder="Amount in BSV"
+                        />
+                        <button
+                          onClick={() => handleLockCoins(submission.id, parseFloat(lockAmount))}
+                          disabled={lockingSubmissionId === submission.id || !lockAmount}
+                          className="bg-[#00ffa3] text-black px-3 py-1 rounded font-bold hover:bg-[#00ff9d] transition-colors disabled:opacity-50 text-sm"
+                        >
+                          {lockingSubmissionId === submission.id ? (
+                            <FiZap className="animate-spin w-4 h-4" />
+                          ) : (
+                            'Lock'
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowLockInput(submission.id)}
+                        className="w-full bg-[#1A1B23] text-[#00ffa3] px-3 py-1 rounded font-bold hover:bg-[#2A2A40] transition-colors text-sm"
+                      >
+                        Lock BSV
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </>
