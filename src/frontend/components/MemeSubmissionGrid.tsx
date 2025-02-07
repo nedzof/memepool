@@ -25,8 +25,6 @@ interface MemeSubmissionGridProps {
 const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }) => {
   const [submissions, setSubmissions] = useState<MemeSubmission[]>([]);
   const [currentThreshold, setCurrentThreshold] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const [participantCount, setParticipantCount] = useState(0);
@@ -43,11 +41,10 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
     const fetchSubmissions = async () => {
       setIsLoading(true);
       try {
-        const newSubmissions = await storageService.getMemeVideos(currentPage, 10);
-        const submissionsWithStats = newSubmissions.map((submission, index) => ({
+        const newSubmissions = await storageService.getMemeVideos(1, 10);
+        const submissionsWithStats = newSubmissions.map((submission) => ({
           ...submission,
           totalLocked: 0,
-          position: index + 1,
           threshold: currentThreshold || 1000,
           isTop10Percent: false,
           isTop3: false,
@@ -55,13 +52,12 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
           updatedAt: submission.updatedAt
         })) as unknown as MemeSubmission[];
         
-        setSubmissions((prevSubmissions: MemeSubmission[]) => {
-          const uniqueSubmissions = submissionsWithStats.filter(
-            (submission) => !prevSubmissions.some((prev) => prev.id === submission.id)
-          );
-          return [...prevSubmissions, ...uniqueSubmissions];
-        });
-        setHasMore(newSubmissions.length === 10);
+        // Sort by createdAt in descending order (newest first)
+        const sortedSubmissions = submissionsWithStats.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        setSubmissions(sortedSubmissions);
       } catch (error) {
         console.error('Failed to fetch meme submissions:', error);
       } finally {
@@ -70,7 +66,7 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
     };
 
     fetchSubmissions();
-  }, [currentPage, currentThreshold]);
+  }, [currentThreshold]);
 
   useEffect(() => {
     const fetchRoundStats = async () => {
@@ -91,10 +87,6 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
 
     fetchRoundStats();
   }, [submissions, roundNumber, onStatsUpdate]);
-
-  const handleLoadMore = () => {
-    setCurrentPage((prevPage) => prevPage + 1);
-  };
 
   const handleVideoClick = (videoId: string) => {
     if (activeVideo === videoId) {
@@ -202,14 +194,14 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
               <div className="flex items-center space-x-2">
                 <FiLock className="text-[#00ffa3]" />
                 <span className="text-[#00ffa3] font-bold">{formatBSV(lock.amount)}</span>
-                <span className="text-gray-400">locked on submission #{submission.position}</span>
+                <span className="text-gray-400">locked</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="max-w-2xl mx-auto space-y-8">
         {submissions.map((submission) => (
           <div
             key={submission.id}
@@ -257,19 +249,6 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <FiTrendingUp className="text-gray-400" />
-                  <span className="text-gray-400">#{submission.position}</span>
-                </div>
-                {submission.isTop3 && (
-                  <div className="flex items-center space-x-2">
-                    <FiAward className="text-yellow-400" />
-                    <span className="text-yellow-400">Top 3</span>
-                  </div>
-                )}
-              </div>
-
               {showLockInput === submission.id ? (
                 <div className="mt-4">
                   <div className="flex space-x-2">
@@ -305,17 +284,6 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
           </div>
         ))}
       </div>
-
-      {hasMore && !isLoading && (
-        <div className="mt-8 text-center">
-          <button
-            onClick={handleLoadMore}
-            className="bg-[#2A2A40] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#3D3D60] transition-colors"
-          >
-            Load More
-          </button>
-        </div>
-      )}
     </div>
   );
 };
