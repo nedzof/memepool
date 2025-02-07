@@ -56,6 +56,9 @@ class WalletManager {
       case WalletType.Imported:
         const { ImportedWallet } = await import('./wallets/imported-wallet');
         return new ImportedWallet();
+      case WalletType.Yours:
+        const { YoursWallet } = await import('./wallets/yours-wallet');
+        return YoursWallet.getInstance();
       default:
         throw new Error('Unsupported wallet type');
     }
@@ -63,27 +66,32 @@ class WalletManager {
 }
 
 export const walletManager = WalletManager.getInstance();
+export default walletManager;
 
-export const generateBtcAddress = (publicKeyHex: string): string => {
-  // Convert hex public key string to bytes
-  const pubKeyBytes = new Uint8Array(
-    publicKeyHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []
-  );
-  
-  const hash = sha256(pubKeyBytes);
-  
-  // Create a BTC public key hash (RIPEMD160(SHA256(pubKey)))
-  const pubKeyHash = ripemd160(hash);
-  
-  // Add version byte for P2PKH (0x00 for mainnet)
-  const versionedPubKeyHash = new Uint8Array([0x00, ...pubKeyHash]);
-  
-  // Calculate checksum (first 4 bytes of double SHA256)
-  const checksum = sha256(sha256(versionedPubKeyHash)).slice(0, 4);
-  
-  // Combine everything and encode in base58
-  const binaryAddr = new Uint8Array([...versionedPubKeyHash, ...checksum]);
-  const address = base58.encode(binaryAddr);
-  
-  return address;
-}; 
+// Helper function to generate BSV address from public key
+export function generateBtcAddress(publicKeyHex: string): string {
+  // Convert hex public key to Uint8Array
+  const publicKey = new Uint8Array(Buffer.from(publicKeyHex, 'hex'));
+
+  // Perform SHA-256 hashing
+  const sha256Hash = sha256(publicKey);
+
+  // Perform RIPEMD-160 hashing
+  const ripemd160Hash = ripemd160(sha256Hash);
+
+  // Add version byte (0x00 for mainnet)
+  const versionedHash = new Uint8Array(21);
+  versionedHash[0] = 0x00;
+  versionedHash.set(ripemd160Hash, 1);
+
+  // Perform double SHA-256 for checksum
+  const checksum = sha256(sha256(versionedHash));
+
+  // Take first 4 bytes of checksum
+  const addressBytes = new Uint8Array(25);
+  addressBytes.set(versionedHash);
+  addressBytes.set(checksum.slice(0, 4), 21);
+
+  // Encode in base58
+  return base58.encode(addressBytes);
+} 

@@ -12,11 +12,13 @@ import Notifications from './Notifications';
 
 const App: React.FC = () => {
   const { 
-    isPhantomInstalled, 
+    isPhantomInstalled,
+    isYoursInstalled,
     connected, 
     btcAddress, 
-    connect: connectPhantom,
-    disconnect: disconnectPhantom
+    connect: connectWallet,
+    disconnect: disconnectWallet,
+    activeWallet
   } = useWallet();
   
   const [showBSVModal, setShowBSVModal] = useState(false);
@@ -31,17 +33,30 @@ const App: React.FC = () => {
     }
 
     try {
-      await connectPhantom();
+      await connectWallet('phantom');
     } catch (error) {
       console.error('Error connecting to Phantom wallet:', error);
     }
   };
 
+  const handleYoursClick = async () => {
+    if (!isYoursInstalled) {
+      window.open('https://chromewebstore.google.com/detail/yours-wallet/mlbnicldlpdimbjdcncnklfempedeipj', '_blank');
+      return;
+    }
+
+    try {
+      await connectWallet('yours');
+    } catch (error) {
+      console.error('Error connecting to Yours wallet:', error);
+    }
+  };
+
   const handleDisconnect = async () => {
     try {
-      await disconnectPhantom();
+      await disconnectWallet();
     } catch (error) {
-      console.error('Error disconnecting from Phantom wallet:', error);
+      console.error('Error disconnecting wallet:', error);
     }
   };
 
@@ -59,17 +74,20 @@ const App: React.FC = () => {
             participantCount={participantCount}
             btcAddress={btcAddress || ''}
             isPhantomInstalled={isPhantomInstalled}
+            isYoursInstalled={isYoursInstalled}
             connected={connected}
             onShowBSVModal={() => setShowBSVModal(true)}
             onCreatePost={() => setShowCreatePostModal(true)}
             onConnectPhantom={handlePhantomClick}
+            onConnectYours={handleYoursClick}
             onDisconnect={handleDisconnect}
+            activeWallet={activeWallet}
           />
         }>
           <Route index element={
             <div className="max-w-7xl mx-auto px-4 py-8">
               <PostGrid
-                onStatsUpdate={(stats) => {
+                onStatsUpdate={(stats: { totalLocked: number; participantCount: number }) => {
                   setTotalLocked(stats.totalLocked);
                   setParticipantCount(stats.participantCount);
                 }}

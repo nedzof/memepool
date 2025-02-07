@@ -8,11 +8,14 @@ interface LayoutProps {
   participantCount: number;
   btcAddress: string;
   isPhantomInstalled: boolean;
+  isYoursInstalled: boolean;
   connected: boolean;
   onShowBSVModal: () => void;
   onCreatePost: () => void;
   onConnectPhantom: () => void;
+  onConnectYours: () => void;
   onDisconnect: () => void;
+  activeWallet: 'phantom' | 'yours' | null;
 }
 
 const Layout: React.FC<LayoutProps> = ({
@@ -20,11 +23,14 @@ const Layout: React.FC<LayoutProps> = ({
   participantCount,
   btcAddress,
   isPhantomInstalled,
+  isYoursInstalled,
   connected,
   onShowBSVModal,
   onCreatePost,
   onConnectPhantom,
-  onDisconnect
+  onConnectYours,
+  onDisconnect,
+  activeWallet
 }) => {
   const location = useLocation();
 
@@ -39,9 +45,12 @@ const Layout: React.FC<LayoutProps> = ({
         onCreatePost={onCreatePost}
         btcAddress={btcAddress}
         isPhantomInstalled={isPhantomInstalled}
+        isYoursInstalled={isYoursInstalled}
         connected={connected}
         onConnectPhantom={onConnectPhantom}
+        onConnectYours={onConnectYours}
         onDisconnect={onDisconnect}
+        activeWallet={activeWallet}
       />
 
       {/* Navigation */}

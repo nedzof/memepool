@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
-import { FiEdit3 } from 'react-icons/fi';
+import { FiEdit3, FiLock, FiUsers, FiChevronDown, FiLogOut } from 'react-icons/fi';
 
 // Add Phantom provider type to the window object
 declare global {
@@ -18,65 +18,99 @@ declare global {
 interface HeaderProps {
   totalLocked: number;
   participantCount: number;
-  onShowBSVModal?: () => void;
-  onCreatePost?: () => void;
-  btcAddress?: string;
-  isPhantomInstalled?: boolean;
-  connected?: boolean;
-  onConnectPhantom?: () => void;
-  onDisconnect?: () => void;
+  btcAddress: string;
+  isPhantomInstalled: boolean;
+  isYoursInstalled: boolean;
+  connected: boolean;
+  onShowBSVModal: () => void;
+  onCreatePost: () => void;
+  onConnectPhantom: () => void;
+  onConnectYours: () => void;
+  onDisconnect: () => void;
+  activeWallet: 'phantom' | 'yours' | null;
 }
 
 const HeaderComponent: React.FC<HeaderProps> = ({
   totalLocked,
   participantCount,
-  onShowBSVModal,
-  onCreatePost,
   btcAddress,
   isPhantomInstalled,
+  isYoursInstalled,
   connected,
+  onShowBSVModal,
+  onCreatePost,
   onConnectPhantom,
+  onConnectYours,
+  onDisconnect,
+  activeWallet
 }) => {
-  const formatBSV = useCallback((amount: number): string => {
-    return `${amount.toFixed(2)} BSV`;
-  }, []);
+  const [showWalletDropdown, setShowWalletDropdown] = useState(false);
 
-  const truncatedAddress = useMemo(() => 
-    btcAddress ? btcAddress.slice(0, 4) + '...' + btcAddress.slice(-4) : 'Loading...',
-    [btcAddress]
-  );
+  const formatBSV = (amount: number): string => {
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8
+    });
+  };
+
+  const formatAddress = (address: string): string => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   const walletButton = useMemo(() => (
     connected ? (
       <button
         onClick={onShowBSVModal}
-        className="flex items-center space-x-2 px-3 py-1.5 bg-[#2A2A40] hover:bg-[#3D3D60] rounded-lg transition-all transform hover:scale-105"
+        className="flex items-center space-x-2 bg-[#1A1B23] text-[#00ffa3] px-4 py-2 rounded-lg hover:bg-[#2A2A40] transition-colors"
       >
-        <img 
-          src="/images/phantom-icon.svg" 
-          alt="Phantom" 
-          className="w-4 h-4"
-        />
-        <span className="text-white text-sm font-mono">
-          {truncatedAddress}
-        </span>
+        <span>{formatAddress(btcAddress)}</span>
+        <FiChevronDown className="w-4 h-4" />
       </button>
     ) : (
-      <button
-        onClick={onConnectPhantom}
-        className="flex items-center space-x-2 px-3 py-1.5 bg-[#2A2A40] hover:bg-[#3D3D60] rounded-lg transition-all transform hover:scale-105"
-      >
-        <span className="text-white text-sm">
-          {isPhantomInstalled ? 'Connect' : 'Download'}
-        </span>
-        <img 
-          src="/images/phantom-icon.svg" 
-          alt="Phantom" 
-          className="w-4 h-4"
-        />
-      </button>
+      <div className="relative">
+        <button
+          onClick={() => setShowWalletDropdown(!showWalletDropdown)}
+          className="flex items-center space-x-2 bg-[#00ffa3] text-black px-4 py-2 rounded-lg hover:bg-[#00ff9d] transition-colors"
+        >
+          <span>Connect Wallet</span>
+          <FiChevronDown className="w-4 h-4" />
+        </button>
+
+        {showWalletDropdown && (
+          <div className="absolute right-0 mt-2 w-48 bg-[#2A2A40] rounded-lg shadow-lg overflow-hidden">
+            <button
+              onClick={() => {
+                onConnectPhantom();
+                setShowWalletDropdown(false);
+              }}
+              className="w-full px-4 py-3 text-left text-gray-300 hover:bg-[#1A1B23] hover:text-[#00ffa3] transition-colors flex items-center space-x-2"
+            >
+              <img src="/icons/phantom.svg" alt="Phantom" className="w-5 h-5" />
+              <span>Phantom Wallet</span>
+              {!isPhantomInstalled && (
+                <span className="text-xs text-gray-500 ml-auto">Install</span>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                onConnectYours();
+                setShowWalletDropdown(false);
+              }}
+              className="w-full px-4 py-3 text-left text-gray-300 hover:bg-[#1A1B23] hover:text-[#00ffa3] transition-colors flex items-center space-x-2"
+            >
+              <img src="/icons/yours.svg" alt="Yours" className="w-5 h-5" />
+              <span>Yours Wallet</span>
+              {!isYoursInstalled && (
+                <span className="text-xs text-gray-500 ml-auto">Install</span>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
     )
-  ), [connected, onShowBSVModal, truncatedAddress, onConnectPhantom, isPhantomInstalled]);
+  ), [connected, onShowBSVModal, btcAddress, onConnectPhantom, isPhantomInstalled, showWalletDropdown, onConnectYours, isYoursInstalled]);
 
   const createPostButton = useMemo(() => (
     connected && onCreatePost && (

@@ -1,7 +1,8 @@
 export enum WalletType {
   BSV = 'BSV',
   Manual = 'Manual',
-  Imported = 'Imported'
+  Imported = 'Imported',
+  Yours = 'Yours'
 }
 
 export interface Transaction {
