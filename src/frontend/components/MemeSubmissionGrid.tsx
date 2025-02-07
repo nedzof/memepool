@@ -41,7 +41,7 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
     const fetchSubmissions = async () => {
       setIsLoading(true);
       try {
-        const newSubmissions = await storageService.getMemeVideos(1, 10);
+        const newSubmissions = await storageService.getMemeVideos(1, 9);
         const submissionsWithStats = newSubmissions.map((submission) => ({
           ...submission,
           totalLocked: 0,
@@ -55,7 +55,7 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
         // Sort by createdAt in descending order (newest first)
         const sortedSubmissions = submissionsWithStats.sort((a, b) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        ).slice(0, 9); // Ensure we never have more than 9 elements
         
         setSubmissions(sortedSubmissions);
       } catch (error) {
