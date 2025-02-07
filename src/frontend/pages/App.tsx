@@ -1,5 +1,5 @@
 import '../utils/buffer-polyfill';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import MemeSubmissionGrid from '../components/MemeSubmissionGrid';
 import BSVTransactionModal from '../components/modals/BSVTransactionModal';
 import { useWallet } from '../providers/WalletProvider';
@@ -16,27 +16,12 @@ const App: React.FC = () => {
   
   const [showBSVModal, setShowBSVModal] = useState(false);
   const [totalLocked, setTotalLocked] = useState(0);
-  const [threshold] = useState(1000); // Default threshold
-  const [timeElapsed, setTimeElapsed] = useState(0);
   const [participantCount, setParticipantCount] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
-
-  // Add timer effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeElapsed(prev => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Reset timer when round changes
-  useEffect(() => {
-    setTimeElapsed(0);
-  }, [roundNumber]);
+  const [timeLeft] = useState(0);
+  const [threshold] = useState(1000);
 
   const handleSearch = (query: string) => {
-    // TODO: Implement search functionality
     console.log('Search query:', query);
   };
 
@@ -66,7 +51,7 @@ const App: React.FC = () => {
       <Header
         totalLocked={totalLocked}
         threshold={threshold}
-        timeLeft={timeElapsed}
+        timeLeft={timeLeft}
         participantCount={participantCount}
         roundNumber={roundNumber}
         onSearch={handleSearch}
@@ -90,13 +75,12 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* BSV Transaction Modal */}
       {showBSVModal && btcAddress && (
         <BSVTransactionModal
           onClose={() => setShowBSVModal(false)}
           onDisconnect={handleDisconnect}
           address={btcAddress}
-          onAddressChange={() => {}} // Remove address change handler as it's managed by WalletProvider
+          onAddressChange={() => {}}
         />
       )}
     </div>
