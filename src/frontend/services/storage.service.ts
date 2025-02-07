@@ -10,6 +10,16 @@ interface Block {
   timestamp?: Date;
 }
 
+interface Post {
+  content: string;
+  mediaUrl?: string | null;
+  lockUntilBlock: number;
+  amount: number;
+  initialVibes: number;
+  timestamp: number;
+  txid: string;
+}
+
 // Track images for each block
 const blockImages = new Map<number, string>();
 
@@ -26,6 +36,7 @@ class StorageService {
   private currentFilter: 'latest' | 'oldest' | 'popular' = 'latest';
   private searchTxId: string = '';
   private searchCreator: string = '';
+  private apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
   constructor() {
     // Initialize with a random high block number
@@ -249,11 +260,16 @@ class StorageService {
   }
 
   async getMemeVideos(page: number, limit: number): Promise<MemeVideoMetadata[]> {
-    // Return mock data for now
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const mockVideos = this.generateMockVideos(10); // Generate 10 mock videos
-    const start = (page - 1) * limit;
-    return mockVideos.slice(start, start + limit);
+    try {
+      const response = await fetch(`${this.apiUrl}/memes?page=${page}&limit=${limit}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch meme videos');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching meme videos:', error);
+      return [];
+    }
   }
 
   async getMemeVideo(id: string): Promise<MemeVideoMetadata | null> {
@@ -308,6 +324,53 @@ class StorageService {
     } catch (error) {
       console.error('Failed to fetch latest block height:', error);
       return this.latestBlockHeight;
+    }
+  }
+
+  async uploadMedia(mediaData: string): Promise<string> {
+    try {
+      // Convert base64 to blob
+      const base64Response = await fetch(mediaData);
+      const blob = await base64Response.blob();
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', blob);
+
+      // Upload to server
+      const response = await fetch(`${this.apiUrl}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload media');
+      }
+
+      const { url } = await response.json();
+      return url;
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      throw error;
+    }
+  }
+
+  async createPost(post: Post): Promise<void> {
+    try {
+      const response = await fetch(`${this.apiUrl}/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(post),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create post');
+      }
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
     }
   }
 }
