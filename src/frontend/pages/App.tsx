@@ -8,6 +8,7 @@ import BSVTransactionModal from '../components/modals/BSVTransactionModal';
 import { CreatePostModal } from '../components/modals/CreatePostModal';
 import { useWallet } from '../providers/WalletProvider';
 import { FiPlus } from 'react-icons/fi';
+import Notifications from './Notifications';
 
 const App: React.FC = () => {
   const { 
@@ -84,6 +85,7 @@ const App: React.FC = () => {
             </div>
           } />
           <Route path="stats" element={<Stats />} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
       </Routes>
 

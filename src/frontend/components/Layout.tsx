@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Header } from '../../components/Header';
+import { FiBell } from 'react-icons/fi';
 
 interface LayoutProps {
   totalLocked: number;
@@ -25,6 +26,10 @@ const Layout: React.FC<LayoutProps> = ({
   onConnectPhantom,
   onDisconnect
 }) => {
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <div className="min-h-screen bg-[#1A1B23]">
       <Header
@@ -44,15 +49,34 @@ const Layout: React.FC<LayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4 flex space-x-4">
           <Link
             to="/"
-            className="text-gray-300 hover:text-[#00ffa3] px-3 py-2 rounded-md text-sm font-medium"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/') 
+                ? 'text-[#00ffa3] bg-[#1A1B23]' 
+                : 'text-gray-300 hover:text-[#00ffa3]'
+            }`}
           >
             Posts
           </Link>
           <Link
             to="/stats"
-            className="text-gray-300 hover:text-[#00ffa3] px-3 py-2 rounded-md text-sm font-medium"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/stats')
+                ? 'text-[#00ffa3] bg-[#1A1B23]'
+                : 'text-gray-300 hover:text-[#00ffa3]'
+            }`}
           >
             Statistics
+          </Link>
+          <Link
+            to="/notifications"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
+              isActive('/notifications')
+                ? 'text-[#00ffa3] bg-[#1A1B23]'
+                : 'text-gray-300 hover:text-[#00ffa3]'
+            }`}
+          >
+            <FiBell className="w-4 h-4 mr-1" />
+            Notifications
           </Link>
         </div>
       </nav>
