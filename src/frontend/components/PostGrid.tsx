@@ -46,15 +46,23 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
         const newSubmissions = await storageService.getPosts(1, 9);
         console.log('Received submissions:', newSubmissions);
         
-        const submissionsWithStats = newSubmissions.map((submission) => ({
-          ...submission,
-          totalLocked: 0,
-          threshold: currentThreshold || 1000,
-          isTop10Percent: false,
-          isTop3: false,
-          createdAt: submission.createdAt,
-          updatedAt: submission.updatedAt
-        })) as unknown as PostSubmission[];
+        const submissionsWithStats = newSubmissions.map((submission) => {
+          // Calculate total locked amount (initial amount + all locklikes)
+          const initialAmount = submission.locks / 100000000; // Convert satoshis to BSV
+          const locklikesAmount = submission.locklikes.reduce((sum, locklike) => 
+            sum + (locklike.amount / 100000000), 0);
+          const totalLocked = initialAmount + locklikesAmount;
+
+          return {
+            ...submission,
+            totalLocked,
+            threshold: currentThreshold || 1000,
+            isTop10Percent: false,
+            isTop3: false,
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt
+          };
+        }) as unknown as PostSubmission[];
         
         console.log('Processed submissions with stats:', submissionsWithStats);
         
@@ -97,7 +105,10 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
 
   const formatBSV = (amount: number | undefined): string => {
     if (typeof amount !== 'number') return '0.00 BSV';
-    return `${amount.toFixed(2)} BSV`;
+    return `${amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8
+    })} BSV`;
   };
 
   const getProgressColor = (locked: number | undefined, threshold: number | undefined): string => {
