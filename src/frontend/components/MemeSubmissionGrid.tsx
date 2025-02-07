@@ -205,13 +205,13 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
         {submissions.map((submission) => (
           <div
             key={submission.id}
-            className="bg-[#2A2A40] rounded-lg overflow-hidden relative group"
+            className="bg-[#2A2A40] rounded-lg overflow-hidden relative group w-full max-w-md mx-auto"
           >
-            <div className="relative">
+            <div className="relative aspect-square">
               <video
                 ref={(el) => el && (videoRefs.current[submission.id] = el)}
                 src={submission.fileUrl}
-                className="w-full aspect-video object-cover cursor-pointer"
+                className="w-full h-full object-cover cursor-pointer"
                 onClick={() => handleVideoClick(submission.id)}
                 onMouseEnter={(e) => handleVideoMouseEnter(e.target as HTMLVideoElement, submission.id)}
                 onMouseLeave={(e) => handleVideoMouseLeave(e.target as HTMLVideoElement, submission.id)}
