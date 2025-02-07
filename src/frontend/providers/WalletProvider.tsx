@@ -46,20 +46,30 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       const isConnected = await yoursWallet.isConnected();
       if (isConnected) {
+        // For Yours wallet, we use the BSV address directly
         const addresses = await yoursWallet.getAddresses();
         if (addresses && addresses.length > 0) {
           const address = addresses[0];
           const balance = await yoursWallet.getBalance();
           if (balance !== undefined) {
-            setBtcAddress(address);
+            setBtcAddress(address); // BSV address from Yours wallet
             setBalance(Number(balance));
             setConnected(true);
             setActiveWallet('yours');
           }
         }
+      } else {
+        setConnected(false);
+        setBtcAddress(null);
+        setPublicKey(null);
+        setActiveWallet(null);
       }
     } catch (error) {
       console.error('Error checking Yours wallet state:', error);
+      setConnected(false);
+      setBtcAddress(null);
+      setPublicKey(null);
+      setActiveWallet(null);
     }
   }, [yoursWallet]);
 
@@ -111,17 +121,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!yoursWallet?.on) return;
 
-    yoursWallet.on('switchAccount', () => {
-      console.log('switchAccount');
+    const handleSwitchAccount = () => {
+      console.log('Yours wallet: Account switched');
       handleYoursWalletState();
-    });
+    };
 
-    yoursWallet.on('signedOut', () => {
-      console.log('signedOut');
+    const handleSignedOut = () => {
+      console.log('Yours wallet: Signed out');
       if (activeWallet === 'yours') {
         disconnect();
       }
-    });
+    };
+
+    yoursWallet.on('switchAccount', handleSwitchAccount);
+    yoursWallet.on('signedOut', handleSignedOut);
+
+    return () => {
+      yoursWallet.removeAllListeners();
+    };
   }, [yoursWallet, activeWallet, handleYoursWalletState]);
 
   // Generate BSV address when connected with public key
@@ -162,13 +179,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
 
         try {
+          console.log('Connecting to Yours wallet...');
           // Connect and get identity public key
           const identityPubKey = await yoursWallet.connect();
           if (identityPubKey) {
             console.log('Connected with identity public key:', identityPubKey);
             setPublicKey(identityPubKey);
 
-            // Get addresses after connection
+            // Get BSV address and balance
             const addresses = await yoursWallet.getAddresses();
             if (addresses && addresses.length > 0) {
               const address = addresses[0];
@@ -211,6 +229,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setBtcAddress(null);
       setPublicKey(null);
       setActiveWallet(null);
+      setBalance(0);
     } catch (error) {
       console.error('Failed to disconnect:', error);
       throw error;

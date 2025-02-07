@@ -27,12 +27,13 @@ export interface PhantomSolanaProvider {
   request: (args: { method: string }) => Promise<any>;
   on: (event: string, callback: () => void) => void;
   off: (event: string, callback: () => void) => void;
+  removeAllListeners: () => void;
 }
 
 declare global {
   interface Window {
     phantom?: {
-      bitcoin: PhantomBitcoinProvider;
+      bitcoin?: PhantomBitcoinProvider;
       solana?: PhantomSolanaProvider;
     };
   }
