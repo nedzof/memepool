@@ -332,5 +332,4 @@ const MemeSubmissionGrid: React.FC<MemeSubmissionGridProps> = ({ onStatsUpdate }
     </div>
   );
 };
-
 export default MemeSubmissionGrid; 
