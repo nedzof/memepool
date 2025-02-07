@@ -1,4 +1,4 @@
-export interface MemeVideoMetadata {
+export interface PostMetadata {
   id: string;
   creator: string;
   title: string;
@@ -11,17 +11,17 @@ export interface MemeVideoMetadata {
   thumbnailUrl: string;
   txId: string;
   locks: number;
-  status: 'minted' | 'pending' | 'failed';
+  status: 'minted';
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
-  initialVibes?: number;
-  totalLockLikeVibes?: number;
-  totalVibes?: number;
-  locklikes?: Array<{
+  initialVibes: number;
+  totalLockLikeVibes: number;
+  totalVibes: number;
+  locklikes: {
     txid: string;
     amount: number;
     locked_until: number;
     created_at: Date;
-  }>;
+  }[];
 } 

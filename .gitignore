@@ -1,6 +1,5 @@
 # Dependencies
 /node_modules
-/src/backend/node_modules
 /.pnp
 .pnp.js
 
@@ -13,22 +12,26 @@
 
 # Misc
 .DS_Store
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env
 
-# Debug logs
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
 # Editor directories and files
+.vscode/*
+!.vscode/extensions.json
 .idea
-.vscode
-*.swp
-*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # Environment files
 .env

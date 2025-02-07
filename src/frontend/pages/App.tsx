@@ -1,6 +1,6 @@
 import '../utils/buffer-polyfill';
 import React, { useState } from 'react';
-import MemeSubmissionGrid from '../components/MemeSubmissionGrid';
+import PostGrid from '../components/PostGrid';
 import BSVTransactionModal from '../components/modals/BSVTransactionModal';
 import { CreatePostModal } from '../components/modals/CreatePostModal';
 import { useWallet } from '../providers/WalletProvider';
@@ -63,7 +63,7 @@ const App: React.FC = () => {
 
       <main>
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <MemeSubmissionGrid
+          <PostGrid
             onStatsUpdate={(stats) => {
               setTotalLocked(stats.totalLocked);
               setParticipantCount(stats.participantCount);

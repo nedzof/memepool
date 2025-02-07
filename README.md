@@ -1,12 +1,110 @@
-# Zeitgeist - Amplifying Truth Through Locked Conviction
+# Lockd.app
 
-Zeitgeist is a minimalist BSV protocol where users anonymously lock BSV to surface what matters in real-time. By staking value on information, the platform acts as society's truth barometer—ranking content purely by collective financial conviction, not algorithms.
+A decentralized platform for sharing and locking posts on the Bitcoin SV blockchain.
 
-- Signal True Value: Lock BSV on underrated info to profit if it trends.
-- Early Recognition: First lockers gain visibility as posts rise.
-- 0.001% Fee: Minimal cost to participate vs traditional platforms.
-- Truth Through Cost: Fake news dies when amplification isn't free.
-- Uncensorable History: All posts/locks immutable on BSV.
+## Features
+
+- Create and share posts
+- Lock BSV to posts
+- Real-time post updates
+- BSV wallet integration
+- Modern, responsive UI
+
+## Tech Stack
+
+- React
+- TypeScript
+- Vite
+- Supabase
+- TailwindCSS
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18+)
+- npm or yarn
+- A Supabase account and project
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/lockd.app.git
+cd lockd.app
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env` file in the root directory and add your Supabase credentials:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:3000`.
+
+## Database Setup
+
+Run the following SQL commands in your Supabase SQL editor to set up the database schema:
+
+```sql
+-- Create creators table
+CREATE TABLE IF NOT EXISTS creators (
+  handle TEXT PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Create posts table
+CREATE TABLE IF NOT EXISTS posts (
+  txid TEXT PRIMARY KEY,
+  amount BIGINT NOT NULL,
+  content TEXT NOT NULL,
+  media_url TEXT,
+  locked_until BIGINT NOT NULL,
+  handle_id TEXT NOT NULL REFERENCES creators(handle),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Create locklikes table
+CREATE TABLE IF NOT EXISTS locklikes (
+  txid TEXT PRIMARY KEY,
+  post_txid TEXT NOT NULL REFERENCES posts(txid),
+  amount BIGINT NOT NULL,
+  locked_until BIGINT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS posts_handle_id_idx ON posts(handle_id);
+CREATE INDEX IF NOT EXISTS locklikes_post_txid_idx ON locklikes(post_txid);
+CREATE INDEX IF NOT EXISTS posts_created_at_idx ON posts(created_at DESC);
+
+-- Insert default 'anon' creator
+INSERT INTO creators (handle) 
+VALUES ('anon')
+ON CONFLICT (handle) DO NOTHING;
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ```mermaid
 graph LR
