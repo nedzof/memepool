@@ -1,10 +1,12 @@
 import '../utils/buffer-polyfill';
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import PostGrid from '../components/PostGrid';
+import Stats from './Stats';
+import Layout from '../components/Layout';
 import BSVTransactionModal from '../components/modals/BSVTransactionModal';
 import { CreatePostModal } from '../components/modals/CreatePostModal';
 import { useWallet } from '../providers/WalletProvider';
-import { Header } from '../../components/Header';
 import { FiPlus } from 'react-icons/fi';
 
 const App: React.FC = () => {
@@ -48,39 +50,42 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#1A1B23]">
-      <Header
-        totalLocked={totalLocked}
-        participantCount={participantCount}
-        onShowBSVModal={() => setShowBSVModal(true)}
-        onCreatePost={() => setShowCreatePostModal(true)}
-        btcAddress={btcAddress || ''}
-        isPhantomInstalled={isPhantomInstalled}
-        connected={connected}
-        onConnectPhantom={handlePhantomClick}
-        onDisconnect={handleDisconnect}
-      />
-
-      <main>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <PostGrid
-            onStatsUpdate={(stats) => {
-              setTotalLocked(stats.totalLocked);
-              setParticipantCount(stats.participantCount);
-            }}
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={
+          <Layout
+            totalLocked={totalLocked}
+            participantCount={participantCount}
+            btcAddress={btcAddress || ''}
+            isPhantomInstalled={isPhantomInstalled}
+            connected={connected}
+            onShowBSVModal={() => setShowBSVModal(true)}
+            onCreatePost={() => setShowCreatePostModal(true)}
+            onConnectPhantom={handlePhantomClick}
+            onDisconnect={handleDisconnect}
           />
-        </div>
-      </main>
-
-      {/* Create Post Button */}
-      {connected && (
-        <button
-          onClick={() => setShowCreatePostModal(true)}
-          className="fixed bottom-8 right-8 bg-[#00ffa3] text-black p-4 rounded-full shadow-lg hover:bg-[#00ff9d] transition-colors"
-        >
-          <FiPlus className="w-6 h-6" />
-        </button>
-      )}
+        }>
+          <Route index element={
+            <div className="max-w-7xl mx-auto px-4 py-8">
+              <PostGrid
+                onStatsUpdate={(stats) => {
+                  setTotalLocked(stats.totalLocked);
+                  setParticipantCount(stats.participantCount);
+                }}
+              />
+              {connected && (
+                <button
+                  onClick={() => setShowCreatePostModal(true)}
+                  className="fixed bottom-8 right-8 bg-[#00ffa3] text-black p-4 rounded-full shadow-lg hover:bg-[#00ff9d] transition-colors"
+                >
+                  <FiPlus className="w-6 h-6" />
+                </button>
+              )}
+            </div>
+          } />
+          <Route path="stats" element={<Stats />} />
+        </Route>
+      </Routes>
 
       {showBSVModal && btcAddress && (
         <BSVTransactionModal
@@ -97,7 +102,7 @@ const App: React.FC = () => {
           onPostCreated={handlePostCreated}
         />
       )}
-    </div>
+    </BrowserRouter>
   );
 };
 
