@@ -2,7 +2,6 @@ import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletName } from '@solana/wallet-adapter-base';
 import { FiTrendingUp, FiLock, FiClock, FiZap, FiDollarSign, FiArrowUp } from 'react-icons/fi';
-import SearchBar from '../frontend/components/SearchBar';
 
 // Add Phantom provider type to the window object
 declare global {
@@ -24,7 +23,6 @@ interface HeaderProps {
   timeLeft: number;
   participantCount: number;
   roundNumber: number;
-  onSearch?: (query: string) => void;
   onShowBSVModal?: () => void;
   btcAddress?: string;
   isPhantomInstalled?: boolean;
@@ -39,7 +37,6 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   timeLeft,
   participantCount,
   roundNumber,
-  onSearch,
   onShowBSVModal,
   btcAddress,
   isPhantomInstalled,
@@ -47,7 +44,6 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   onConnectPhantom,
   onDisconnect
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [blockHeight, setBlockHeight] = useState<number | null>(null);
   const [isHeightLoading, setIsHeightLoading] = useState(true);
 
@@ -69,13 +65,6 @@ const HeaderComponent: React.FC<HeaderProps> = ({
     const interval = setInterval(fetchBlockHeight, 60000); // Update every minute
     return () => clearInterval(interval);
   }, []);
-
-  const handleSearch = useCallback((query: string) => {
-    console.log('Search query:', query);
-    if (onSearch) {
-      onSearch(query);
-    }
-  }, [onSearch]);
 
   const formatBSV = useCallback((amount: number): string => {
     return `${amount.toFixed(2)} BSV`;
@@ -165,10 +154,6 @@ const HeaderComponent: React.FC<HeaderProps> = ({
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center flex-shrink-0">
             <img src="/assets/images/Memepool_Logo.svg" alt="Memepool Logo" className="h-8" />
-          </div>
-
-          <div className="flex-grow max-w-xl mx-8">
-            <SearchBar onSearch={handleSearch} />
           </div>
 
           <div className="flex items-center space-x-3 flex-shrink-0">

@@ -21,10 +21,6 @@ const App: React.FC = () => {
   const [timeLeft] = useState(0);
   const [threshold] = useState(1000);
 
-  const handleSearch = (query: string) => {
-    console.log('Search query:', query);
-  };
-
   const handlePhantomClick = async () => {
     if (!isPhantomInstalled) {
       window.open('https://chrome.google.com/webstore/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa', '_blank');
@@ -54,7 +50,6 @@ const App: React.FC = () => {
         timeLeft={timeLeft}
         participantCount={participantCount}
         roundNumber={roundNumber}
-        onSearch={handleSearch}
         onShowBSVModal={() => setShowBSVModal(true)}
         btcAddress={btcAddress || ''}
         isPhantomInstalled={isPhantomInstalled}
