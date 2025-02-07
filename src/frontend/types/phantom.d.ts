@@ -8,9 +8,12 @@ export interface PhantomBitcoinProvider {
   connect: () => Promise<BtcAccount[]>;
   disconnect: () => Promise<void>;
   signMessage: (message: string) => Promise<string>;
-  on: (event: string, callback: (args: any) => void) => void;
+  requestAccounts: () => Promise<BtcAccount[]>;
+  on: (event: PhantomEvent, callback: (args: any) => void) => void;
   removeAllListeners: () => void;
 }
+
+export type PhantomEvent = 'accountsChanged' | 'disconnect';
 
 export interface ConnectResponse {
   publicKey: string;
@@ -22,18 +25,15 @@ export interface PhantomSolanaProvider {
   connect: () => Promise<{ publicKey: { toString: () => string } }>;
   disconnect: () => Promise<void>;
   request: (args: { method: string }) => Promise<any>;
+  on: (event: string, callback: () => void) => void;
+  off: (event: string, callback: () => void) => void;
 }
 
 declare global {
   interface Window {
     phantom?: {
-      bitcoin?: PhantomBitcoinProvider;
-      solana?: {
-        isPhantom?: boolean;
-        connect: () => Promise<{ publicKey: { toString: () => string } }>;
-        disconnect: () => Promise<void>;
-        request: (args: { method: string }) => Promise<any>;
-      };
+      bitcoin: PhantomBitcoinProvider;
+      solana?: PhantomSolanaProvider;
     };
   }
 } 

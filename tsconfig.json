@@ -27,8 +27,8 @@
     },
 
     /* Environment */
-    "types": ["vite/client"]
+    "types": ["vite/client", "react", "react-dom", "node"]
   },
-  "include": ["src"],
+  "include": ["src", "src/**/*.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 } 

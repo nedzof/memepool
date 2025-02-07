@@ -1,63 +1,130 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { PhantomWallet } from '../utils/wallets/phantom-wallet';
-import { YoursWallet } from '../utils/wallets/yours-wallet';
-import type { BtcAccount, PhantomBitcoinProvider, ConnectResponse } from '../types/phantom';
+import { useYoursWallet } from 'yours-wallet-provider';
+import type { PhantomSolanaProvider } from '../types/phantom';
 import { generateBtcAddress } from '../utils/wallet';
-
-interface Inscription {
-  id: string;
-  mintTx: string;
-  transferTx: string;
-  imageUrl: string;
-  timestamp: number;
-}
 
 interface WalletContextType {
   isPhantomInstalled: boolean;
   isYoursInstalled: boolean;
   connected: boolean;
   btcAddress: string | null;
-  accounts: BtcAccount[];
   balance: number;
-  inscriptions: Inscription[];
   connect: (walletType: 'phantom' | 'yours') => Promise<void>;
   disconnect: () => Promise<void>;
   signMessage: (message: string) => Promise<string>;
-  addInscription: (inscription: Omit<Inscription, 'id' | 'timestamp'>) => void;
   publicKey: string | null;
   activeWallet: 'phantom' | 'yours' | null;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
+export const useWallet = () => {
+  const context = useContext(WalletContext);
+  if (context === undefined) {
+    throw new Error('useWallet must be used within a WalletProvider');
+  }
+  return context;
+};
+
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isPhantomInstalled, setIsPhantomInstalled] = useState(false);
   const [isYoursInstalled, setIsYoursInstalled] = useState(false);
   const [connected, setConnected] = useState(false);
   const [btcAddress, setBtcAddress] = useState<string | null>(null);
-  const [accounts, setAccounts] = useState<BtcAccount[]>([]);
   const [balance, setBalance] = useState(0);
-  const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [activeWallet, setActiveWallet] = useState<'phantom' | 'yours' | null>(null);
 
   const phantomWallet = PhantomWallet.getInstance();
-  const yoursWallet = YoursWallet.getInstance();
+  const yoursWallet = useYoursWallet();
 
+  // Handle Yours wallet connection state
+  const handleYoursWalletState = useCallback(async () => {
+    if (!yoursWallet) return;
+
+    try {
+      const isConnected = await yoursWallet.isConnected();
+      if (isConnected) {
+        const addresses = await yoursWallet.getAddresses();
+        if (addresses && addresses.length > 0) {
+          const address = addresses[0];
+          const balance = await yoursWallet.getBalance();
+          if (balance !== undefined) {
+            setBtcAddress(address);
+            setBalance(Number(balance));
+            setConnected(true);
+            setActiveWallet('yours');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking Yours wallet state:', error);
+    }
+  }, [yoursWallet]);
+
+  // Check if wallets are installed
   useEffect(() => {
     const checkWallets = async () => {
-      // Check Phantom
-      const provider = window?.phantom?.bitcoin;
-      const isPhantomAvailable = provider?.isPhantom || false;
-      setIsPhantomInstalled(isPhantomAvailable);
+      try {
+        // Check Phantom
+        const phantomProvider = window?.phantom?.solana;
+        const isPhantomAvailable = phantomProvider?.isPhantom || false;
+        setIsPhantomInstalled(isPhantomAvailable);
 
-      // Check Yours
-      const isYoursAvailable = ('yours' in window && window.yours?.isReady) || false;
-      setIsYoursInstalled(isYoursAvailable);
+        // Check Yours
+        const isYoursAvailable = yoursWallet?.isReady || false;
+        setIsYoursInstalled(isYoursAvailable);
+
+        if (isYoursAvailable) {
+          await handleYoursWalletState();
+        }
+
+        console.log('Wallet detection:', {
+          phantom: isPhantomAvailable,
+          yours: isYoursAvailable
+        });
+
+        // Check if Phantom is already connected
+        if (isPhantomAvailable && activeWallet === 'phantom' && phantomProvider) {
+          try {
+            const resp = await phantomProvider.connect();
+            const pubKey = resp.publicKey.toString();
+            setPublicKey(pubKey);
+            setConnected(true);
+          } catch (error) {
+            console.log('No connected accounts found');
+            setConnected(false);
+            setPublicKey(null);
+            setActiveWallet(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking wallet availability:', error);
+      }
     };
-    checkWallets();
-  }, []);
 
+    checkWallets();
+  }, [activeWallet, yoursWallet, handleYoursWalletState]);
+
+  // Set up Yours wallet event listeners
+  useEffect(() => {
+    if (!yoursWallet?.on) return;
+
+    yoursWallet.on('switchAccount', () => {
+      console.log('switchAccount');
+      handleYoursWalletState();
+    });
+
+    yoursWallet.on('signedOut', () => {
+      console.log('signedOut');
+      if (activeWallet === 'yours') {
+        disconnect();
+      }
+    });
+  }, [yoursWallet, activeWallet, handleYoursWalletState]);
+
+  // Generate BSV address when connected with public key
   useEffect(() => {
     if (connected && publicKey) {
       try {
@@ -76,48 +143,43 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const connect = async (walletType: 'phantom' | 'yours') => {
     try {
       if (walletType === 'phantom') {
-        const provider = window.phantom?.bitcoin;
+        const provider = window.phantom?.solana;
         if (!provider) {
           throw new Error('Phantom provider not found');
         }
 
         console.log('Connecting to Phantom...');
-        const accounts = await provider.connect();
-        console.log('Phantom connection response:', accounts);
-
-        if (accounts && accounts.length > 0) {
-          const publicKey = accounts[0].publicKey;
-          console.log('Connected with public key:', publicKey);
-          setPublicKey(publicKey);
-          setAccounts(accounts);
-          setConnected(true);
-          setActiveWallet('phantom');
-        }
+        const resp = await provider.connect();
+        const pubKey = resp.publicKey.toString();
+        console.log('Connected with public key:', pubKey);
+        setPublicKey(pubKey);
+        setConnected(true);
+        setActiveWallet('phantom');
       } else if (walletType === 'yours') {
-        const provider = window.yours;
-        if (!provider || !provider.isReady) {
+        if (!yoursWallet?.isReady) {
+          window.open('https://yours.org', '_blank');
           throw new Error('Yours Wallet is not ready');
         }
 
         try {
-          // Check if already connected
-          const isConnected = await provider.isConnected();
-          if (!isConnected) {
-            // Connect and get identity public key
-            const identityPubKey = await provider.connect();
+          // Connect and get identity public key
+          const identityPubKey = await yoursWallet.connect();
+          if (identityPubKey) {
             console.log('Connected with identity public key:', identityPubKey);
-          }
+            setPublicKey(identityPubKey);
 
-          // Get addresses after connection
-          const addresses = await provider.getAddresses();
-          if (addresses && addresses.length > 0) {
-            const address = addresses[0]; // Use first address
-            const balance = await provider.getBalance();
-            
-            setBtcAddress(address);
-            setBalance(balance);
-            setConnected(true);
-            setActiveWallet('yours');
+            // Get addresses after connection
+            const addresses = await yoursWallet.getAddresses();
+            if (addresses && addresses.length > 0) {
+              const address = addresses[0];
+              const balance = await yoursWallet.getBalance();
+              if (balance !== undefined) {
+                setBtcAddress(address);
+                setBalance(Number(balance));
+                setConnected(true);
+                setActiveWallet('yours');
+              }
+            }
           }
         } catch (err: unknown) {
           console.error('Failed to connect to Yours wallet:', err);
@@ -127,7 +189,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err: unknown) {
       console.error('Failed to connect:', err);
       setConnected(false);
-      setAccounts([]);
       setBtcAddress(null);
       setPublicKey(null);
       setActiveWallet(null);
@@ -138,16 +199,15 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const disconnect = async () => {
     try {
       if (activeWallet === 'phantom') {
-        const provider = window.phantom?.bitcoin;
+        const provider = window.phantom?.solana;
         if (provider) {
           await provider.disconnect();
         }
-      } else if (activeWallet === 'yours') {
+      } else if (activeWallet === 'yours' && yoursWallet) {
         await yoursWallet.disconnect();
       }
       
       setConnected(false);
-      setAccounts([]);
       setBtcAddress(null);
       setPublicKey(null);
       setActiveWallet(null);
@@ -160,72 +220,51 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const signMessage = async (message: string) => {
     if (activeWallet === 'phantom') {
       return await phantomWallet.signMessage(message);
-    } else if (activeWallet === 'yours') {
-      return await yoursWallet.signMessage(message);
+    } else if (activeWallet === 'yours' && yoursWallet) {
+      const result = await yoursWallet.signMessage(message);
+      if (result?.signedMessage) {
+        return result.signedMessage;
+      }
+      throw new Error('Failed to sign message with Yours wallet');
     }
     throw new Error('No wallet connected');
   };
 
-  const addInscription = useCallback((inscription: Omit<Inscription, 'id' | 'timestamp'>) => {
-    const newInscription: Inscription = {
-      ...inscription,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: Date.now(),
-    };
-    setInscriptions(prev => [newInscription, ...prev]);
-  }, []);
-
+  // Set up Phantom wallet event listeners
   useEffect(() => {
-    const setupWalletListeners = () => {
-      // Phantom wallet listeners
-      const provider = window.phantom?.bitcoin;
+    const setupPhantomListeners = () => {
+      const provider = window.phantom?.solana;
       if (provider && activeWallet === 'phantom') {
-        provider.on('accountsChanged', (accounts: BtcAccount[]) => {
-          if (accounts.length > 0) {
-            setPublicKey(accounts[0].publicKey);
-            setAccounts(accounts);
+        provider.on('accountChanged', () => {
+          provider.connect().then(resp => {
+            const pubKey = resp.publicKey.toString();
+            setPublicKey(pubKey);
             setConnected(true);
-          } else {
-            provider.requestAccounts().catch((error) => {
-              console.error('Failed to reconnect:', error);
-              setConnected(false);
-              setAccounts([]);
-              setBtcAddress(null);
-              setPublicKey(null);
-              setActiveWallet(null);
-            });
-          }
-        });
-      }
-
-      // Yours wallet listeners
-      if (window.yours && activeWallet === 'yours') {
-        window.yours.on('accountChanged', async () => {
-          try {
-            const address = await yoursWallet.getAddress();
-            const balance = await yoursWallet.getBalance();
-            setBtcAddress(address);
-            setBalance(balance);
-          } catch (error) {
-            console.error('Failed to update Yours wallet info:', error);
+          }).catch(error => {
+            console.error('Failed to reconnect:', error);
             setConnected(false);
             setBtcAddress(null);
             setPublicKey(null);
             setActiveWallet(null);
-          }
+          });
+        });
+
+        provider.on('disconnect', () => {
+          setConnected(false);
+          setBtcAddress(null);
+          setPublicKey(null);
+          setActiveWallet(null);
         });
       }
     };
 
-    setupWalletListeners();
+    setupPhantomListeners();
 
     return () => {
       // Cleanup listeners
-      if (window.phantom?.bitcoin?.removeAllListeners) {
-        window.phantom.bitcoin.removeAllListeners();
-      }
-      if (window.yours?.removeAllListeners) {
-        window.yours.removeAllListeners();
+      const provider = window.phantom?.solana;
+      if (provider?.removeAllListeners) {
+        provider.removeAllListeners();
       }
     };
   }, [activeWallet]);
@@ -237,13 +276,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isYoursInstalled,
         connected,
         btcAddress,
-        accounts,
         balance,
-        inscriptions,
         connect,
         disconnect,
         signMessage,
-        addInscription,
         publicKey,
         activeWallet,
       }}
@@ -251,12 +287,4 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
     </WalletContext.Provider>
   );
-};
-
-export const useWallet = () => {
-  const context = useContext(WalletContext);
-  if (context === undefined) {
-    throw new Error('useWallet must be used within a WalletProvider');
-  }
-  return context;
 }; 

@@ -12,7 +12,7 @@ export interface YoursWalletProvider {
   removeAllListeners: () => void;
 }
 
-export type YoursEvent = 'connect' | 'disconnect' | 'accountChanged';
+export type YoursEvent = 'connect' | 'disconnect' | 'accountChanged' | 'signedOut';
 
 declare global {
   interface Window {
