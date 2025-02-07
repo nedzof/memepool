@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storage.service';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { FiTrendingUp, FiUsers, FiAward, FiClock, FiActivity, FiBell, FiBarChart2 } from 'react-icons/fi';
+import { FiTrendingUp, FiUsers, FiAward, FiClock, FiActivity, FiBarChart2 } from 'react-icons/fi';
 
 interface StatsData {
   totalPosts: number;
@@ -520,51 +520,6 @@ const Stats: React.FC = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
-
-        {/* Notification Settings */}
-        <div className="bg-[#2A2A40] rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold flex items-center mb-6">
-            <FiBell className="w-6 h-6 text-[#00ffa3] mr-2" />
-            Notification Settings
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {notificationSettings.map((setting, index) => (
-              <div key={index} className="bg-[#1A1B23] rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-400 text-sm">Notify when post reaches</p>
-                    <p className="text-xl font-bold text-[#00ffa3]">{setting.threshold} BSV</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={setting.enabled}
-                      onChange={() => {
-                        const newSettings = [...notificationSettings];
-                        newSettings[index].enabled = !newSettings[index].enabled;
-                        setNotificationSettings(newSettings);
-                        // Here you would typically save the settings to user preferences
-                        // For now, we'll just log them
-                        console.log('Updated notification settings:', newSettings);
-                      }}
-                    />
-                    <div className={`
-                      w-11 h-6 bg-gray-700 rounded-full peer 
-                      peer-checked:after:translate-x-full peer-checked:bg-[#00ffa3]
-                      after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
-                      after:bg-white after:rounded-full after:h-5 after:w-5 
-                      after:transition-all
-                    `}></div>
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-gray-400 text-sm mt-4">
-            You'll receive notifications when posts reach these BSV thresholds. Make sure to enable notifications in your browser.
-          </p>
         </div>
 
         {/* Footer */}

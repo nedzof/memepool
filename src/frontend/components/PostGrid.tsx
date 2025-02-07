@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiLock, FiZap } from 'react-icons/fi';
+import { FiLock, FiZap, FiClock, FiFilter } from 'react-icons/fi';
 import { PostMetadata } from '../../shared/types/metadata';
 import { storageService } from '../services/storage.service';
 import { walletManager } from '../utils/wallet';
@@ -22,6 +22,19 @@ interface PostGridProps {
   }) => void;
 }
 
+const TIME_PERIODS = [
+  { id: '1d', label: 'Last 24h' },
+  { id: '7d', label: 'Last 7d' },
+  { id: '30d', label: 'Last 30d' }
+] as const;
+
+const TOP_FILTERS = [
+  { id: 'all', label: 'All Posts' },
+  { id: 'top1', label: 'Top Post' },
+  { id: 'top3', label: 'Top 3' },
+  { id: 'top10', label: 'Top 10' }
+] as const;
+
 const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
   const [submissions, setSubmissions] = useState<PostSubmission[]>([]);
   const [currentThreshold, setCurrentThreshold] = useState(0);
@@ -36,6 +49,8 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
   const [recentLocks, setRecentLocks] = useState<Array<{ submissionId: string; amount: number; timestamp: number }>>([]);
   const [showConfetti, setShowConfetti] = useState<string | null>(null);
   const imageRefs = useRef<{ [key: string]: HTMLImageElement }>({});
+  const [selectedPeriod, setSelectedPeriod] = useState<typeof TIME_PERIODS[number]['id']>('1d');
+  const [selectedTopFilter, setSelectedTopFilter] = useState<typeof TOP_FILTERS[number]['id']>('all');
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -164,8 +179,99 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
     }
   };
 
+  const filterSubmissions = (posts: PostSubmission[]): PostSubmission[] => {
+    // First apply time period filter
+    const now = new Date();
+    const filteredByTime = posts.filter(post => {
+      const postDate = new Date(post.createdAt);
+      const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
+      
+      switch (selectedPeriod) {
+        case '1d':
+          return hoursDiff <= 24;
+        case '7d':
+          return hoursDiff <= 168;
+        case '30d':
+          return hoursDiff <= 720;
+        default:
+          return true;
+      }
+    });
+
+    // Then apply top filter
+    const sortedByLocks = [...filteredByTime].sort((a, b) => b.totalLocked - a.totalLocked);
+    
+    switch (selectedTopFilter) {
+      case 'top1':
+        return sortedByLocks.slice(0, 1);
+      case 'top3':
+        return sortedByLocks.slice(0, 3);
+      case 'top10':
+        return sortedByLocks.slice(0, 10);
+      default:
+        return sortedByLocks;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1A1B23] text-white p-4 md:p-8">
+      {/* Filters */}
+      <div className="max-w-7xl mx-auto mb-8">
+        <div className="bg-[#2A2A40] rounded-lg p-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            {/* Time Period Filter */}
+            <div className="flex flex-col w-full md:w-auto">
+              <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center">
+                <FiClock className="w-4 h-4 mr-2" />
+                Time Period
+              </h3>
+              <div className="flex space-x-2">
+                {TIME_PERIODS.map(period => (
+                  <button
+                    key={period.id}
+                    onClick={() => setSelectedPeriod(period.id)}
+                    className={`
+                      px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      ${selectedPeriod === period.id
+                        ? 'bg-[#00ffa3] text-black'
+                        : 'bg-[#1A1B23] text-gray-400 hover:text-[#00ffa3]'
+                      }
+                    `}
+                  >
+                    {period.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Posts Filter */}
+            <div className="flex flex-col w-full md:w-auto">
+              <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center">
+                <FiFilter className="w-4 h-4 mr-2" />
+                Filter Posts
+              </h3>
+              <div className="flex space-x-2">
+                {TOP_FILTERS.map(filter => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setSelectedTopFilter(filter.id)}
+                    className={`
+                      px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      ${selectedTopFilter === filter.id
+                        ? 'bg-[#00ffa3] text-black'
+                        : 'bg-[#1A1B23] text-gray-400 hover:text-[#00ffa3]'
+                      }
+                    `}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-pulse text-[#00ffa3]">Loading...</div>
@@ -178,27 +284,23 @@ const PostGrid: React.FC<PostGridProps> = ({ onStatsUpdate }) => {
       ) : (
         <>
           <div className="fixed top-24 right-4 z-50 space-y-2 pointer-events-none">
-            {recentLocks.map((lock, index) => {
-              const submission = submissions.find(s => s.id === lock.submissionId);
-              if (!submission) return null;
-              return (
-                <div
-                  key={`${lock.submissionId}-${lock.timestamp}`}
-                  className="bg-white/10 backdrop-blur-md rounded-lg p-4 animate-fade-out"
-                >
-                  <div className="flex items-center space-x-2">
-                    <FiLock className="text-[#00ffa3]" />
-                    <span className="text-[#00ffa3] font-bold">{formatBSV(lock.amount)}</span>
-                    <span className="text-gray-400">locked</span>
-                  </div>
+            {recentLocks.map((lock, index) => (
+              <div
+                key={`${lock.submissionId}-${lock.timestamp}`}
+                className="bg-white/10 backdrop-blur-md rounded-lg p-4 animate-fade-out"
+              >
+                <div className="flex items-center space-x-2">
+                  <FiLock className="text-[#00ffa3]" />
+                  <span className="text-[#00ffa3] font-bold">{formatBSV(lock.amount)}</span>
+                  <span className="text-gray-400">locked</span>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
 
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {submissions.map((submission) => (
+              {filterSubmissions(submissions).map((submission) => (
                 <div
                   key={submission.id}
                   className="bg-[#2A2A40] rounded-lg overflow-hidden relative group aspect-square"
