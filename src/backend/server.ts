@@ -1,20 +1,15 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import memegenService from './services/memegen.service.js';
-import { createMetadata, getMetadata, initAerospike } from './services/aerospikeService.js';
-import inscriptionsRouter from './routes/inscriptions';
-import blockMemeRoutes from './routes/blockMeme.routes';
-import faucetRouter from './routes/faucet';
-import videoRoutes from './routes/video.routes';
-import { BlockStateService } from './services/blockState.service';
-import { modelServingService } from './services/modelServing.service.js';
+import { createMetadata, getMetadata } from './services/aerospikeService.js';
+import inscriptionsRouter from './routes/inscriptions.js';
+import faucetRouter from './routes/faucet.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3005;
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
 // Middleware
 app.use(cors({
@@ -23,6 +18,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -31,77 +27,18 @@ console.log('Starting server initialization...');
 console.log('Environment:', process.env.NODE_ENV || 'development');
 console.log('Port:', port);
 
-// Initialize BlockStateService
-const blockStateService = BlockStateService.getInstance();
-
-// Block Meme Routes with initialization check
-app.use('/api/block-memes', async (req, res, next) => {
-  try {
-    if (!blockStateService.isInitialized()) {
-      console.log('BlockStateService not initialized, attempting to initialize...');
-      await blockStateService.start();
-    }
-    next();
-  } catch (error) {
-    console.error('BlockStateService initialization failed in middleware:', error);
-    res.status(503).json({ 
-      error: 'Service temporarily unavailable',
-      details: 'Block state service initialization failed'
-    });
-  }
-}, blockMemeRoutes);
-
-// Video Routes
-app.use('/api/video', videoRoutes);
+// Routes
+app.use('/api/inscriptions', inscriptionsRouter);
+app.use('/api/faucet', faucetRouter);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
   const health = {
     status: 'ok',
-    blockState: blockStateService.isInitialized() ? 'initialized' : 'not initialized',
-    currentBlockHeight: blockStateService.getCurrentBlockHeight(),
-    aerospike: await checkAerospikeConnection(),
-    aiVideo: await checkAiVideoService()
+    aerospike: 'connected'
   };
   res.json(health);
 });
-
-async function checkAerospikeConnection() {
-  try {
-    const client = await initAerospike();
-    await client.close();
-    return { 
-      status: 'connected',
-      host: process.env.AEROSPIKE_HOST || 'localhost',
-      port: parseInt(process.env.AEROSPIKE_PORT || "3003")
-    };
-  } catch (error) {
-    return { 
-      status: 'disconnected',
-      error: error.message,
-      config: {
-        host: process.env.AEROSPIKE_HOST || 'localhost',
-        port: parseInt(process.env.AEROSPIKE_PORT || "3003")
-      }
-    };
-  }
-}
-
-async function checkAiVideoService() {
-  try {
-    const response = await fetch('http://localhost:8001/docs');
-    return {
-      status: response.ok ? 'connected' : 'error',
-      port: 8001
-    };
-  } catch (error) {
-    return {
-      status: 'disconnected',
-      error: error.message,
-      port: 8001
-    };
-  }
-}
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -115,17 +52,10 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // Start the server
 const startServer = async () => {
   try {
-    console.log('Initializing BlockStateService...');
-    await blockStateService.start();
-    console.log('BlockStateService initialized successfully');
-
-    await initAerospike();
-    console.log('Aerospike initialized successfully');
-
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
