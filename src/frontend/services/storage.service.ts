@@ -260,16 +260,32 @@ class StorageService {
   }
 
   async getMemeVideos(page: number, limit: number): Promise<MemeVideoMetadata[]> {
-    try {
-      const response = await fetch(`${this.apiUrl}/memes?page=${page}&limit=${limit}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch meme videos');
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching meme videos:', error);
-      return [];
-    }
+    // Return mock data for now
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    const mockVideos = Array.from({ length: limit }, (_, i) => ({
+      id: `meme-${(page - 1) * limit + i + 1}`,
+      creator: `creator-${i + 1}`,
+      title: `Meme #${(page - 1) * limit + i + 1}`,
+      description: `A placeholder meme ${(page - 1) * limit + i + 1}`,
+      prompt: `Generate meme ${(page - 1) * limit + i + 1}`,
+      style: 'viral',
+      duration: 30,
+      format: 'video/mp4',
+      fileUrl: `https://placehold.co/600x400/1A1B23/00ffa3?text=Meme+${(page - 1) * limit + i + 1}`,
+      thumbnailUrl: `https://placehold.co/600x400/1A1B23/00ffa3?text=Meme+${(page - 1) * limit + i + 1}`,
+      txId: `tx-${(page - 1) * limit + i + 1}`,
+      locks: Math.floor(Math.random() * 100),
+      status: 'minted' as const,
+      tags: ['meme', 'viral'],
+      views: Math.floor(Math.random() * 1000),
+      likes: Math.floor(Math.random() * 100),
+      dislikes: Math.floor(Math.random() * 20),
+      shares: Math.floor(Math.random() * 50),
+      createdAt: new Date(Date.now() - ((page - 1) * limit + i) * 60000),
+      updatedAt: new Date(Date.now() - ((page - 1) * limit + i) * 60000),
+    }));
+
+    return mockVideos;
   }
 
   async getMemeVideo(id: string): Promise<MemeVideoMetadata | null> {
