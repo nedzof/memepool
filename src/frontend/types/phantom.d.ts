@@ -1,9 +1,20 @@
+export interface BtcAccount {
+  publicKey: string;
+  address: string;
+}
+
 export interface PhantomBitcoinProvider {
-  isPhantom: boolean;
-  requestAccounts: () => Promise<BtcAccount[]>;
-  request: (args: { method: string; params?: any }) => Promise<any>;
-  on?: (event: string, handler: Function) => void;
-  removeAllListeners?: () => void;
+  isPhantom?: boolean;
+  connect: () => Promise<BtcAccount[]>;
+  disconnect: () => Promise<void>;
+  signMessage: (message: string) => Promise<string>;
+  on: (event: string, callback: (args: any) => void) => void;
+  removeAllListeners: () => void;
+}
+
+export interface ConnectResponse {
+  publicKey: string;
+  address: string;
 }
 
 export interface PhantomSolanaProvider {
@@ -13,18 +24,16 @@ export interface PhantomSolanaProvider {
   request: (args: { method: string }) => Promise<any>;
 }
 
-export interface BtcAccount {
-  address: string;
-  addressType: "p2tr" | "p2wpkh" | "p2sh" | "p2pkh";
-  publicKey: string;
-  purpose: "payment" | "ordinals";
-}
-
 declare global {
   interface Window {
     phantom?: {
       bitcoin?: PhantomBitcoinProvider;
-      solana?: PhantomSolanaProvider;
+      solana?: {
+        isPhantom?: boolean;
+        connect: () => Promise<{ publicKey: { toString: () => string } }>;
+        disconnect: () => Promise<void>;
+        request: (args: { method: string }) => Promise<any>;
+      };
     };
   }
 } 

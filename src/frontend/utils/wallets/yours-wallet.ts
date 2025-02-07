@@ -1,5 +1,5 @@
 import { Wallet, WalletType } from '../../../shared/types/wallet';
-import type { YoursWalletProvider, ConnectResponse } from '../../types/yours';
+import type { YoursWalletProvider } from '../../types/yours';
 
 export class YoursWallet implements Wallet {
   private static instance: YoursWallet;
@@ -24,18 +24,18 @@ export class YoursWallet implements Wallet {
   private getProvider(): YoursWalletProvider | null {
     if ('yours' in window) {
       const provider = window.yours;
-      if (provider?.isYours) {
+      if (provider?.isReady) {
         return provider;
       }
     }
-    window.open('https://chromewebstore.google.com/detail/yours-wallet/mlbnicldlpdimbjdcncnklfempedeipj', '_blank');
+    window.open('https://yours.org', '_blank');
     return null;
   }
 
   async isAvailable(): Promise<boolean> {
     try {
       const provider = this.getProvider();
-      return provider !== null;
+      return provider !== null && provider.isReady;
     } catch (error) {
       console.error('Error checking Yours Wallet installation:', error);
       return false;
@@ -53,12 +53,18 @@ export class YoursWallet implements Wallet {
 
       this.provider = provider;
 
-      const response = await provider.connect();
-      console.log('Yours Wallet connection response:', response);
+      // Check if already connected
+      const isConnected = await provider.isConnected();
+      if (!isConnected) {
+        // Connect and get identity public key
+        const identityPubKey = await provider.connect();
+        console.log('Yours Wallet identity public key:', identityPubKey);
+      }
 
-      if (response) {
-        this.publicKey = response.publicKey;
-        this.address = response.address;
+      // Get addresses after connection
+      const addresses = await provider.getAddresses();
+      if (addresses && addresses.length > 0) {
+        this.address = addresses[0]; // Use first address
         
         // Get initial balance
         const balance = await provider.getBalance();
@@ -66,7 +72,6 @@ export class YoursWallet implements Wallet {
         
         console.log('Yours Wallet connected:', {
           address: this.address,
-          publicKey: this.publicKey,
           balance: this.balance
         });
       }

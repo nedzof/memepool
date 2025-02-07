@@ -52,7 +52,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsPhantomInstalled(isPhantomAvailable);
 
       // Check Yours
-      const isYoursAvailable = await yoursWallet.isAvailable();
+      const isYoursAvailable = ('yours' in window && window.yours?.isReady) || false;
       setIsYoursInstalled(isYoursAvailable);
     };
     checkWallets();
@@ -82,7 +82,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
 
         console.log('Connecting to Phantom...');
-        const accounts = await provider.requestAccounts();
+        const accounts = await provider.connect();
         console.log('Phantom connection response:', accounts);
 
         if (accounts && accounts.length > 0) {
@@ -94,24 +94,44 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setActiveWallet('phantom');
         }
       } else if (walletType === 'yours') {
-        await yoursWallet.initiateLogin();
-        const address = await yoursWallet.getAddress();
-        const balance = await yoursWallet.getBalance();
-        
-        setPublicKey(yoursWallet.publicKey || null);
-        setBtcAddress(address);
-        setBalance(balance);
-        setConnected(true);
-        setActiveWallet('yours');
+        const provider = window.yours;
+        if (!provider || !provider.isReady) {
+          throw new Error('Yours Wallet is not ready');
+        }
+
+        try {
+          // Check if already connected
+          const isConnected = await provider.isConnected();
+          if (!isConnected) {
+            // Connect and get identity public key
+            const identityPubKey = await provider.connect();
+            console.log('Connected with identity public key:', identityPubKey);
+          }
+
+          // Get addresses after connection
+          const addresses = await provider.getAddresses();
+          if (addresses && addresses.length > 0) {
+            const address = addresses[0]; // Use first address
+            const balance = await provider.getBalance();
+            
+            setBtcAddress(address);
+            setBalance(balance);
+            setConnected(true);
+            setActiveWallet('yours');
+          }
+        } catch (err: unknown) {
+          console.error('Failed to connect to Yours wallet:', err);
+          throw new Error(err instanceof Error ? err.message : 'Failed to connect to Yours wallet');
+        }
       }
-    } catch (error) {
-      console.error('Failed to connect:', error);
+    } catch (err: unknown) {
+      console.error('Failed to connect:', err);
       setConnected(false);
       setAccounts([]);
       setBtcAddress(null);
       setPublicKey(null);
       setActiveWallet(null);
-      throw error;
+      throw new Error(err instanceof Error ? err.message : 'Failed to connect wallet');
     }
   };
 
