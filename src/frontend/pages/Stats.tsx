@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storage.service';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FiTrendingUp, FiUsers, FiAward, FiClock, FiActivity } from 'react-icons/fi';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { FiTrendingUp, FiUsers, FiAward, FiClock, FiActivity, FiBell, FiBarChart2 } from 'react-icons/fi';
 
 interface StatsData {
   totalPosts: number;
@@ -34,6 +34,16 @@ interface StatsData {
     averageResponseTime: number; // in minutes
     postSuccessRate: number; // percentage
   };
+  lockValueDistribution: Array<{
+    range: string;
+    count: number;
+    totalValue: number;
+  }>;
+}
+
+interface NotificationSetting {
+  threshold: number;
+  enabled: boolean;
 }
 
 const COLORS = ['#00ffa3', '#00ff9d', '#00ffff', '#ff00ff'];
@@ -42,6 +52,17 @@ const TIME_PERIODS = [
   { id: '7d', label: 'Last 7 Days' },
   { id: '30d', label: 'Last 30 Days' }
 ] as const;
+
+const LOCK_RANGES = [
+  { min: 0, max: 0.1, label: '0-0.1 BSV' },
+  { min: 0.1, max: 0.5, label: '0.1-0.5 BSV' },
+  { min: 0.5, max: 1, label: '0.5-1 BSV' },
+  { min: 1, max: 5, label: '1-5 BSV' },
+  { min: 5, max: 10, label: '5-10 BSV' },
+  { min: 10, max: Infinity, label: '10+ BSV' }
+];
+
+const DEFAULT_NOTIFICATION_THRESHOLDS = [0.1, 0.5, 1, 5, 10];
 
 const Stats: React.FC = () => {
   const [stats, setStats] = useState<StatsData>({
@@ -63,10 +84,17 @@ const Stats: React.FC = () => {
       returnRate: 0,
       averageResponseTime: 0,
       postSuccessRate: 0
-    }
+    },
+    lockValueDistribution: []
   });
   const [selectedPeriod, setSelectedPeriod] = useState('24h');
   const [isLoading, setIsLoading] = useState(true);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSetting[]>(
+    DEFAULT_NOTIFICATION_THRESHOLDS.map(threshold => ({
+      threshold,
+      enabled: false
+    }))
+  );
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -208,6 +236,25 @@ const Stats: React.FC = () => {
           postSuccessRate: (postsWithLocks / posts.length) * 100 || 0
         };
 
+        // Calculate lock value distribution
+        const lockValueDistribution = LOCK_RANGES.map(range => {
+          const locksInRange = posts.flatMap(post => {
+            const locks = [
+              { amount: post.locks / 100000000 },
+              ...post.locklikes.map(lock => ({ amount: lock.amount / 100000000 }))
+            ];
+            return locks.filter(lock => 
+              lock.amount > range.min && lock.amount <= range.max
+            );
+          });
+
+          return {
+            range: range.label,
+            count: locksInRange.length,
+            totalValue: locksInRange.reduce((sum, lock) => sum + lock.amount, 0)
+          };
+        });
+
         setStats({
           totalPosts: posts.length,
           totalBSVLocked,
@@ -217,7 +264,8 @@ const Stats: React.FC = () => {
           timeSeriesData,
           postDistribution: postsByLockAmount,
           topPostsByPeriod,
-          engagementMetrics
+          engagementMetrics,
+          lockValueDistribution
         });
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -446,6 +494,77 @@ const Stats: React.FC = () => {
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
+
+        {/* Lock Value Distribution */}
+        <div className="bg-[#2A2A40] rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold flex items-center mb-6">
+            <FiBarChart2 className="w-6 h-6 text-[#00ffa3] mr-2" />
+            Lock Value Distribution
+          </h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.lockValueDistribution}>
+                <XAxis dataKey="range" stroke="#666" />
+                <YAxis yAxisId="left" stroke="#666" />
+                <YAxis yAxisId="right" orientation="right" stroke="#00ffa3" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#2A2A40',
+                    border: 'none',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Bar yAxisId="left" dataKey="count" fill="#666" name="Number of Locks" />
+                <Bar yAxisId="right" dataKey="totalValue" fill="#00ffa3" name="Total BSV" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Notification Settings */}
+        <div className="bg-[#2A2A40] rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold flex items-center mb-6">
+            <FiBell className="w-6 h-6 text-[#00ffa3] mr-2" />
+            Notification Settings
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {notificationSettings.map((setting, index) => (
+              <div key={index} className="bg-[#1A1B23] rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">Notify when post reaches</p>
+                    <p className="text-xl font-bold text-[#00ffa3]">{setting.threshold} BSV</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={setting.enabled}
+                      onChange={() => {
+                        const newSettings = [...notificationSettings];
+                        newSettings[index].enabled = !newSettings[index].enabled;
+                        setNotificationSettings(newSettings);
+                        // Here you would typically save the settings to user preferences
+                        // For now, we'll just log them
+                        console.log('Updated notification settings:', newSettings);
+                      }}
+                    />
+                    <div className={`
+                      w-11 h-6 bg-gray-700 rounded-full peer 
+                      peer-checked:after:translate-x-full peer-checked:bg-[#00ffa3]
+                      after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
+                      after:bg-white after:rounded-full after:h-5 after:w-5 
+                      after:transition-all
+                    `}></div>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-gray-400 text-sm mt-4">
+            You'll receive notifications when posts reach these BSV thresholds. Make sure to enable notifications in your browser.
+          </p>
         </div>
 
         {/* Footer */}
